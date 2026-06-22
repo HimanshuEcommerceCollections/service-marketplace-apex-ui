@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import DemoBanner from '../components/DemoBanner';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import DemoBanner from '../components/HomeComponents/DemoBanner';
+import Navbar from '../components/HomeComponents/Navbar';
+import Footer from '../components/HomeComponents/Footer';
 
 export const metadata: Metadata = {
   title: 'Apex Total Home Services',

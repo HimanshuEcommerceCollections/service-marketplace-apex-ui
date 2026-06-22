@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
-import { navLinks } from '../data/footer';
-import { services } from '../data/services';
+import { navLinks } from '../../data/HomeData/footer';
+import { services } from '../../data/HomeData/services';
 
 interface Props {
   isOpen: boolean;

@@ -1,5 +1,5 @@
-import { testimonials } from '../data/testimonials';
-import TestimonialCard from '../components/TestimonialCard';
+import { testimonials } from '../../data/HomeData/testimonials';
+import TestimonialCard from '../../components/HomeComponents/TestimonialCard';
 
 export default function TestimonialsSection() {
   return (

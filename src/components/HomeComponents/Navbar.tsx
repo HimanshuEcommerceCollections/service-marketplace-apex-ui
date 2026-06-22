@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import MobileSidebar from './MobileSidebar';
-import { navLinks } from '../data/footer';
+import { navLinks } from '../../data/HomeData/footer';
 
 export default function Navbar() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
