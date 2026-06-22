@@ -1,4 +1,4 @@
-import { Testimonial } from '../data/testimonials';
+import { Testimonial } from '../../data/HomeData/testimonials';
 
 interface Props {
   testimonial: Testimonial;

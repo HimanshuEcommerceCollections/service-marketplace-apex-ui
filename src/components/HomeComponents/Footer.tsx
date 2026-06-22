@@ -1,4 +1,4 @@
-import { footerLinks } from '../data/footer';
+import { footerLinks } from '../../data/HomeData/footer';
 
 export default function Footer() {
   return (

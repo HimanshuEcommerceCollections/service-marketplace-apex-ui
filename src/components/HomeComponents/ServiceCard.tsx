@@ -1,4 +1,4 @@
-import { Service } from '../data/services';
+import { Service } from '../../data/HomeData/services';
 
 interface Props {
   service: Service;

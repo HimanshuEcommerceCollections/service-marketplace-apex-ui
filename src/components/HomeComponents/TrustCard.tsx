@@ -1,4 +1,4 @@
-import { TrustStat } from '../data/trust';
+import { TrustStat } from '../../data/HomeData/trust';
 
 interface Props {
   card: TrustStat;

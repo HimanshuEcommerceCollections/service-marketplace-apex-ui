@@ -1,4 +1,4 @@
-import PricingCard from '../components/PricingCard';
+import PricingCard from '../../components/HomeComponents/PricingCard';
 
 const types = ['priced', 'from', 'quote'] as const;
 

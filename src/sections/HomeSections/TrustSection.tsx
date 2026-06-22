@@ -1,5 +1,5 @@
-import { trustStats } from '../data/trust';
-import TrustCard from '../components/TrustCard';
+import { trustStats } from '../../data/HomeData/trust';
+import TrustCard from '../../components/HomeComponents/TrustCard';
 
 export default function TrustSection() {
   return (

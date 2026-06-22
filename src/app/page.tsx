@@ -1,12 +1,12 @@
-import HeroSection from '../sections/HeroSection';
-import ZipGateSection from '../sections/ZipGateSection';
-import ServicesSection from '../sections/ServicesSection';
-import PricingSection from '../sections/PricingSection';
-import HowItWorksSection from '../sections/HowItWorksSection';
-import TrustSection from '../sections/TrustSection';
-import TestimonialsSection from '../sections/TestimonialsSection';
-import FaqSection from '../sections/FaqSection';
-import FinalCtaSection from '../sections/FinalCtaSection';
+import HeroSection from '../sections/HomeSections/HeroSection';
+import ZipGateSection from '../sections/HomeSections/ZipGateSection';
+import ServicesSection from '../sections/HomeSections/ServicesSection';
+import PricingSection from '../sections/HomeSections/PricingSection';
+import HowItWorksSection from '../sections/HomeSections/HowItWorksSection';
+import TrustSection from '../sections/HomeSections/TrustSection';
+import TestimonialsSection from '../sections/HomeSections/TestimonialsSection';
+import FaqSection from '../sections/HomeSections/FaqSection';
+import FinalCtaSection from '../sections/HomeSections/FinalCtaSection';
 
 export default function Home() {
   return (
