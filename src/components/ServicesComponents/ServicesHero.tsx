@@ -25,10 +25,16 @@ export default function ServicesHero() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <Link href="#services-grid" className="btn-primary text-[15px] px-6 h-11">
+          <Link
+            href="#services-grid"
+            className="inline-flex items-center justify-center px-6 h-11 bg-[#1B2D4F] text-white font-semibold text-[15px] rounded-md hover:opacity-90 transition-opacity no-underline"
+          >
             Browse Services
           </Link>
-          <Link href="#pricing" className="btn-secondary text-[15px] px-6 h-11">
+          <Link
+            href="#pricing"
+            className="inline-flex items-center justify-center px-6 h-11 bg-white border border-[#1B2D4F] text-[#1B2D4F] font-semibold text-[15px] rounded-md hover:bg-[#F5F5F3] transition-colors no-underline"
+          >
             View Pricing
           </Link>
         </div>

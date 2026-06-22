@@ -11,7 +11,10 @@ export default function ServicesCTA() {
         style={{ fontFamily: 'Inter, sans-serif' }}>
         Choose a category and see how Apex can help.
       </p>
-      <Link href="#services-grid" className="btn-amber text-[15px] px-8 h-[52px] mt-8">
+      <Link
+        href="#services-grid"
+        className="inline-flex items-center justify-center px-8 h-[52px] mt-8 bg-[#C07820] text-white font-semibold text-[15px] rounded-md hover:opacity-90 transition-opacity no-underline"
+      >
         Book Now
       </Link>
     </section>
