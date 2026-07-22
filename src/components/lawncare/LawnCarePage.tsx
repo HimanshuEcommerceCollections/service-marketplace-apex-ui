@@ -11,14 +11,12 @@ import FinalCta from './FinalCta';
 import SiteFooter from '../shared/SiteFooter';
 import { mountService } from '../../lib/service/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
-import { testimonials } from '../../data/cleaning/testimonials';
+import { testimonials } from '../../data/lawncare/testimonials';
 
-export default function CleaningPage() {
+export default function LawnCarePage() {
   useEffect(() => {
-    // mountService wires the configurator engine, testimonial carousel and
-    // final-CTA spotlight, returning a teardown fn. 'cleaning' selects the
-    // configurator spec; testimonials feed the carousel. Safe under StrictMode.
-    const disposeService = mountService('cleaning', testimonials);
+    // 'lawn-care' selects the configurator spec; testimonials feed the carousel.
+    const disposeService = mountService('lawn-care', testimonials);
     const disposeChrome = mountChrome();
     return () => {
       disposeService();
