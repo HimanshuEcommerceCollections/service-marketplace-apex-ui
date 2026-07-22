@@ -1,26 +1,15 @@
-import HouseCleaningHero   from '../../../components/HouseCleaningComponents/HouseCleaningHero';
-import PriceConfigurator   from '../../../components/HouseCleaningComponents/PriceConfigurator';
-import WhyApexSection      from '../../../components/HouseCleaningComponents/WhyApexSection';
-import HowItWorksSection   from '../../../components/HouseCleaningComponents/HowItWorksSection';
-import TestimonialsSection from '../../../components/HouseCleaningComponents/TestimonialsSection';
-import FAQSection          from '../../../components/HouseCleaningComponents/FAQSection';
-import HouseCleaningCTA    from '../../../components/HouseCleaningComponents/HouseCleaningCTA';
+import type { Metadata } from 'next';
+import '../../chrome.css';
+import './cleaning.css';
+import CleaningPage from '../../../components/cleaning/CleaningPage';
 
-export const metadata = {
-  title: 'House Cleaning – Apex Total Home Services',
-  description: 'Professional home cleaning with transparent pricing. Configure your service, see your estimated price, and book with coordinator confirmation. Serving Raleigh, NC.',
+export const metadata: Metadata = {
+  // Preserved from the source document.
+  title: 'Cleaning — Apex Total Home Services',
+  description:
+    'Recurring or one-time cleans, priced by beds and baths, handled by the same trusted team every visit.',
 };
 
 export default function HouseCleaningPage() {
-  return (
-    <>
-      <HouseCleaningHero />
-      <PriceConfigurator />
-      <WhyApexSection />
-      <HowItWorksSection />
-      <TestimonialsSection />
-      <FAQSection />
-      <HouseCleaningCTA />
-    </>
-  );
+  return <CleaningPage />;
 }
