@@ -61,9 +61,18 @@ export async function mountApex() {
   });
   cleanups.push(() => ctx.revert());
 
-  // ScrollTrigger positions depend on layout that settles after media loads.
-  if (document.readyState === 'complete') ScrollTrigger.refresh();
-  else on(window, 'load', () => ScrollTrigger.refresh());
+  // ScrollTrigger positions depend on layout that settles after fonts/media load.
+  // On client-side (soft) navigation document.readyState is already 'complete', so a
+  // single synchronous refresh would run before the freshly-mounted DOM has laid out,
+  // leaving scroll-reveal sections stuck at opacity:0 until a hard refresh. Refresh
+  // again after paint, after fonts, and on load so re-mounts recompute correctly.
+  let alive = true;
+  cleanups.push(() => { alive = false; });
+  const refreshST = () => { if (!alive) return; try { ScrollTrigger.refresh(); } catch (e) {} };
+  refreshST();
+  requestAnimationFrame(() => requestAnimationFrame(refreshST));
+  if (document.readyState !== 'complete') on(window, 'load', refreshST);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshST).catch(() => {});
 
   return () => {
     cleanups.forEach((c) => {
@@ -1216,6 +1225,9 @@ export async function mountApex() {
     if (hasGSAP && !reduce) {
       gsap.registerPlugin(ScrollTrigger);
       gsap.utils.toArray('.site-foot .fv2').forEach((el) => {
+        // Neutralize any leaked chrome.css `.fv2` CSS transition (it persists onto
+        // home after client-nav from a chrome.css route) so it can't fight this tween.
+        el.style.transition = 'none';
         gsap.to(el, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 92%' } });
       });
     } else {
