@@ -693,3 +693,13 @@ html.hero-preanim #hero .scroll-cue{opacity:0}
   .book-modal-backdrop,.book-modal-dialog{animation:none}
   .book-modal-close:hover{transform:none}
 }
+
+/* mobile menu panel — .navtoggle toggles `.open` on #nav to reveal .navlinks (<=900px) */
+@media(max-width:900px){
+  #nav.nav.open{flex-wrap:wrap;border-radius:22px}
+  #nav.open .navlinks{display:flex;flex-direction:column;align-items:stretch;gap:2px;width:100%;order:3;margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
+  #nav.open .navlinks a{padding:12px;border-radius:12px;font-size:16px;opacity:1}
+  #nav.open .navlinks a:hover{background:var(--mist)}
+  #nav.open .svc-dd{width:100%}
+  #nav.open .nav-cta{margin-top:8px;justify-content:center}
+}
