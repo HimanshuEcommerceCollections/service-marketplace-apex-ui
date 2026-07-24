@@ -30,7 +30,7 @@ export default function MembershipPage() {
   }, []);
 
   return (
-    <>
+    <div className="pg-membership">
       <SiteNav />
       <Hero />
       <WhyChoose />
@@ -43,6 +43,6 @@ export default function MembershipPage() {
       <Faq />
       <FinalCta />
       <SiteFooter />
-    </>
+    </div>
   );
 }

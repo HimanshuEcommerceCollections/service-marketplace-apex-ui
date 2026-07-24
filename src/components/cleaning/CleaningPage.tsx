@@ -27,7 +27,7 @@ export default function CleaningPage() {
   }, []);
 
   return (
-    <>
+    <div className="pg-service">
       <SiteNav />
       <Hero />
       <Expect />
@@ -36,6 +36,6 @@ export default function CleaningPage() {
       <Testimonials />
       <FinalCta />
       <SiteFooter />
-    </>
+    </div>
   );
 }

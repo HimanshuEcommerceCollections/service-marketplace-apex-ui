@@ -58,7 +58,7 @@ export default function BookingPage() {
   }, []);
 
   return (
-    <>
+    <div className="pg-book">
       <SiteNav />
 
       <div className="bk-progress">
@@ -224,6 +224,6 @@ export default function BookingPage() {
       <canvas id="confetti" />
 
       <SiteFooter />
-    </>
+    </div>
   );
 }
