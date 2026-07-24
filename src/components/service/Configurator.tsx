@@ -1,7 +1,6 @@
-// section: CONFIGURATOR — the #cfgFields (controls) and #cfgOut (live price)
-// containers are populated by the runtime's configurator engine for the
-// active service (cleaning).
-
+// section: CONFIGURATOR — shared across service pages. The #cfgFields (controls)
+// and #cfgOut (live price) containers are populated by the shared runtime's
+// configurator engine for the active service (mountService picks the spec).
 export default function Configurator() {
   return (
     <section className="sec cfg" id="configure">

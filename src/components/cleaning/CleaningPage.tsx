@@ -4,15 +4,25 @@ import { useEffect } from 'react';
 import SiteNav from '../shared/SiteNav';
 import Hero from './Hero';
 import Expect from './Expect';
-import Configurator from './Configurator';
-import Recurring from './Recurring';
+import Configurator from '../service/Configurator';
+import Recurring, { type ServicePlan } from '../service/Recurring';
 import Testimonials from '../shared/Testimonials';
-import FinalCta from './FinalCta';
+import FinalCta from '../service/FinalCta';
 import SiteFooter from '../shared/SiteFooter';
 import { mountService } from '../../lib/service/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 import { testimonials } from '../../data/cleaning/testimonials';
+import { ctaVideo } from '../../data/cleaning/media';
+
+const recurringPlans: ServicePlan[] = [
+  { name: 'One-time', freq: 'Single visit', amount: '$170', choose: 'Choose one-time' },
+  { name: 'Weekly', freq: 'Every week', amount: '$133', unit: '/visit', disc: 'Save 22%', best: true, choose: 'Choose weekly' },
+  { name: 'Biweekly', freq: 'Every 2 weeks', amount: '$145', unit: '/visit', disc: 'Save 15%', choose: 'Choose biweekly' },
+  { name: 'Monthly', freq: 'Every month', amount: '$156', unit: '/visit', disc: 'Save 8%', choose: 'Choose monthly' },
+];
+const finalBlurb =
+  'Recurring or one-time cleans, priced by beds and baths, handled by the same trusted team every visit.';
 
 export default function CleaningPage() {
   useEffect(() => {
@@ -37,9 +47,9 @@ export default function CleaningPage() {
       <Hero />
       <Expect />
       <Configurator />
-      <Recurring />
+      <Recurring heading="Book once. Never think about it again." plans={recurringPlans} serviceSlug="cleaning" />
       <Testimonials />
-      <FinalCta />
+      <FinalCta blurb={finalBlurb} serviceSlug="cleaning" ctaVideo={ctaVideo} />
       <SiteFooter />
     </div>
   );

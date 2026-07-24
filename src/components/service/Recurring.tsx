@@ -1,8 +1,7 @@
-// section: RECURRING PLANS — 4 plan cards (Weekly is the "Most popular").
-// Booking CTAs point at /book?service=cleaning, preserved verbatim from the
-// source (plain <a>, since the booking flow is a separate/backend route).
-
-interface Plan {
+// section: RECURRING PLANS — shared across service pages. Renders N plan cards
+// (mark one `best` as "Most popular"). Content via props. Booking CTAs are plain
+// <a> to /book?service=<slug> (the booking flow is a separate route).
+export interface ServicePlan {
   name: string;
   freq: string;
   amount: string;
@@ -12,21 +11,20 @@ interface Plan {
   choose: string;
 }
 
-const plans: Plan[] = [
-  { name: 'One-time', freq: 'Single visit', amount: '$170', choose: 'Choose one-time' },
-  { name: 'Weekly', freq: 'Every week', amount: '$133', unit: '/visit', disc: 'Save 22%', best: true, choose: 'Choose weekly' },
-  { name: 'Biweekly', freq: 'Every 2 weeks', amount: '$145', unit: '/visit', disc: 'Save 15%', choose: 'Choose biweekly' },
-  { name: 'Monthly', freq: 'Every month', amount: '$156', unit: '/visit', disc: 'Save 8%', choose: 'Choose monthly' },
-];
+interface RecurringProps {
+  heading: string;
+  plans: ServicePlan[];
+  serviceSlug: string;
+}
 
-export default function Recurring() {
+export default function Recurring({ heading, plans, serviceSlug }: RecurringProps) {
   return (
     <section className="sec rec">
       <div className="sec-head reveal">
         <span className="eyebrow" style={{ justifyContent: 'center' }}>
           Recurring plans
         </span>
-        <h2>Book once. Never think about it again.</h2>
+        <h2>{heading}</h2>
         <p>Recurring visits lock in a lower per-visit price and a standing spot on the schedule.</p>
       </div>
       <div className="rec-grid reveal">
@@ -40,7 +38,7 @@ export default function Recurring() {
               {p.unit && <small>{p.unit}</small>}
             </div>
             {p.disc ? <div className="disc">{p.disc}</div> : <div className="disc" style={{ visibility: 'hidden' }}>.</div>}
-            <a className="rlink" href="/book?service=cleaning">
+            <a className="rlink" href={`/book?service=${serviceSlug}`}>
               {p.choose} &#x2192;
             </a>
           </div>
