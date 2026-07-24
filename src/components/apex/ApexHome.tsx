@@ -7,7 +7,7 @@ import Bridge from './Bridge';
 import Showcase from './Showcase';
 import HowItWorks from './HowItWorks';
 import Coverage from './Coverage';
-import Testimonials from './Testimonials';
+import Testimonials from '../shared/Testimonials';
 import Recurring from './Recurring';
 import Faq from './Faq';
 import Cta from './Cta';

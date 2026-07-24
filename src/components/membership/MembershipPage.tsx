@@ -9,12 +9,13 @@ import Compare from './Compare';
 import Calculator from './Calculator';
 import Benefits from './Benefits';
 import HowItWorks from './HowItWorks';
-import Testimonials from './Testimonials';
+import Testimonials from '../shared/Testimonials';
 import Faq from './Faq';
 import FinalCta from './FinalCta';
 import SiteFooter from '../shared/SiteFooter';
 import { mountMembership } from '../../lib/membership/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountTestimonials } from '../../lib/shared/testimonials';
 import { testimonials } from '../../data/membership/testimonials';
 
 export default function MembershipPage() {
@@ -23,9 +24,13 @@ export default function MembershipPage() {
     // + shared chrome (nav scroll-state + footer reveal). Compose both teardowns.
     const disposeMembership = mountMembership(testimonials);
     const disposeChrome = mountChrome();
+    const disposeTst = mountTestimonials(
+      testimonials.map((t) => ({ name: t.name, role: t.tag, quote: t.quote, portrait: t.portrait }))
+    );
     return () => {
       disposeMembership();
       disposeChrome();
+      disposeTst();
     };
   }, []);
 

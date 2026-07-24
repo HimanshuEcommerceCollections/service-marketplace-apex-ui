@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '../chrome.css';
 import './membership.css';
+import '../testimonials.css';
 import MembershipPage from '../../components/membership/MembershipPage';
 
 export const metadata: Metadata = {
