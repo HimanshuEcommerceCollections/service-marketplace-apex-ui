@@ -25,7 +25,7 @@ export default function LawnCarePage() {
   }, []);
 
   return (
-    <>
+    <div className="pg-service">
       <SiteNav />
       <Hero />
       <Expect />
@@ -34,6 +34,6 @@ export default function LawnCarePage() {
       <Testimonials />
       <FinalCta />
       <SiteFooter />
-    </>
+    </div>
   );
 }

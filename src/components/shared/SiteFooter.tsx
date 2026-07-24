@@ -17,10 +17,10 @@ const servicesCol = [
   { label: 'Power Washing', href: '/#showcase' },
   { label: 'Painting', href: '/#showcase' },
   { label: 'Junk Removal', href: '/#showcase' },
-  { label: 'Pool Service', href: '/services/pool' },
+  { label: 'Pool Service', href: '/#showcase' },
 ];
 const moreCol = [
-  { label: 'Pest Control', href: '/services/pestcontrol' },
+  { label: 'Pest Control', href: '/#showcase' },
   { label: 'Home Security', href: '/#showcase' },
   { label: 'Smart Home', href: '/#showcase' },
   { label: 'Handyman', href: '/#showcase' },
@@ -31,7 +31,7 @@ const companyCol = [
   { label: 'How it works', href: '/#how' },
   { label: 'Plans', href: '/membership-plans' },
   { label: 'Service area', href: '/#coverage' },
-  { label: 'Property managers', href: '/book' },
+  { label: 'Property managers', href: '/#showcase' },
   { label: 'Become a pro', href: '/book' },
   { label: 'FAQ', href: '/#faq' },
 ];

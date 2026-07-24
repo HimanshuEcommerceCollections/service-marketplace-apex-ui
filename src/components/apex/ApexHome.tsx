@@ -34,7 +34,7 @@ export default function ApexHome() {
   }, []);
 
   return (
-    <>
+    <div className="pg-home">
       <SiteNav />
       <Hero />
       <Bridge />
@@ -46,6 +46,6 @@ export default function ApexHome() {
       <Faq />
       <Cta />
       <SiteFooter />
-    </>
+    </div>
   );
 }
