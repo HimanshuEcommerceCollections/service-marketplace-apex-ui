@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '../../chrome.css';
 import '../service.css';
+import '../../testimonials.css';
 import CleaningPage from '../../../components/cleaning/CleaningPage';
 
 export const metadata: Metadata = {

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './apex.css';
+import './testimonials.css';
 import ApexHome from '../components/apex/ApexHome';
 
 export const metadata: Metadata = {
