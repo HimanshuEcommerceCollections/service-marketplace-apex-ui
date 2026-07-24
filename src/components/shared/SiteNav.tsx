@@ -50,14 +50,14 @@ export default function SiteNav() {
             </div>
           </span>
           <Link href="/#how">How it works</Link>
-          <Link href="/#recurring">Plans</Link>
-          <Link href="/#book">Pricing</Link>
+          <Link href="/membership-plans">Plans</Link>
+          <Link href="/book">Pricing</Link>
           <Link href="/#coverage">Service area</Link>
-          <Link href="/#book">For property managers</Link>
-          <Link href="/#book" className="becomepro">
+          <Link href="/book">For property managers</Link>
+          <Link href="/book" className="becomepro">
             Become a pro
           </Link>
-          <Link className="nav-cta magnetic" href="/#book">
+          <Link className="nav-cta magnetic" href="/book">
             Book now
           </Link>
         </div>

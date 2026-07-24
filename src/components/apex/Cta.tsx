@@ -15,7 +15,7 @@ export default function Cta() {
           Tell us what your home needs. We&rsquo;ll bring the right trade, a clear price, and a
           coordinator who owns the outcome.
         </p>
-        <a className="btn magnetic" href="#book">
+        <a className="btn magnetic" href="/book">
           <span className="btn-inner">
             Book a Service <Arrow />
           </span>

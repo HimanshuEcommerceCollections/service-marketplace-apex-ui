@@ -24,7 +24,7 @@ export default function Coverage() {
               with new neighborhoods added regularly.
             </p>
             <div className="cov-cta cv">
-              <a className="cov-btn magnetic" href="#book">
+              <a className="cov-btn magnetic" href="/book">
                 Check My Address <ArrowThin />
               </a>
               <div className="cov-phone">

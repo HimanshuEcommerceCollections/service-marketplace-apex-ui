@@ -62,7 +62,7 @@ export default function Recurring() {
           ))}
         </div>
 
-        <a className="rp-btn rv magnetic" href="#book">
+        <a className="rp-btn rv magnetic" href="/book">
           View Recurring Plans <ArrowThin />
         </a>
       </div>

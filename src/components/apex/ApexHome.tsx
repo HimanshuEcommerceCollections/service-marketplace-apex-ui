@@ -7,8 +7,6 @@ import Bridge from './Bridge';
 import Showcase from './Showcase';
 import HowItWorks from './HowItWorks';
 import Coverage from './Coverage';
-import Booking from './Booking';
-import BookingModal from './BookingModal';
 import Testimonials from './Testimonials';
 import Recurring from './Recurring';
 import Faq from './Faq';
@@ -48,10 +46,6 @@ export default function ApexHome() {
       <Faq />
       <Cta />
       <SiteFooter />
-      {/* Booking is no longer an inline section — it opens as a modal from any Book CTA. */}
-      <BookingModal>
-        <Booking />
-      </BookingModal>
     </>
   );
 }

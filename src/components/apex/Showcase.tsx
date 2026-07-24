@@ -56,7 +56,7 @@ export default function Showcase() {
                   ))}
                 </div>
                 <div className="ch-cta ch-reveal">
-                  <a className="btn btn-ghost magnetic" href="#book">
+                  <a className="btn btn-ghost magnetic" href="/book">
                     <span className="btn-inner">
                       {c.cta} <Arrow />
                     </span>

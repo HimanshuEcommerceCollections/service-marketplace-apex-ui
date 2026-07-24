@@ -8,7 +8,7 @@ export default function Faq() {
           <span className="faq-pill fv">FAQ</span>
           <h2 className="fv">Common questions.</h2>
           <p className="faq-sub fv">
-            Can&apos;t find your answer? <a href="#book">Chat with us</a>
+            Can&apos;t find your answer? <a href="/book">Chat with us</a>
           </p>
         </div>
         <div className="faq-list" id="faqList" />
