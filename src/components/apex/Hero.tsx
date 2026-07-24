@@ -54,7 +54,7 @@ export default function Hero() {
             one trusted team.
           </p>
           <div className="hero-actions" data-h>
-            <a className="btn btn-primary magnetic" href="#book">
+            <a className="btn btn-primary magnetic" href="/book">
               <span className="btn-inner">
                 Book a Service <Arrow />
               </span>

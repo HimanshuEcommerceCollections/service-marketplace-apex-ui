@@ -29,10 +29,10 @@ const moreCol = [
 const companyCol = [
   { label: 'About', href: '/#hero' },
   { label: 'How it works', href: '/#how' },
-  { label: 'Plans', href: '/#recurring' },
+  { label: 'Plans', href: '/membership-plans' },
   { label: 'Service area', href: '/#coverage' },
-  { label: 'Property managers', href: '/#book' },
-  { label: 'Become a pro', href: '/#book' },
+  { label: 'Property managers', href: '/book' },
+  { label: 'Become a pro', href: '/book' },
   { label: 'FAQ', href: '/#faq' },
 ];
 
@@ -47,7 +47,7 @@ export default function SiteFooter() {
           <p>Book a trusted pro in minutes — cleaning, lawn, repairs and more, all under one roof.</p>
         </div>
         <div className="foot-cta-side">
-          <Link className="foot-cta-btn magnetic" href="/#book">
+          <Link className="foot-cta-btn magnetic" href="/book">
             Book now <Arrow />
           </Link>
           <form className="foot-news" onSubmit={(e) => e.preventDefault()}>
