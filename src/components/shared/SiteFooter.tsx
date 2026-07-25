@@ -28,9 +28,9 @@ const moreCol = [
 ];
 const companyCol = [
   { label: 'About', href: '/#hero' },
-  { label: 'How it works', href: '/#how' },
+  { label: 'How it works', href: '/how-it-works' },
   { label: 'Plans', href: '/membership-plans' },
-  { label: 'Service area', href: '/#coverage' },
+  { label: 'Service area', href: '/service-area' },
   { label: 'Property managers', href: '/#showcase' },
   { label: 'Become a pro', href: '/book' },
   { label: 'FAQ', href: '/#faq' },

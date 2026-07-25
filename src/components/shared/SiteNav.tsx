@@ -67,10 +67,10 @@ export default function SiteNav() {
               ))}
             </div>
           </span>
-          <Link href="/#how" onClick={close}>How it works</Link>
+          <Link href="/how-it-works" onClick={close}>How it works</Link>
           <Link href="/membership-plans" onClick={close}>Plans</Link>
-          <Link href="/membership-plans" onClick={close}>Pricing</Link>
-          <Link href="/#coverage" onClick={close}>Service area</Link>
+          <Link href="/pricing" onClick={close}>Pricing</Link>
+          <Link href="/service-area" onClick={close}>Service area</Link>
           <Link href="/#showcase" onClick={close}>For property managers</Link>
           <Link href="/book" className="becomepro" onClick={close}>
             Become a pro
