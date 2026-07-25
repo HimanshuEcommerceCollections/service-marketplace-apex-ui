@@ -18,15 +18,15 @@ import { useEffect, useState } from 'react';
 const services = [
   { label: 'Cleaning', href: '/services/house-cleaning' },
   { label: 'Lawn Care', href: '/services/lawncare' },
-  { label: 'Power Washing', href: '/#showcase' },
-  { label: 'Painting', href: '/#showcase' },
-  { label: 'Junk Removal', href: '/#showcase' },
-  { label: 'Pool', href: '/#showcase' },
-  { label: 'Pest Control', href: '/#showcase' },
-  { label: 'Home Security', href: '/#showcase' },
-  { label: 'Smart Home', href: '/#showcase' },
-  { label: 'Handyman', href: '/#showcase' },
-  { label: 'Tree & Stump', href: '/#showcase' },
+  { label: 'Power Washing', href: '/services/power-washing' },
+  { label: 'Painting', href: '/services/painting' },
+  { label: 'Junk Removal', href: '/services/junk-removal' },
+  { label: 'Pool', href: '/services/pool' },
+  { label: 'Pest Control', href: '/services/pest-control' },
+  { label: 'Home Security', href: '/services/home-security' },
+  { label: 'Smart Home', href: '/services/smart-home' },
+  { label: 'Handyman', href: '/services/handyman' },
+  { label: 'Tree & Stump', href: '/services/tree-stump' },
 ];
 
 export default function SiteNav() {

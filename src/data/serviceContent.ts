@@ -54,3 +54,32 @@ export interface ServiceContent {
   hero: HeroContent;
   expect: ExpectContent;
 }
+
+// ---- Full page config consumed by the shared <ServicePage/> ----
+// (ServicePlan is structurally identical to the one in components/service/Recurring,
+// so config.recurring.plans passes straight through as its prop.)
+export interface ServicePlan {
+  name: string;
+  freq: string;
+  amount: string;
+  unit?: string;
+  disc?: string;
+  best?: boolean;
+  choose: string;
+}
+
+export interface ServiceTestimonial {
+  name: string;
+  role: string;
+  quote: string;
+  portrait: string;
+}
+
+export interface ServiceConfig {
+  /** mountService spec key + /book?service= slug + route folder name */
+  slug: string;
+  content: ServiceContent;
+  recurring: { heading: string; plans: ServicePlan[] };
+  finalCta: { blurb: string; ctaVideo: { src: string; poster: string } };
+  testimonials: ServiceTestimonial[];
+}
