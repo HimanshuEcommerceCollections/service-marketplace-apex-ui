@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import SiteNav from '../shared/SiteNav';
-import Hero from './Hero';
-import Expect from './Expect';
+import Hero from '../service/Hero';
+import Expect from '../service/Expect';
 import Configurator from '../service/Configurator';
 import Recurring, { type ServicePlan } from '../service/Recurring';
 import Testimonials from '../shared/Testimonials';
@@ -14,6 +14,7 @@ import { mountChrome } from '../../lib/shared/chrome';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 import { testimonials } from '../../data/lawncare/testimonials';
 import { ctaVideo } from '../../data/lawncare/media';
+import { content } from '../../data/lawncare/content';
 
 const recurringPlans: ServicePlan[] = [
   { name: 'One-time', freq: 'Single visit', amount: '$59', choose: 'Choose one-time' },
@@ -41,8 +42,8 @@ export default function LawnCarePage() {
   return (
     <div className="pg-service">
       <SiteNav />
-      <Hero />
-      <Expect />
+      <Hero content={content.hero} />
+      <Expect content={content.expect} />
       <Configurator />
       <Recurring heading="Book once. Never chase a mow again." plans={recurringPlans} serviceSlug="lawn-care" />
       <Testimonials />
