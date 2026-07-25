@@ -14,7 +14,9 @@ import SiteFooter from '../shared/SiteFooter';
 import { mountHowItWorks } from '../../lib/how-it-works/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
 import { mountTestimonials } from '../../lib/shared/testimonials';
-import { testimonials } from '../../data/how-it-works/testimonials';
+// Reuse the existing (identical) testimonial set + portraits rather than a
+// page-local copy — same five Wake County reviewers as the cleaning page.
+import { testimonials } from '../../data/cleaning/testimonials';
 import { testimonialsHead } from '../../data/how-it-works/content';
 
 export default function HowItWorksPage() {
