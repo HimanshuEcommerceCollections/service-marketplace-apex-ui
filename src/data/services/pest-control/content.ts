@@ -2,7 +2,8 @@
 // testimonials and recurring plans when the Pest Control design is delivered. All UI
 // comes from the shared components — this file is the only thing to change.
 import type { ServiceConfig } from '../../serviceContent';
-import { placeholderTiles, placeholderBigMedia, placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { heroBig, heroTiles } from './media';
 
 export const content: ServiceConfig = {
   slug: 'pest-control',
@@ -23,8 +24,8 @@ export const content: ServiceConfig = {
         { icon: 'shield', label: 'Vetted & insured' },
         { icon: 'clock', label: '~90-sec booking' },
       ],
-      bigMedia: placeholderBigMedia,
-      tiles: placeholderTiles,
+      bigMedia: heroBig,
+      tiles: heroTiles,
     },
     expect: {
       heading: 'Straightforward from start to finish.',
