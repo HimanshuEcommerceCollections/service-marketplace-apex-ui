@@ -1,12 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 // section: ALL SERVICES — image-banner pricing cards for every Apex service.
-// Data in data/pricing/services. "Learn more" → the service route; "Book now"
-// → /book?service=<slug>.
-import { services } from '../../data/pricing/services';
+// Presentation data (icons/images/routes) is static; prices are overlaid live
+// from the catalog API by the server page. "Learn more" → the service route;
+// "Book now" → /book?service=<slug>.
+import { services as staticServices, type PricingService } from '../../data/pricing/services';
 import SecHead from './SecHead';
 import { Icon } from './icons';
 
-export default function Overview() {
+export default function Overview({ services = staticServices }: { services?: PricingService[] }) {
   return (
     <section className="sec">
       <SecHead eyebrow="All services" title="Pricing for every Apex service." />

@@ -1,0 +1,127 @@
+/* Apex admin dashboard — self-contained design system (no Tailwind dependency).
+   Everything is scoped under `.admin` so it never leaks into the marketing site. */
+
+.admin {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e4e7ec;
+  --text: #101828;
+  --muted: #667085;
+  --brand: #0f766e;
+  --brand-ink: #ffffff;
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  --ok: #067647;
+  --ok-bg: #ecfdf3;
+  --warn: #b54708;
+  --warn-bg: #fffaeb;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+
+  font-family: var(--font-inter, system-ui, sans-serif);
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.admin * { box-sizing: border-box; }
+
+/* ---- layout ---- */
+.ax-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.ax-side {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.ax-brand { font-family: var(--font-archivo, var(--font-inter)); font-weight: 800; font-size: 18px; padding: 4px 10px 16px; letter-spacing: -0.01em; }
+.ax-brand span { color: var(--brand); }
+.ax-nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px; color: var(--muted);
+  text-decoration: none; font-weight: 500;
+}
+.ax-nav a:hover { background: #f2f4f7; color: var(--text); }
+.ax-nav a.active { background: #ecfdf5; color: var(--brand); }
+.ax-side-foot { margin-top: auto; border-top: 1px solid var(--border); padding-top: 12px; }
+.ax-who { padding: 6px 10px; }
+.ax-who b { display: block; }
+.ax-who small { color: var(--muted); }
+
+.ax-main { display: flex; flex-direction: column; min-width: 0; }
+.ax-top { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.ax-top h1 { font-family: var(--font-archivo, var(--font-inter)); font-size: 20px; margin: 0; }
+.ax-content { padding: 28px; max-width: 1100px; width: 100%; }
+
+/* ---- cards / grid ---- */
+.ax-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.ax-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.ax-card h3 { margin: 0 0 4px; font-size: 15px; }
+.ax-stat { font-size: 30px; font-weight: 800; font-family: var(--font-archivo, var(--font-inter)); }
+.ax-card p { color: var(--muted); margin: 6px 0 0; }
+.ax-card a { color: var(--brand); font-weight: 600; text-decoration: none; }
+
+/* ---- tables ---- */
+.ax-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.ax-table th, .ax-table td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+.ax-table th { background: #fafbfc; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+.ax-table tr:last-child td { border-bottom: none; }
+.ax-table tbody tr:hover { background: #fafbfc; }
+
+/* ---- badges ---- */
+.ax-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.ax-badge.ok { background: var(--ok-bg); color: var(--ok); }
+.ax-badge.warn { background: var(--warn-bg); color: var(--warn); }
+.ax-badge.danger { background: var(--danger-bg); color: var(--danger); }
+.ax-badge.muted { background: #f2f4f7; color: var(--muted); }
+
+/* ---- forms / buttons ---- */
+.ax-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.ax-field label { font-weight: 600; font-size: 13px; }
+.ax-input, .ax-select, .ax-textarea {
+  width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
+  font: inherit; color: var(--text); background: #fff;
+}
+.ax-input:focus, .ax-select:focus, .ax-textarea:focus { outline: 2px solid #99f6e4; border-color: var(--brand); }
+.ax-textarea { min-height: 90px; resize: vertical; }
+.ax-btn {
+  display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+  padding: 9px 16px; border-radius: 8px; border: 1px solid var(--brand);
+  background: var(--brand); color: var(--brand-ink); font: inherit; font-weight: 600;
+  cursor: pointer;
+}
+.ax-btn:hover { filter: brightness(1.05); }
+.ax-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.ax-btn.ghost { background: #fff; color: var(--text); border-color: var(--border); }
+.ax-btn.danger { background: #fff; color: var(--danger); border-color: #fecdca; }
+.ax-btn.sm { padding: 5px 10px; font-size: 13px; }
+
+.ax-alert { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-weight: 500; }
+.ax-alert.err { background: var(--danger-bg); color: var(--danger); }
+.ax-alert.ok { background: var(--ok-bg); color: var(--ok); }
+.ax-muted { color: var(--muted); }
+.ax-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.ax-section-title { font-family: var(--font-archivo, var(--font-inter)); font-size: 16px; margin: 24px 0 12px; }
+
+/* ---- login ---- */
+.ax-login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.ax-login-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 30px; box-shadow: var(--shadow); }
+.ax-login-card h1 { font-family: var(--font-archivo, var(--font-inter)); font-size: 22px; margin: 0 0 4px; }
+.ax-login-card p.sub { color: var(--muted); margin: 0 0 20px; }
+
+.ax-center { min-height: 100vh; display: grid; place-items: center; color: var(--muted); }
+.ax-lines { display: grid; gap: 6px; }
+.ax-lines div { display: flex; justify-content: space-between; gap: 16px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.ax-total { font-weight: 800; font-size: 18px; }
+
+@media (max-width: 720px) {
+  .ax-shell { grid-template-columns: 1fr; }
+  .ax-side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; }
+  .ax-side-foot { width: 100%; }
+}
