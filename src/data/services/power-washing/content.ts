@@ -1,8 +1,10 @@
-// TODO(design): placeholder content for Power Washing. Replace copy, price, media,
-// testimonials and recurring plans when the Power Washing design is delivered. All UI
-// comes from the shared components — this file is the only thing to change.
+// TODO(design): placeholder COPY for Power Washing — replace copy, price, recurring
+// plans and testimonials when the Power Washing design is delivered. All UI comes
+// from the shared components — this file is the only thing to change.
+// Hero media is real (see ./media.ts); the final-CTA film is still the placeholder.
 import type { ServiceConfig } from '../../serviceContent';
-import { placeholderTiles, placeholderBigMedia, placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { heroBig, heroTiles } from './media';
 
 export const content: ServiceConfig = {
   slug: 'power-washing',
@@ -23,8 +25,8 @@ export const content: ServiceConfig = {
         { icon: 'shield', label: 'Vetted & insured' },
         { icon: 'clock', label: '~90-sec booking' },
       ],
-      bigMedia: placeholderBigMedia,
-      tiles: placeholderTiles,
+      bigMedia: heroBig,
+      tiles: heroTiles,
     },
     expect: {
       heading: 'Straightforward from start to finish.',

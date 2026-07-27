@@ -15,8 +15,14 @@ import SiteFooter from '../shared/SiteFooter';
 import { mountPricing } from '../../lib/pricing/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
 import { estimatorConfig } from '../../data/pricing/content';
+import type { PricingService, ComparisonRow } from '../../data/pricing/services';
 
-export default function PricingPage() {
+interface PricingPageProps {
+  services?: PricingService[];
+  comparisonRows?: ComparisonRow[];
+}
+
+export default function PricingPage({ services, comparisonRows }: PricingPageProps) {
   useEffect(() => {
     // pricing runtime (reveal, stat count-up, cost estimator, FAQ, ripple, hero
     // video) + shared chrome (nav scroll-state + footer reveal). Compose both
@@ -33,8 +39,8 @@ export default function PricingPage() {
     <div className="pg-pricing">
       <SiteNav />
       <Hero />
-      <Overview />
-      <Compare />
+      <Overview services={services} />
+      <Compare rows={comparisonRows} />
       <Estimator />
       <Models />
       <Included />

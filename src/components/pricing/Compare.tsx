@@ -1,10 +1,11 @@
 // section: COMPARE — every service side by side. Reuses the shared `.cmp` table
 // styling (membership.css) plus pricing-only `.price-table` rules (sticky head,
 // recurring-row highlight). Cell animations key off .cmp-wrap.in (reveal observer).
-import { comparisonRows } from '../../data/pricing/services';
+// Starting prices are overlaid live from the catalog API by the server page.
+import { comparisonRows as staticRows, type ComparisonRow } from '../../data/pricing/services';
 import SecHead from './SecHead';
 
-export default function Compare() {
+export default function Compare({ rows = staticRows }: { rows?: ComparisonRow[] }) {
   return (
     <section className="sec" id="compare" style={{ background: 'var(--mist)' }}>
       <SecHead eyebrow="Compare" title="Everything, side by side." />
@@ -22,7 +23,7 @@ export default function Compare() {
               </tr>
             </thead>
             <tbody>
-              {comparisonRows.map((r) => (
+              {rows.map((r) => (
                 <tr key={r.name} className={r.recurring ? 'rec' : undefined}>
                   <th>
                     {r.name}
