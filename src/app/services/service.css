@@ -172,7 +172,9 @@ img,svg,video{display:block}
 .pg-service .cfg-out .state{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--azure)}
 .pg-service .cfg-out .amount{font-family:var(--font-display);font-weight:800;font-size:clamp(38px,5vw,58px);letter-spacing:-.03em;line-height:1;margin:8px 0 4px}
 .pg-service .cfg-out .amount small{font-size:16px;font-weight:500;color:rgba(255,255,255,.7)}
-.pg-service .cfg-out .amount.updating{opacity:.5;transition:opacity .18s ease}
+.pg-service .cfg-out .cfg-spin{display:none;width:15px;height:15px;margin-left:12px;vertical-align:middle;box-sizing:border-box;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%}
+.pg-service .cfg-out .amount.updating .cfg-spin{display:inline-block;animation:cfg-spin .7s linear infinite}
+@keyframes cfg-spin{to{transform:rotate(360deg)}}
 .pg-service .cfg-out .sub{font-size:13.5px;color:rgba(255,255,255,.75);line-height:1.5;min-height:20px}
 .pg-service .cfg-out .save{display:inline-block;margin-top:14px;font-size:12.5px;font-weight:700;color:#0e1720;background:#8FD3B0;padding:6px 12px;border-radius:100px}
 .pg-service .cfg-out .summary{margin:18px 0;padding:16px 0;border-top:1px solid rgba(255,255,255,.15);border-bottom:1px solid rgba(255,255,255,.15);display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:rgba(255,255,255,.85)}

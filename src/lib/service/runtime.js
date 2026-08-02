@@ -386,7 +386,7 @@ export function mountService(slug, testimonials) {
         const pre = r.state === 'FROM' ? '<small>from </small>' : '';
         // For live services keep the last server price on screen while the new one loads.
         const amtStr = spec.live && lastLive != null ? money(lastLive) : money(r.amount || 0);
-        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${amtStr}</span><small>${r.unit || ''}</small></div>`;
+        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${amtStr}</span><small>${r.unit || ''}</small><span class="cfg-spin"></span></div>`;
       }
       html += `<div class="sub">${r.sub || ''}</div>`;
       if (r.save) html += `<div class="save">${r.save}</div>`;
