@@ -40,10 +40,21 @@ export default function SiteNav() {
 
   const close = () => setOpen(false);
 
+  // Home logo: when already on home, scroll back to the top and drop any #hash
+  // (e.g. #showcase left over from the Services link) instead of staying put.
+  const goHome = (e: React.MouseEvent) => {
+    setOpen(false);
+    if (pathname === '/') {
+      e.preventDefault();
+      window.history.replaceState(null, '', '/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <>
       <nav className={`nav${open ? ' open' : ''}`} id="nav">
-        <Link className="brand" href="/" aria-label="Apex Total Home Services home" onClick={close}>
+        <Link className="brand" href="/" aria-label="Apex Total Home Services home" onClick={goHome}>
           <span className="bmark">
             <img className="apex-ico" src="/assets/images/image-1.png" alt="Apex" />
           </span>
