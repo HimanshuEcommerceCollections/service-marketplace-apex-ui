@@ -13,6 +13,7 @@ export const NAV: NavItem[] = [
   { href: "/admin/quotes", label: "Quotes", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/services", label: "Catalog & pricing", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/catalog", label: "Edit pricing", roles: ["ADMIN"] },
+  { href: "/admin/membership-plans", label: "Membership plans", roles: ["ADMIN"] },
   { href: "/admin/areas", label: "Areas", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/zip-codes", label: "ZIP codes", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/coverage", label: "Service coverage", roles: ["COORDINATOR", "ADMIN"] },
