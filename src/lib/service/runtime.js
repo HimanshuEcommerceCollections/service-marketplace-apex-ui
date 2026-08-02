@@ -346,8 +346,7 @@ export function mountService(slug, testimonials) {
     function applyLivePrice(immediate) {
       const mySeq = ++liveSeq;
       const selections = spec.sel(state);
-      const box = out.querySelector('.amount');
-      if (box) box.classList.add('updating');
+      out.classList.add('loading');
       clearTimeout(liveTimer);
       const go = () => {
         fetch(`${API_BASE}/services/${activeSlug}/config/price`, {
@@ -367,8 +366,7 @@ export function mountService(slug, testimonials) {
           .catch(() => {}) // keep the last price on error
           .finally(() => {
             if (mySeq !== liveSeq) return;
-            const b = out.querySelector('.amount');
-            if (b) b.classList.remove('updating');
+            out.classList.remove('loading');
           });
       };
       if (immediate) go();
@@ -386,7 +384,7 @@ export function mountService(slug, testimonials) {
         const pre = r.state === 'FROM' ? '<small>from </small>' : '';
         // For live services keep the last server price on screen while the new one loads.
         const amtStr = spec.live && lastLive != null ? money(lastLive) : money(r.amount || 0);
-        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${amtStr}</span><small>${r.unit || ''}</small><span class="cfg-spin"></span></div>`;
+        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${amtStr}</span><small>${r.unit || ''}</small></div>`;
       }
       html += `<div class="sub">${r.sub || ''}</div>`;
       if (r.save) html += `<div class="save">${r.save}</div>`;
@@ -395,6 +393,7 @@ export function mountService(slug, testimonials) {
       const cta = r.state === 'QUOTE' ? 'Get your custom estimate' : r.state === 'CONSULT' ? 'Request free consult' : 'Book this service';
       html += `<a class="btn btn-primary" href="${BOOK(activeSlug)}">${cta}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`;
       html += `<div class="fineprint">Final price confirmed at booking. Your selection is carried into the booking flow.</div>`;
+      if (spec.live) html += `<div class="cfg-load"><span class="cfg-spin"></span></div>`;
       out.innerHTML = html;
       if (spec.live && spec.sel && (r.state === 'PRICED' || r.state === 'FROM')) applyLivePrice(lastLive == null);
     }
