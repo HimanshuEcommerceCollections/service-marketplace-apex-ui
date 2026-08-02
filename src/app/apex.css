@@ -349,6 +349,7 @@
   .pg-home #coverage .cov-pill{margin:clamp(44px,5vw,70px) auto 0;width:max-content;max-width:100%;display:flex;align-items:center;gap:14px;background:var(--blue-deep);color:#fff;border-radius:100px;padding:15px 26px;font-family:var(--font-body);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;box-shadow:0 24px 50px -24px rgba(20,67,90,.8)}
   .pg-home #coverage .cov-pill svg{width:15px;height:15px;vertical-align:-2px;margin-right:7px}
   .pg-home #coverage .cov-pill .sep{width:5px;height:5px;border-radius:50%;background:var(--azure)}
+  .pg-home #coverage .cov-pill > span:not(.sep){display:inline-flex;align-items:center}
 
   .pg-home #coverage .cv{opacity:0;transform:translateY(22px)}
   @media(prefers-reduced-motion:reduce){.pg-home #coverage .cv{opacity:1;transform:none}}
