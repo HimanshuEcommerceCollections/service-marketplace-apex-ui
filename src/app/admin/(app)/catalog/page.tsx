@@ -15,6 +15,8 @@ interface EditView {
   basePrice: number;
   fromPrice: number | null;
   currency: string;
+  typicalDuration: string | null;
+  recurringDiscount: string | null;
   groups: EditGroup[];
   rules: EditRule[];
 }
@@ -28,6 +30,8 @@ export default function EditPricingPage() {
   const [view, setView] = useState<EditView | null>(null);
   const [basePrice, setBasePrice] = useState("");
   const [fromPrice, setFromPrice] = useState("");
+  const [typicalDuration, setTypicalDuration] = useState("");
+  const [recurringDiscount, setRecurringDiscount] = useState("");
   const [optDeltas, setOptDeltas] = useState<Record<string, string>>({});
   const [ruleVals, setRuleVals] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
@@ -49,6 +53,8 @@ export default function EditPricingPage() {
       setView(v);
       setBasePrice(c2d(v.basePrice));
       setFromPrice(v.fromPrice != null ? c2d(v.fromPrice) : "");
+      setTypicalDuration(v.typicalDuration ?? "");
+      setRecurringDiscount(v.recurringDiscount ?? "");
       setOptDeltas(Object.fromEntries(v.groups.flatMap((g) => g.options.map((o) => [o.id, c2d(o.priceDelta)]))));
       setRuleVals(Object.fromEntries(v.rules.map((r) => [r.id, r.calc === "percent" ? String(r.value) : c2d(r.value)])));
     } catch (e) {
@@ -62,17 +68,22 @@ export default function EditPricingPage() {
     setErr(null);
     setNotice(null);
     try {
-      const body = {
-        basePrice: d2c(basePrice),
-        ...(view.pricingMode === "FROM" && fromPrice !== "" ? { fromPrice: d2c(fromPrice) } : {}),
-        options: view.groups.flatMap((g) => g.options.map((o) => ({ id: o.id, priceDelta: d2c(optDeltas[o.id] ?? "0") }))),
-        rules: view.rules.map((r) => ({
+      const body: Record<string, unknown> = {
+        // Compare-table labels apply to every service, including QUOTE.
+        typicalDuration: typicalDuration.trim() || null,
+        recurringDiscount: recurringDiscount.trim() || null,
+      };
+      if (view.pricingMode !== "QUOTE") {
+        body.basePrice = d2c(basePrice);
+        if (view.pricingMode === "FROM" && fromPrice !== "") body.fromPrice = d2c(fromPrice);
+        body.options = view.groups.flatMap((g) => g.options.map((o) => ({ id: o.id, priceDelta: d2c(optDeltas[o.id] ?? "0") })));
+        body.rules = view.rules.map((r) => ({
           id: r.id,
           value: r.calc === "percent" ? Number(ruleVals[r.id] ?? "0") : d2c(ruleVals[r.id] ?? "0"),
-        })),
-      };
+        }));
+      }
       await api(`/admin/catalog/services/${view.slug}/pricing`, { method: "PUT", body });
-      setNotice("Pricing saved — live immediately for new quotes and bookings.");
+      setNotice("Saved — live on the site within ~5 min.");
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Save failed");
     } finally {
@@ -95,29 +106,47 @@ export default function EditPricingPage() {
         </select>
       </div>
 
-      {view && view.pricingMode === "QUOTE" && (
-        <div className="ax-card" style={{ marginTop: 16 }}>
-          <p className="ax-muted">{view.name} is a quote service — it has no configurable pricing.</p>
-        </div>
-      )}
-
-      {view && view.pricingMode !== "QUOTE" && (
+      {view && (
         <>
           <div className="ax-card" style={{ marginTop: 16 }}>
             <h3>{view.name}</h3>
+            <p className="ax-muted" style={{ marginTop: 2 }}>
+              Compare-table labels (shown on /pricing). Leave blank to hide.
+            </p>
             <div className="ax-row" style={{ gap: 16, marginTop: 10 }}>
-              <div className="ax-field" style={{ width: 160 }}>
-                <label>Base price ($)</label>
-                <input className="ax-input" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
+              <div className="ax-field" style={{ width: 200 }}>
+                <label>Typical duration</label>
+                <input className="ax-input" placeholder="e.g. 2–3 hrs" value={typicalDuration} onChange={(e) => setTypicalDuration(e.target.value)} />
               </div>
-              {view.pricingMode === "FROM" && (
-                <div className="ax-field" style={{ width: 160 }}>
-                  <label>From price ($)</label>
-                  <input className="ax-input" value={fromPrice} onChange={(e) => setFromPrice(e.target.value)} />
-                </div>
-              )}
+              <div className="ax-field" style={{ width: 200 }}>
+                <label>Recurring discount</label>
+                <input className="ax-input" placeholder="e.g. up to 15%" value={recurringDiscount} onChange={(e) => setRecurringDiscount(e.target.value)} />
+              </div>
             </div>
           </div>
+
+          {view.pricingMode === "QUOTE" && (
+            <div className="ax-card" style={{ marginTop: 12 }}>
+              <p className="ax-muted">{view.name} is a quote service — no configurable pricing (the labels above still apply).</p>
+            </div>
+          )}
+
+          {view.pricingMode !== "QUOTE" && (
+            <div className="ax-card" style={{ marginTop: 12 }}>
+              <div className="ax-row" style={{ gap: 16 }}>
+                <div className="ax-field" style={{ width: 160 }}>
+                  <label>Base price ($)</label>
+                  <input className="ax-input" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
+                </div>
+                {view.pricingMode === "FROM" && (
+                  <div className="ax-field" style={{ width: 160 }}>
+                    <label>From price ($)</label>
+                    <input className="ax-input" value={fromPrice} onChange={(e) => setFromPrice(e.target.value)} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {view.groups.filter((g) => g.options.length > 0).map((g) => (
             <div className="ax-card" style={{ marginTop: 12 }} key={g.key}>
@@ -161,7 +190,7 @@ export default function EditPricingPage() {
           )}
 
           <button className="ax-btn" style={{ marginTop: 16 }} onClick={() => void save()} disabled={busy}>
-            {busy ? "Saving…" : "Save pricing"}
+            {busy ? "Saving…" : "Save"}
           </button>
         </>
       )}

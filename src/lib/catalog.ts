@@ -19,6 +19,8 @@ export interface CatalogService {
   currency: string;
   badges: string[];
   isRecurringEligible: boolean;
+  typicalDuration: string | null; // e.g. "2–3 hrs"
+  recurringDiscount: string | null; // e.g. "up to 15%"
 }
 
 export interface MembershipPlanView {

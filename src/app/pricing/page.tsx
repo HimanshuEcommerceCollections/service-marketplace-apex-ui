@@ -23,19 +23,27 @@ const IS_NUMERIC = /^\$\d/; // only overlay real dollar prices; keep "Custom Est
 
 export default async function Page() {
   const live = await getServices();
-  const priceBySlug = new Map(
-    (live ?? [])
-      .filter((s) => s.fromPrice != null)
-      .map((s) => [s.slug, formatFromPrice(s.fromPrice as number, s.currency)]),
-  );
+  const svcBySlug = new Map((live ?? []).map((s) => [s.slug, s]));
+  const priceLabel = (slug: string) => {
+    const s = svcBySlug.get(slug);
+    return s?.fromPrice != null ? formatFromPrice(s.fromPrice, s.currency) : undefined;
+  };
 
   const services = staticServices.map((s) => {
-    const label = priceBySlug.get(slugOf(s.bookHref));
+    const label = priceLabel(slugOf(s.bookHref));
     return label && IS_NUMERIC.test(s.price.main) ? { ...s, price: { ...s.price, main: label } } : s;
   });
+  // Compare rows: overlay live starting price (numeric only), typical duration, and recurring discount.
   const comparisonRows = staticRows.map((r) => {
-    const label = priceBySlug.get(slugOf(r.bookHref));
-    return label && IS_NUMERIC.test(r.start) ? { ...r, start: label } : r;
+    const svc = svcBySlug.get(slugOf(r.bookHref));
+    if (!svc) return r;
+    const label = svc.fromPrice != null ? formatFromPrice(svc.fromPrice, svc.currency) : undefined;
+    return {
+      ...r,
+      start: label && IS_NUMERIC.test(r.start) ? label : r.start,
+      duration: svc.typicalDuration ?? r.duration,
+      discount: svc.recurringDiscount,
+    };
   });
 
   return <PricingPage services={services} comparisonRows={comparisonRows} />;
