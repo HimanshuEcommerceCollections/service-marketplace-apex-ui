@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 // section: MEMBERSHIP PLANS — pick a service or bundle a few. Data in data/membership/plans.
-import { plans } from '../../data/membership/plans';
+import { plans as staticPlans, type MembershipPlan } from '../../data/membership/plans';
 
 const Check = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -8,7 +8,9 @@ const Check = () => (
   </svg>
 );
 
-export default function Plans() {
+// `plans` is overlaid with live member prices by the server page; falls back to
+// the static set when the membership API is unreachable.
+export default function Plans({ plans = staticPlans }: { plans?: MembershipPlan[] }) {
   return (
     <section className="sec" id="plans" style={{ background: 'var(--mist)' }}>
       <div className="swrap">

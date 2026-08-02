@@ -17,8 +17,9 @@ import { mountMembership } from '../../lib/membership/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 import { testimonials } from '../../data/membership/testimonials';
+import type { MembershipPlan } from '../../data/membership/plans';
 
-export default function MembershipPage() {
+export default function MembershipPage({ plans }: { plans?: MembershipPlan[] }) {
   useEffect(() => {
     // membership runtime (reveal, calculator, carousel, timeline, CTA video, FAQ)
     // + shared chrome (nav scroll-state + footer reveal). Compose both teardowns.
@@ -39,7 +40,7 @@ export default function MembershipPage() {
       <SiteNav />
       <Hero />
       <WhyChoose />
-      <Plans />
+      <Plans plans={plans} />
       <Compare />
       <Calculator />
       <Benefits />

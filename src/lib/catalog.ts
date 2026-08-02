@@ -28,6 +28,8 @@ export interface MembershipPlanView {
   description: string | null;
   interval: "WEEK" | "MONTH";
   intervalCount: number;
+  fromPrice: number | null; // cents; display "from $X / visit" member price
+  currency: string;
   service: { slug: string; name: string } | null;
 }
 
