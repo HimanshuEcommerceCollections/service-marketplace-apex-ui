@@ -118,9 +118,20 @@ export function mountService(slug, testimonials) {
 
     const SPEC = {
       cleaning: {
+        // Live-priced: the shown amount comes from the server recompute
+        // (POST /services/cleaning/config/price). `sel` maps this UI's state to
+        // the server config's group/option keys; compute() is the offline fallback.
+        live: true,
+        sel: (s) => ({
+          'cleaning-type': { standard: 'standard', deep: 'deep', move: 'move-in-out' }[s.type],
+          bedrooms: String(s.beds),
+          bathrooms: String(s.baths),
+          frequency: { once: 'one-time', weekly: 'weekly', biweekly: 'biweekly', monthly: 'monthly' }[s.freq],
+        }),
         fields: [
-          { t: 'stepper', k: 'beds', label: 'Bedrooms', min: 1, max: 6, def: 2 },
-          { t: 'stepper', k: 'baths', label: 'Bathrooms', min: 1, max: 5, def: 2 },
+          // ranges match the server config (bedrooms 1-5, bathrooms 1-4)
+          { t: 'stepper', k: 'beds', label: 'Bedrooms', min: 1, max: 5, def: 2 },
+          { t: 'stepper', k: 'baths', label: 'Bathrooms', min: 1, max: 4, def: 2 },
           { t: 'seg', k: 'type', label: 'Cleaning type', def: 'standard', opts: [
             { v: 'standard', label: 'Standard' }, { v: 'deep', label: 'Deep clean' }, { v: 'move', label: 'Move in / out' }] },
           { t: 'seg', k: 'freq', label: 'Frequency', def: 'once', opts: [
@@ -324,6 +335,34 @@ export function mountService(slug, testimonials) {
       host.appendChild(wrap);
     });
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api/v1';
+    let liveTimer = null,
+      liveSeq = 0;
+    cleanups.push(() => clearTimeout(liveTimer));
+    // Live-priced services fetch the authoritative amount from the server recompute,
+    // debounced + sequence-guarded so a fast change wins over an in-flight request.
+    function applyLivePrice() {
+      const mySeq = ++liveSeq;
+      const selections = spec.sel(state);
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => {
+        fetch(`${API_BASE}/services/${activeSlug}/config/price`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ selections, quantity: 1 }),
+        })
+          .then((r) => r.json())
+          .then((j) => {
+            if (mySeq !== liveSeq) return; // superseded by a newer change
+            const dp = j && j.data && j.data.displayed_price && j.data.displayed_price.total;
+            if (!dp || typeof dp.amount !== 'number') return;
+            const el = out.querySelector('.amt-v');
+            if (el) el.textContent = money(dp.amount / 100);
+          })
+          .catch(() => {}); // keep the offline estimate on error
+      }, 250);
+    }
+
     function render() {
       const r = spec.compute(state);
       let html = '';
@@ -333,7 +372,7 @@ export function mountService(slug, testimonials) {
         html += `<div class="state">No cost</div><div class="amount">Free<br>Consult</div>`;
       } else {
         const pre = r.state === 'FROM' ? '<small>from </small>' : '';
-        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}${money(r.amount || 0)}<small>${r.unit || ''}</small></div>`;
+        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${money(r.amount || 0)}</span><small>${r.unit || ''}</small></div>`;
       }
       html += `<div class="sub">${r.sub || ''}</div>`;
       if (r.save) html += `<div class="save">${r.save}</div>`;
@@ -343,6 +382,7 @@ export function mountService(slug, testimonials) {
       html += `<a class="btn btn-primary" href="${BOOK(activeSlug)}">${cta}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`;
       html += `<div class="fineprint">Final price confirmed at booking. Your selection is carried into the booking flow.</div>`;
       out.innerHTML = html;
+      if (spec.live && spec.sel && (r.state === 'PRICED' || r.state === 'FROM')) applyLivePrice();
     }
 
     on(host, 'click', (e) => {
