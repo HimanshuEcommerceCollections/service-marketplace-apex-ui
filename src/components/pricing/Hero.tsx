@@ -1,8 +1,8 @@
-// section: HERO — cinematic pricing hero with a background video, a glass
-// "instant estimate" card, and three floating price chips. Video autoplay is
-// wired by the runtime (mountPricing → initHeroVideo).
+// section: HERO — cinematic pricing hero with a background video and a glass
+// "instant estimate" card. Video autoplay is wired by the runtime
+// (mountPricing → initHeroVideo).
 import { heroVideo } from '../../data/pricing/media';
-import { Icon, Arrow } from './icons';
+import { Arrow } from './icons';
 
 export default function Hero() {
   return (
@@ -67,33 +67,6 @@ export default function Hero() {
                 <span>You pay</span>
                 <b>$167</b>
               </div>
-            </div>
-          </div>
-          <div className="fchip c1">
-            <span className="fic">
-              <Icon name="cleaning" />
-            </span>
-            <div>
-              <b>Cleaning</b>
-              <span>From $149</span>
-            </div>
-          </div>
-          <div className="fchip c2">
-            <span className="fic">
-              <Icon name="lawn" />
-            </span>
-            <div>
-              <b>Lawn Care</b>
-              <span>From $79</span>
-            </div>
-          </div>
-          <div className="fchip c3">
-            <span className="fic">
-              <Icon name="pool" />
-            </span>
-            <div>
-              <b>Pool</b>
-              <span>From $99</span>
             </div>
           </div>
         </div>
