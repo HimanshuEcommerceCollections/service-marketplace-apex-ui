@@ -25,7 +25,7 @@ const recurringPlans: ServicePlan[] = [
 const finalBlurb =
   'Recurring or one-time cleans, priced by beds and baths, handled by the same trusted team every visit.';
 
-export default function CleaningPage() {
+export default function CleaningPage({ heroPrice }: { heroPrice?: string }) {
   useEffect(() => {
     // mountService wires the configurator engine, testimonial carousel and
     // final-CTA spotlight, returning a teardown fn. 'cleaning' selects the
@@ -45,7 +45,7 @@ export default function CleaningPage() {
   return (
     <div className="pg-service">
       <SiteNav />
-      <Hero content={content.hero} />
+      <Hero content={heroPrice ? { ...content.hero, price: heroPrice } : content.hero} />
       <Expect content={content.expect} />
       <Configurator />
       <Recurring heading="Book once. Never think about it again." plans={recurringPlans} serviceSlug="cleaning" />

@@ -76,3 +76,20 @@ export function formatFromPrice(cents: number, currency = "USD"): string {
   const symbol = currency === "USD" ? "$" : `${currency} `;
   return `${symbol}${Math.round(cents / 100)}`;
 }
+
+/** Live "from $X" label for a service, or undefined if it has no numeric from-price. */
+export async function livePrice(slug: string): Promise<string | undefined> {
+  const svc = await getService(slug);
+  return svc?.fromPrice != null ? formatFromPrice(svc.fromPrice, svc.currency) : undefined;
+}
+
+/** Overlay a shared service page's hero "from" price with the live catalog value (by slug). */
+export async function overlayHeroPrice<T extends { content: { hero: { price: string } } }>(
+  config: T,
+  slug: string,
+): Promise<T> {
+  const label = await livePrice(slug);
+  return label
+    ? { ...config, content: { ...config.content, hero: { ...config.content.hero, price: label } } }
+    : config;
+}

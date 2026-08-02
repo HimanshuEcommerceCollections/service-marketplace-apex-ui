@@ -3,6 +3,7 @@ import '../../chrome.css';
 import '../service.css';
 import '../../testimonials.css';
 import CleaningPage from '../../../components/cleaning/CleaningPage';
+import { livePrice } from '../../../lib/catalog';
 
 export const metadata: Metadata = {
   // Preserved from the source document.
@@ -11,6 +12,6 @@ export const metadata: Metadata = {
     'Recurring or one-time cleans, priced by beds and baths, handled by the same trusted team every visit.',
 };
 
-export default function HouseCleaningPage() {
-  return <CleaningPage />;
+export default async function HouseCleaningPage() {
+  return <CleaningPage heroPrice={await livePrice('cleaning')} />;
 }

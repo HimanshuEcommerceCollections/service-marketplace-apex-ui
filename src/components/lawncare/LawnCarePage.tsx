@@ -24,7 +24,7 @@ const recurringPlans: ServicePlan[] = [
 const finalBlurb =
   'Mowing, edging and full lawn care, priced by lot size, handled by the same crew on the schedule you set.';
 
-export default function LawnCarePage() {
+export default function LawnCarePage({ heroPrice }: { heroPrice?: string }) {
   useEffect(() => {
     // 'lawn-care' selects the configurator spec; testimonials feed the carousel.
     const disposeService = mountService('lawn-care', testimonials);
@@ -42,7 +42,7 @@ export default function LawnCarePage() {
   return (
     <div className="pg-service">
       <SiteNav />
-      <Hero content={content.hero} />
+      <Hero content={heroPrice ? { ...content.hero, price: heroPrice } : content.hero} />
       <Expect content={content.expect} />
       <Configurator />
       <Recurring heading="Book once. Never chase a mow again." plans={recurringPlans} serviceSlug="lawn-care" />

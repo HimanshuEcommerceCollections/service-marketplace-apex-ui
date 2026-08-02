@@ -3,6 +3,7 @@ import '../../chrome.css';
 import '../service.css';
 import '../../testimonials.css';
 import ServicePage from '../../../components/service/ServicePage';
+import { overlayHeroPrice } from '../../../lib/catalog';
 import { content } from '../../../data/services/home-security/content';
 
 // TODO(design): update metadata when the Home Security design is delivered.
@@ -11,6 +12,6 @@ export const metadata: Metadata = {
   description: 'Cameras, sensors and monitoring, tailored to your home and set up by trained pros.',
 };
 
-export default function Page() {
-  return <ServicePage config={content} />;
+export default async function Page() {
+  return <ServicePage config={await overlayHeroPrice(content, 'home-security')} />;
 }
