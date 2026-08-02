@@ -200,16 +200,23 @@
   background: #fdf1ed; color: #9c3f26; border: 1px solid #f0cec2;
 }
 
-/* ===== floating-label fields ===== */
-.apexauth .ffld { position: relative; }
+/* ===== floating-label fields =====
+   The label, eye and tick are positioned against .ffld, but .ffld is taller than
+   the input whenever the field carries extras (the strength meter, or the error
+   message once it expands). So they anchor to the input's own centre line —
+   --fld-h — instead of 50% of the wrapper, which would drop them below the box.
+   --fld-h must equal the input's border-box height: 24 line + 22 + 9 padding + 2 border. */
+.apexauth .ffld { position: relative; --fld-h: 57px; }
 .apexauth .ffld input {
-  width: 100%; font-family: var(--font-body); font-size: 15px; color: var(--ink2); background: #fff;
+  width: 100%; font-family: var(--font-body); font-size: 15px; line-height: 24px;
+  color: var(--ink2); background: #fff;
   border: 1px solid var(--line); border-radius: 13px; padding: 22px 15px 9px;
   transition: border-color var(--dur-quick), box-shadow var(--dur-quick);
 }
 .apexauth .ffld input:focus { outline: 0; border-color: var(--bblue); box-shadow: 0 0 0 4px var(--bblue-tint); }
 .apexauth .ffld label {
-  position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 14.5px;
+  position: absolute; left: 16px; top: calc(var(--fld-h) / 2); transform: translateY(-50%);
+  font-size: 14.5px; line-height: 1.2;
   color: var(--slate4); pointer-events: none; transition: all var(--dur-quick) var(--ease-settle);
 }
 .apexauth .ffld input:focus + label,
@@ -220,7 +227,7 @@
 .apexauth .ffld input::placeholder { color: transparent; }
 .apexauth .ffld.has-toggle input { padding-right: 48px; }
 .apexauth .ffld .eye {
-  position: absolute; right: 8px; top: 30px; transform: translateY(-50%); width: 36px; height: 36px;
+  position: absolute; right: 8px; top: calc(var(--fld-h) / 2); transform: translateY(-50%); width: 36px; height: 36px;
   border: 0; background: none; border-radius: 10px; display: flex; align-items: center;
   justify-content: center; color: var(--slate4); cursor: pointer;
   transition: color var(--dur-quick), background var(--dur-quick);
@@ -247,7 +254,7 @@
 @media (prefers-reduced-motion: reduce) { .apexauth .ffld.err.shake input { animation: none; } }
 .apexauth .ffld.ok input { border-color: #8fc4ab; }
 .apexauth .ffld .tick {
-  position: absolute; right: 14px; top: 30px; transform: translateY(-50%) scale(0); width: 20px;
+  position: absolute; right: 14px; top: calc(var(--fld-h) / 2); transform: translateY(-50%) scale(0); width: 20px;
   height: 20px; border-radius: 50%; background: var(--confirm); color: #fff; display: flex;
   align-items: center; justify-content: center; transition: transform var(--dur-quick) var(--ease-settle);
 }
