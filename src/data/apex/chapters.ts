@@ -20,6 +20,8 @@ export interface Chapter {
   badge: BadgeKind;
   badgeLabel: string;
   title: string;
+  /** canonical Service.slug — join key for live pricing from the catalog API */
+  slug: string;
   /** service name used inside the image alt text */
   altName: string;
   image: string;
@@ -38,6 +40,7 @@ export const chapters: Chapter[] = [
     badge: 'priced',
     badgeLabel: 'Priced instantly',
     title: 'Cleaning',
+    slug: 'cleaning',
     altName: 'Cleaning',
     image: '/assets/images/image-2.webp',
     rating: '4.9',
@@ -58,6 +61,7 @@ export const chapters: Chapter[] = [
     badge: 'priced',
     badgeLabel: 'Priced instantly',
     title: 'Lawn Care',
+    slug: 'lawn-care',
     altName: 'Lawn Care',
     image: '/assets/images/image-3.webp',
     rating: '4.8',
@@ -78,6 +82,7 @@ export const chapters: Chapter[] = [
     badge: 'priced',
     badgeLabel: 'Priced instantly',
     title: 'Pool Service',
+    slug: 'pool',
     altName: 'Pool Service',
     image: '/assets/images/image-4.webp',
     rating: '4.9',
@@ -98,6 +103,7 @@ export const chapters: Chapter[] = [
     badge: 'priced',
     badgeLabel: 'Priced instantly',
     title: 'Pest Control',
+    slug: 'pest-control',
     altName: 'Pest Control',
     image: '/assets/images/image-5.webp',
     rating: '4.7',
@@ -118,6 +124,7 @@ export const chapters: Chapter[] = [
     badge: 'from',
     badgeLabel: 'Starting price',
     title: 'Power Washing',
+    slug: 'power-washing',
     altName: 'Power Washing',
     image: '/assets/images/image-6.webp',
     rating: '4.8',
@@ -138,6 +145,7 @@ export const chapters: Chapter[] = [
     badge: 'priced',
     badgeLabel: 'Priced instantly',
     title: 'Junk Removal',
+    slug: 'junk-removal',
     altName: 'Junk Removal',
     image: '/assets/images/image-7.webp',
     rating: '4.8',
@@ -158,6 +166,7 @@ export const chapters: Chapter[] = [
     badge: 'priced',
     badgeLabel: 'Priced instantly',
     title: 'Smart Home',
+    slug: 'smart-home',
     altName: 'Smart Home',
     image: '/assets/images/image-8.webp',
     rating: '4.9',
@@ -178,6 +187,7 @@ export const chapters: Chapter[] = [
     badge: 'from',
     badgeLabel: 'Starting price',
     title: 'Handyman',
+    slug: 'handyman',
     altName: 'Handyman',
     image: '/assets/images/image-9.webp',
     rating: '4.9',
@@ -198,6 +208,7 @@ export const chapters: Chapter[] = [
     badge: 'quote',
     badgeLabel: 'Free estimate',
     title: 'Painting',
+    slug: 'painting',
     altName: 'Painting',
     image: '/assets/images/image-10.webp',
     rating: '5.0',
@@ -218,6 +229,7 @@ export const chapters: Chapter[] = [
     badge: 'quote',
     badgeLabel: 'Free consult',
     title: 'Home Security',
+    slug: 'home-security',
     altName: 'Home Security',
     image: '/assets/images/image-11.webp',
     rating: '4.8',
@@ -239,6 +251,7 @@ export const chapters: Chapter[] = [
     badge: 'quote',
     badgeLabel: 'Free estimate',
     title: 'Tree & Stump',
+    slug: 'tree-stump',
     altName: 'Tree & Stump',
     image: '/assets/images/image-12.webp',
     rating: '4.7',

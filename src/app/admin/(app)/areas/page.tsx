@@ -8,6 +8,7 @@ interface AreaView {
   id: string;
   name: string;
   slug: string;
+  duration: string | null;
   status: "ACTIVE" | "INACTIVE";
   deletedAt: string | null;
 }
@@ -20,8 +21,10 @@ export default function AreasPage() {
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
+  const [newDuration, setNewDuration] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editDuration, setEditDuration] = useState("");
 
   const load = useCallback(async () => {
     setErr(null);
@@ -64,12 +67,17 @@ export default function AreasPage() {
             e.preventDefault();
             if (!newName.trim()) return;
             void run(async () => {
-              await api("/admin/areas", { method: "POST", body: { name: newName.trim() } });
+              await api("/admin/areas", {
+                method: "POST",
+                body: { name: newName.trim(), duration: newDuration.trim() || undefined },
+              });
               setNewName("");
+              setNewDuration("");
             });
           }}
         >
-          <input className="ax-input" style={{ maxWidth: 300 }} placeholder="Area name (e.g. Dallas)" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <input className="ax-input" style={{ maxWidth: 260 }} placeholder="Area name (e.g. Dallas)" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <input className="ax-input" style={{ maxWidth: 160 }} placeholder="Response time (e.g. 15 MIN)" value={newDuration} onChange={(e) => setNewDuration(e.target.value)} />
           <button className="ax-btn">Add area</button>
         </form>
       </div>
@@ -96,6 +104,7 @@ export default function AreasPage() {
           <tr>
             <th>Name</th>
             <th>Slug</th>
+            <th>Response time</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -112,6 +121,13 @@ export default function AreasPage() {
               </td>
               <td className="ax-muted">{a.slug}</td>
               <td>
+                {editId === a.id ? (
+                  <input className="ax-input" style={{ maxWidth: 140 }} placeholder="e.g. 15 MIN" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} />
+                ) : (
+                  a.duration ?? <span className="ax-muted">—</span>
+                )}
+              </td>
+              <td>
                 {a.deletedAt ? (
                   <span className="ax-badge danger">DELETED</span>
                 ) : (
@@ -124,12 +140,12 @@ export default function AreasPage() {
                     <button className="ax-btn ghost sm" onClick={() => void run(() => api(`/admin/areas/${a.id}/restore`, { method: "POST" }))}>Restore</button>
                   ) : editId === a.id ? (
                     <>
-                      <button className="ax-btn sm" onClick={() => void run(async () => { await api(`/admin/areas/${a.id}`, { method: "PATCH", body: { name: editName.trim() } }); setEditId(null); })}>Save</button>
+                      <button className="ax-btn sm" onClick={() => void run(async () => { await api(`/admin/areas/${a.id}`, { method: "PATCH", body: { name: editName.trim(), duration: editDuration.trim() } }); setEditId(null); })}>Save</button>
                       <button className="ax-btn ghost sm" onClick={() => setEditId(null)}>Cancel</button>
                     </>
                   ) : (
                     <>
-                      <button className="ax-btn ghost sm" onClick={() => { setEditId(a.id); setEditName(a.name); }}>Rename</button>
+                      <button className="ax-btn ghost sm" onClick={() => { setEditId(a.id); setEditName(a.name); setEditDuration(a.duration ?? ""); }}>Edit</button>
                       <button className="ax-btn ghost sm" onClick={() => void run(() => api(`/admin/areas/${a.id}`, { method: "PATCH", body: { status: a.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" } }))}>
                         {a.status === "ACTIVE" ? "Deactivate" : "Activate"}
                       </button>
@@ -141,7 +157,7 @@ export default function AreasPage() {
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr><td colSpan={4} className="ax-muted">No areas found.</td></tr>
+            <tr><td colSpan={5} className="ax-muted">No areas found.</td></tr>
           )}
         </tbody>
       </table>

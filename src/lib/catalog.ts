@@ -31,6 +31,14 @@ export interface MembershipPlanView {
   service: { slug: string; name: string } | null;
 }
 
+export interface CoverageArea {
+  id: string;
+  name: string;
+  slug: string;
+  duration: string | null; // admin-controlled response-time label (e.g. "15 MIN")
+  zipCodes: { zipCode: string; city: string | null; state: string | null }[];
+}
+
 async function catalogFetch<T>(path: string, tags: string[]): Promise<T | null> {
   try {
     const res = await fetch(`${API_BASE}${path}`, { next: { revalidate: TTL_SECONDS, tags } });
@@ -52,6 +60,11 @@ export function getService(slug: string): Promise<CatalogService | null> {
 
 export function getMembershipPlans(): Promise<MembershipPlanView[] | null> {
   return catalogFetch<MembershipPlanView[]>("/membership/plans", ["catalog"]);
+}
+
+/** Active service areas + their ZIPs/cities (feeds the home Service Coverage section). */
+export function getAreas(): Promise<CoverageArea[] | null> {
+  return catalogFetch<CoverageArea[]>("/service-area/areas", ["coverage"]);
 }
 
 /** Whole-dollar label from integer cents, e.g. 14900 -> "$149". */

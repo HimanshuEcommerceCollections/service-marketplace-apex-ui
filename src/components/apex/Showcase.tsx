@@ -1,10 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 // section: SHOWCASE — cinematic chapters. Parallax + .ch-reveal staggering are
 // driven by the runtime (per .chapter / .ch-media / .ch-reveal).
-import { chapters } from '../../data/apex/chapters';
+import { chapters as staticChapters, type Chapter } from '../../data/apex/chapters';
 import { Star, Arrow } from './icons';
 
-export default function Showcase() {
+// `chapters` is overlaid with live from-prices by the server page; falls back to
+// the static set when the catalog API is unreachable.
+export default function Showcase({ chapters = staticChapters }: { chapters?: Chapter[] }) {
   return (
     <div className="showcase" id="showcase">
       {chapters.map((c, i) => (
