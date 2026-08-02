@@ -46,16 +46,18 @@ function overlayChapters(services: CatalogService[] | null): Chapter[] {
   });
 }
 
-// Distinct served towns (cities across active areas' ZIPs), each labelled with
-// its area's admin-set response time (Area.duration).
+// The served cities, each labelled with its admin-set response time. An Area IS a
+// city, so the list is the areas themselves -- NOT the cities on their ZIPs, which
+// also include neighbouring postal towns a city's coverage happens to reach. The
+// API returns active areas only, so deactivating a city drops it from the section.
 function deriveTowns(areas: CoverageArea[] | null): { name: string; time: string }[] {
-  const seen = new Map<string, string>();
-  for (const a of areas ?? []) {
-    for (const z of a.zipCodes) {
-      if (z.city && !seen.has(z.city)) seen.set(z.city, a.duration ?? '');
-    }
-  }
-  return [...seen.entries()].sort((x, y) => x[0].localeCompare(y[0])).map(([name, time]) => ({ name, time }));
+  const mins = (d: string) => {
+    const n = parseInt(d, 10);
+    return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+  };
+  return (areas ?? [])
+    .map((a) => ({ name: a.name, time: a.duration ?? '' }))
+    .sort((x, y) => mins(x.time) - mins(y.time) || x.name.localeCompare(y.name));
 }
 
 export default async function Home() {
