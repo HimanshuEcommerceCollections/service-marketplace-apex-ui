@@ -337,15 +337,19 @@ export function mountService(slug, testimonials) {
 
     const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api/v1';
     let liveTimer = null,
-      liveSeq = 0;
+      liveSeq = 0,
+      lastLive = null; // last server dollar amount — kept so changes don't flash to the offline estimate
     cleanups.push(() => clearTimeout(liveTimer));
-    // Live-priced services fetch the authoritative amount from the server recompute,
-    // debounced + sequence-guarded so a fast change wins over an in-flight request.
-    function applyLivePrice() {
+    // Live-priced services fetch the authoritative amount from the server recompute.
+    // First load fires immediately; later changes debounce briefly. Sequence-guarded
+    // so a fast change wins over an in-flight request; the price dims while updating.
+    function applyLivePrice(immediate) {
       const mySeq = ++liveSeq;
       const selections = spec.sel(state);
+      const box = out.querySelector('.amount');
+      if (box) box.classList.add('updating');
       clearTimeout(liveTimer);
-      liveTimer = setTimeout(() => {
+      const go = () => {
         fetch(`${API_BASE}/services/${activeSlug}/config/price`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -356,11 +360,19 @@ export function mountService(slug, testimonials) {
             if (mySeq !== liveSeq) return; // superseded by a newer change
             const dp = j && j.data && j.data.displayed_price && j.data.displayed_price.total;
             if (!dp || typeof dp.amount !== 'number') return;
+            lastLive = dp.amount / 100;
             const el = out.querySelector('.amt-v');
-            if (el) el.textContent = money(dp.amount / 100);
+            if (el) el.textContent = money(lastLive);
           })
-          .catch(() => {}); // keep the offline estimate on error
-      }, 250);
+          .catch(() => {}) // keep the last price on error
+          .finally(() => {
+            if (mySeq !== liveSeq) return;
+            const b = out.querySelector('.amount');
+            if (b) b.classList.remove('updating');
+          });
+      };
+      if (immediate) go();
+      else liveTimer = setTimeout(go, 120);
     }
 
     function render() {
@@ -372,7 +384,9 @@ export function mountService(slug, testimonials) {
         html += `<div class="state">No cost</div><div class="amount">Free<br>Consult</div>`;
       } else {
         const pre = r.state === 'FROM' ? '<small>from </small>' : '';
-        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${money(r.amount || 0)}</span><small>${r.unit || ''}</small></div>`;
+        // For live services keep the last server price on screen while the new one loads.
+        const amtStr = spec.live && lastLive != null ? money(lastLive) : money(r.amount || 0);
+        html += `<div class="state">${r.state === 'FROM' ? 'Starting at' : 'Your price'}</div><div class="amount">${pre}<span class="amt-v">${amtStr}</span><small>${r.unit || ''}</small></div>`;
       }
       html += `<div class="sub">${r.sub || ''}</div>`;
       if (r.save) html += `<div class="save">${r.save}</div>`;
@@ -382,7 +396,7 @@ export function mountService(slug, testimonials) {
       html += `<a class="btn btn-primary" href="${BOOK(activeSlug)}">${cta}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`;
       html += `<div class="fineprint">Final price confirmed at booking. Your selection is carried into the booking flow.</div>`;
       out.innerHTML = html;
-      if (spec.live && spec.sel && (r.state === 'PRICED' || r.state === 'FROM')) applyLivePrice();
+      if (spec.live && spec.sel && (r.state === 'PRICED' || r.state === 'FROM')) applyLivePrice(lastLive == null);
     }
 
     on(host, 'click', (e) => {
