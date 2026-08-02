@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './apex.css';
 import './testimonials.css';
 import ApexHome from '../components/apex/ApexHome';
+import { chapters as staticChapters, type Chapter } from '../data/apex/chapters';
+import { getServices, getAreas, formatFromPrice, type CatalogService, type CoverageArea } from '../lib/catalog';
 
 export const metadata: Metadata = {
   title: 'Apex Total Home Services — One Call. Every Home Service.',
@@ -23,11 +25,52 @@ const PREANIM_SCRIPT =
   "d.classList.add('hero-preanim');" +
   "setTimeout(function(){d.classList.remove('hero-preanim')},2500)}}catch(e){}";
 
-export default function Home() {
+// Overlay live from-prices onto the showcase chapters, keyed by slug. Only the
+// numeric "$NNN" inside a price spec is swapped, preserving "from " / "/hr".
+const DOLLAR = /\$\d[\d,]*/;
+function overlayChapters(services: CatalogService[] | null): Chapter[] {
+  const priceBySlug = new Map(
+    (services ?? [])
+      .filter((s) => s.fromPrice != null)
+      .map((s) => [s.slug, formatFromPrice(s.fromPrice as number, s.currency)] as const),
+  );
+  return staticChapters.map((c) => {
+    const label = priceBySlug.get(c.slug);
+    if (!label) return c;
+    return {
+      ...c,
+      specs: c.specs.map((sp) =>
+        sp.num && DOLLAR.test(sp.value) ? { ...sp, value: sp.value.replace(DOLLAR, () => label) } : sp,
+      ),
+    };
+  });
+}
+
+// Distinct served towns (cities across active areas' ZIPs), each labelled with
+// its area's admin-set response time (Area.duration).
+function deriveTowns(areas: CoverageArea[] | null): { name: string; time: string }[] {
+  const seen = new Map<string, string>();
+  for (const a of areas ?? []) {
+    for (const z of a.zipCodes) {
+      if (z.city && !seen.has(z.city)) seen.set(z.city, a.duration ?? '');
+    }
+  }
+  return [...seen.entries()].sort((x, y) => x[0].localeCompare(y[0])).map(([name, time]) => ({ name, time }));
+}
+
+export default async function Home() {
+  // ISR-cached, tag-busted reads; both fall back to null (→ static content) if the API is down.
+  const [services, areas] = await Promise.all([getServices(), getAreas()]);
+  const chapters = overlayChapters(services);
+  const towns = deriveTowns(areas);
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: PREANIM_SCRIPT }} />
-      <ApexHome />
+      <ApexHome
+        chapters={chapters}
+        towns={towns.length ? towns : undefined}
+        townCount={towns.length || undefined}
+      />
     </>
   );
 }

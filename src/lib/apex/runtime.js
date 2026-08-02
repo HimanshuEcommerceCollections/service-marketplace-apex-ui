@@ -1062,7 +1062,12 @@ export async function mountApex() {
       ['Fuquay-Varina', '35 MIN'],
       ['Knightdale', '38 MIN'],
     ];
-    document.getElementById('covList').innerHTML = TOWNS.map((t) => `<div class="cov-row"><span class="t">${t[0]}</span><span class="m">${t[1]}</span></div>`).join('');
+    // The town rows are normally server-rendered by the Coverage component (live
+    // Service Areas). Only inject the static fallback if React rendered nothing.
+    const covList = document.getElementById('covList');
+    if (covList && !covList.children.length) {
+      covList.innerHTML = TOWNS.map((t) => `<div class="cov-row"><span class="t">${t[0]}</span><span class="m">${t[1]}</span></div>`).join('');
+    }
     const v = root.querySelector('video');
     if (v) {
       v.muted = true;

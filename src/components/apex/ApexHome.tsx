@@ -13,8 +13,16 @@ import Faq from './Faq';
 import Cta from './Cta';
 import SiteFooter from '../shared/SiteFooter';
 import { mountApex } from '../../lib/apex/runtime';
+import type { Chapter } from '../../data/apex/chapters';
+import type { CoverageTown } from './Coverage';
 
-export default function ApexHome() {
+interface ApexHomeProps {
+  chapters?: Chapter[];
+  towns?: CoverageTown[];
+  townCount?: number;
+}
+
+export default function ApexHome({ chapters, towns, townCount }: ApexHomeProps) {
   useEffect(() => {
     let disposed = false;
     let dispose: (() => void) | null = null;
@@ -38,9 +46,9 @@ export default function ApexHome() {
       <SiteNav />
       <Hero />
       <Bridge />
-      <Showcase />
+      <Showcase chapters={chapters} />
       <HowItWorks />
-      <Coverage />
+      <Coverage towns={towns} townCount={townCount} />
       <Testimonials />
       <Recurring />
       <Faq />

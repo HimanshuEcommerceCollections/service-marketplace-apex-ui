@@ -2,7 +2,32 @@
 // counters ([data-count]) animate via the runtime.
 import { ArrowThin } from './icons';
 
-export default function Coverage() {
+export interface CoverageTown {
+  name: string;
+  time: string;
+}
+
+// Fallback shown only if the areas API is unreachable at build/revalidate; the
+// server page normally supplies live towns derived from Service Areas.
+const STATIC_TOWNS: CoverageTown[] = [
+  { name: 'Cary', time: '15 MIN' },
+  { name: 'Apex', time: '18 MIN' },
+  { name: 'Morrisville', time: '20 MIN' },
+  { name: 'Raleigh', time: '22 MIN' },
+  { name: 'Holly Springs', time: '25 MIN' },
+  { name: 'Garner', time: '28 MIN' },
+  { name: 'Wake Forest', time: '30 MIN' },
+  { name: 'Fuquay-Varina', time: '35 MIN' },
+  { name: 'Knightdale', time: '38 MIN' },
+];
+
+export default function Coverage({
+  towns = STATIC_TOWNS,
+  townCount = 20,
+}: {
+  towns?: CoverageTown[];
+  townCount?: number;
+}) {
   return (
     <section id="coverage">
       <div className="cov-wrap">
@@ -34,7 +59,7 @@ export default function Coverage() {
             </div>
             <div className="cov-stats cv">
               <div className="cov-stat">
-                <div className="n" data-count="20" data-suffix="+">
+                <div className="n" data-count={townCount} data-suffix="+">
                   0
                 </div>
                 <div className="cap">Towns Served</div>
@@ -49,7 +74,14 @@ export default function Coverage() {
           </div>
 
           <div className="cov-mid cv">
-            <div className="cov-list" id="covList" />
+            <div className="cov-list" id="covList">
+              {towns.map((t) => (
+                <div className="cov-row" key={t.name}>
+                  <span className="t">{t.name}</span>
+                  {t.time && <span className="m">{t.time}</span>}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="cov-map cv">
@@ -67,7 +99,7 @@ export default function Coverage() {
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M10 4h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm4 3V6h-4v1h4z" />
             </svg>
-            20+ Towns
+            {townCount}+ Towns
           </span>
           <span className="sep" />
           <span>
