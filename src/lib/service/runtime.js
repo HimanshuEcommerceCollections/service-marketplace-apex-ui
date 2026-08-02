@@ -153,6 +153,13 @@ export function mountService(slug, testimonials) {
         },
       },
       'lawn-care': {
+        // Live-priced; xl lot stays a QUOTE (compute returns QUOTE -> no fetch).
+        live: true,
+        sel: (s) => ({
+          'lot-size': { s: 'small', m: 'medium', l: 'large', xl: 'xlarge' }[s.lot],
+          service: s.svc === 'full' ? 'full' : 'mow',
+          frequency: { once: 'one-time', weekly: 'weekly', biweekly: 'biweekly' }[s.freq],
+        }),
         fields: [
           { t: 'seg', k: 'lot', label: 'Lot size', hint: 'Approximate yard size', def: 'm', opts: [
             { v: 's', label: 'Small · <5k sq ft' }, { v: 'm', label: 'Medium · 5–10k' }, { v: 'l', label: 'Large · 10–20k' }, { v: 'xl', label: 'XL · 20k+' }] },
@@ -171,6 +178,9 @@ export function mountService(slug, testimonials) {
         },
       },
       'power-washing': {
+        live: true,
+        ready: (s) => (s.areas || []).length > 0, // don't fetch an empty multiselect
+        sel: (s) => ({ surfaces: s.areas || [] }),
         fields: [
           { t: 'check', k: 'areas', label: 'What needs washing?', hint: 'Select all that apply', opts: [
             { v: 'drive', label: 'Driveway', price: 99 }, { v: 'siding', label: 'House siding', price: 149 },
@@ -203,6 +213,8 @@ export function mountService(slug, testimonials) {
         },
       },
       'junk-removal': {
+        live: true,
+        sel: (s) => ({ 'load-size': { q: 'quarter', h: 'half', t: 'three-quarter', f: 'full' }[s.load] }),
         fields: [
           { t: 'load', k: 'load', label: 'How much to haul?', def: 'q', opts: [
             { v: 'q', label: '¼ truck', sub: 'A few items', price: 99, fill: 25 },
@@ -217,6 +229,11 @@ export function mountService(slug, testimonials) {
         },
       },
       pool: {
+        live: true,
+        sel: (s) => ({
+          frequency: { once: 'one-time', weekly: 'weekly', biweekly: 'biweekly', monthly: 'monthly' }[s.freq],
+          type: s.type === 'green' ? 'green' : 'standard',
+        }),
         fields: [
           { t: 'seg', k: 'freq', label: 'Service frequency', def: 'weekly', opts: [
             { v: 'once', label: 'One-time' }, { v: 'weekly', label: 'Weekly' }, { v: 'biweekly', label: 'Biweekly' }, { v: 'monthly', label: 'Monthly' }] },
@@ -232,6 +249,12 @@ export function mountService(slug, testimonials) {
         },
       },
       'pest-control': {
+        // Live-priced; termite stays a QUOTE (compute returns QUOTE -> no fetch).
+        live: true,
+        sel: (s) => ({
+          property: { apt: 'apt', house: 'house', large: 'large' }[s.prop],
+          service: { general: 'general', mosquito: 'mosquito', termite: 'termite' }[s.svc],
+        }),
         fields: [
           { t: 'seg', k: 'prop', label: 'Property', def: 'house', opts: [{ v: 'apt', label: 'Apartment' }, { v: 'house', label: 'House' }, { v: 'large', label: 'Large home' }] },
           { t: 'seg', k: 'svc', label: 'Service', def: 'general', opts: [{ v: 'general', label: 'General pest' }, { v: 'mosquito', label: 'Mosquito +' }, { v: 'termite', label: 'Termite' }] },
@@ -256,6 +279,9 @@ export function mountService(slug, testimonials) {
         },
       },
       'smart-home': {
+        live: true,
+        ready: (s) => (s.dev || []).length > 0, // don't fetch until a device is picked
+        sel: (s) => ({ devices: s.dev || [] }),
         fields: [
           { t: 'check', k: 'dev', label: 'Choose your devices', hint: 'Pick 3 or more and save 15% on install', opts: [
             { v: 'thermo', label: 'Smart thermostat', price: 129 }, { v: 'doorbell', label: 'Video doorbell', price: 149 },
@@ -275,6 +301,11 @@ export function mountService(slug, testimonials) {
         },
       },
       handyman: {
+        // Live-priced hourly: server base ($95) × quantity (hours). `kind` is carried
+        // to booking but doesn't change the price.
+        live: true,
+        qty: (s) => s.hours,
+        sel: (s) => ({ kind: { general: 'general', mount: 'mount', assemble: 'assemble', multi: 'multi' }[s.kind] }),
         fields: [
           { t: 'seg', k: 'kind', label: 'Task type', def: 'general', opts: [
             { v: 'general', label: 'Small repair' }, { v: 'mount', label: 'Mount / hang' }, { v: 'assemble', label: 'Assembly' }, { v: 'multi', label: 'Punch list' }] },
@@ -346,13 +377,14 @@ export function mountService(slug, testimonials) {
     function applyLivePrice(immediate) {
       const mySeq = ++liveSeq;
       const selections = spec.sel(state);
+      const quantity = spec.qty ? spec.qty(state) : 1; // hourly services price by quantity
       out.classList.add('loading');
       clearTimeout(liveTimer);
       const go = () => {
         fetch(`${API_BASE}/services/${activeSlug}/config/price`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ selections, quantity: 1 }),
+          body: JSON.stringify({ selections, quantity }),
         })
           .then((r) => r.json())
           .then((j) => {
@@ -375,6 +407,10 @@ export function mountService(slug, testimonials) {
 
     function render() {
       const r = spec.compute(state);
+      // Live pricing applies only to numeric states; `ready` gates empty multiselects.
+      const live = spec.live && spec.sel && (r.state === 'PRICED' || r.state === 'FROM');
+      const ready = live && (!spec.ready || spec.ready(state));
+      if (live && !ready) lastLive = null; // nothing selected -> fall back to the offline copy
       let html = '';
       if (r.state === 'QUOTE') {
         html += `<div class="state">Custom estimate</div><div class="amount">Custom<br>Estimate</div>`;
@@ -395,7 +431,8 @@ export function mountService(slug, testimonials) {
       html += `<div class="fineprint">Final price confirmed at booking. Your selection is carried into the booking flow.</div>`;
       if (spec.live) html += `<div class="cfg-load"><span class="cfg-spin"></span></div>`;
       out.innerHTML = html;
-      if (spec.live && spec.sel && (r.state === 'PRICED' || r.state === 'FROM')) applyLivePrice(lastLive == null);
+      if (ready) applyLivePrice(lastLive == null);
+      else if (live) out.classList.remove('loading');
     }
 
     on(host, 'click', (e) => {

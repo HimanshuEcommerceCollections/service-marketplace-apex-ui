@@ -1,7 +1,15 @@
 "use client";
 
+// Customer session context. Mounted ONCE in the root layout (src/app/layout.tsx)
+// so that every page — including the shared <SiteNav/> on the marketing pages —
+// can read the session and render the Sign in link vs the account avatar.
+//
+// On mount it attempts a silent cookie refresh; `loading` stays true until that
+// settles, which is what the nav uses to avoid flashing "Sign in" at a user who
+// is in fact signed in.
+
 import { createContext, useContext, useEffect, useState } from "react";
-import { api, refresh, setAccessToken } from "../lib/api-client";
+import { api, refresh, setAccessToken } from "./api-client";
 
 export interface CustomerUser {
   id: string;
@@ -15,8 +23,16 @@ interface CustomerAuthState {
   user: CustomerUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
+}
+
+/** Avatar label: first + last initial ("Ada Lovelace" → "AL"), single name → first two letters. */
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 const Ctx = createContext<CustomerAuthState | null>(null);
@@ -53,10 +69,10 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     setUser(data.user);
   };
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (name: string, email: string, password: string, phone?: string) => {
     const data = await api<{ user: CustomerUser; accessToken: string }>("/auth/register", {
       method: "POST",
-      body: { name, email, password },
+      body: phone ? { name, email, password, phone } : { name, email, password },
     });
     setAccessToken(data.accessToken);
     setUser(data.user);

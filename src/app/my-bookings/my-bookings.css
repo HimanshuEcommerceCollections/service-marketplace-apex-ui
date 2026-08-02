@@ -1,0 +1,70 @@
+/* /my-bookings — the signed-in customer's booking history.
+   Sits on the shared chrome (chrome.css supplies the tokens + the floating nav
+   and footer), so this sheet only styles the page body. */
+
+.pg-mybookings { background: var(--paper); min-height: 100vh; }
+
+.mb-wrap { max-width: 940px; margin: 0 auto; padding: calc(var(--nav-h) + 54px) clamp(20px, 5vw, 32px) 96px; }
+
+.mb-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 8px; }
+.mb-head h1 {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 4vw, 44px);
+  letter-spacing: -0.03em; line-height: 1.06; color: var(--ink);
+}
+.mb-sub { margin-top: 10px; font-size: 15px; color: var(--slate7); }
+.mb-count { font-size: 13px; font-weight: 600; color: var(--slate4); }
+
+.mb-note {
+  margin: 22px 0 0; padding: 13px 16px; border-radius: 13px; font-size: 13.5px;
+  background: var(--clay-tint, #f6ebe1); color: #8a4f22; border: 1px solid #ecd6c3;
+}
+
+.mb-list { list-style: none; padding: 0; margin: 30px 0 0; display: grid; gap: 12px; }
+.mb-item {
+  background: linear-gradient(180deg, #fff, #fdfbf7); border: 1px solid var(--line);
+  border-radius: 18px; padding: 20px 22px; display: flex; align-items: center;
+  justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  box-shadow: 0 18px 46px -34px rgba(20, 40, 60, 0.5);
+  transition: transform var(--dur-quick) var(--ease-settle), box-shadow var(--dur-quick);
+}
+.mb-item:hover { transform: translateY(-1px); box-shadow: 0 22px 52px -30px rgba(20, 40, 60, 0.55); }
+.mb-item-main { min-width: 0; }
+.mb-item h2 {
+  font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.015em;
+  color: var(--ink); margin-bottom: 5px;
+}
+.mb-meta { font-size: 13px; color: var(--slate4); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.mb-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--line); flex: 0 0 auto; }
+.mb-ref { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--slate7); }
+.mb-item-side { text-align: right; display: grid; gap: 6px; justify-items: end; }
+.mb-price { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.mb-badge {
+  display: inline-block; padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; background: var(--mist); color: var(--slate7);
+}
+.mb-badge.is-confirmed, .mb-badge.is-paid { background: #e6f2ec; color: var(--confirm); }
+.mb-badge.is-completed { background: var(--bblue-tint); color: var(--bblue-deep); }
+.mb-badge.is-cancelled { background: #fbeae4; color: #b0492c; }
+.mb-badge.is-pending, .mb-badge.is-awaiting_payment { background: #f7ecdf; color: var(--attention); }
+
+/* empty / loading / signed-out states */
+.mb-empty {
+  margin-top: 30px; padding: 54px 28px; text-align: center; border-radius: 22px;
+  border: 1px dashed var(--line); background: rgba(255, 255, 255, 0.6);
+}
+.mb-empty h2 { font-family: var(--font-display); font-weight: 800; font-size: 21px; letter-spacing: -0.02em; color: var(--ink); }
+.mb-empty p { margin-top: 8px; font-size: 14.5px; color: var(--slate7); }
+.mb-cta {
+  display: inline-flex; align-items: center; gap: 9px; margin-top: 20px; padding: 13px 26px;
+  border-radius: 999px; background: var(--bblue); color: #fff; font-weight: 700; font-size: 14.5px;
+  box-shadow: 0 12px 30px -12px rgba(27, 83, 110, 0.8);
+  transition: background var(--dur-quick), box-shadow var(--dur-quick), transform var(--dur-quick) var(--ease-settle);
+}
+.mb-cta:hover { background: var(--bblue-deep); transform: translateY(-1px); box-shadow: 0 16px 38px -12px rgba(27, 83, 110, 0.9); }
+.mb-muted { margin-top: 30px; font-size: 14.5px; color: var(--slate4); }
+
+@media (max-width: 560px) {
+  .mb-item { align-items: flex-start; }
+  .mb-item-side { text-align: left; justify-items: start; }
+}

@@ -1,0 +1,316 @@
+/* Split-screen auth design (apex-auth.html) ported for /login and /signup.
+ *
+ * Everything is scoped under `.apexauth` so the generic class names the design
+ * uses (.btn, .link, .chip, .brand, .view, .row-between …) can't leak into — or
+ * be hit by — the marketing chrome, the admin sheet, or the legacy auth.css that
+ * still styles /forgot-password, /reset-password, /verify-email and /book.
+ *
+ * The segmented Sign In / Create Account toggle is real routing: each half links
+ * to /login or /signup and the pill slides based on the `signup` class the page
+ * sets from its own mode. Fonts come from next/font via --font-archivo/--font-inter.
+ */
+
+.apexauth {
+  --paper: #fcfbf8;
+  --mist: #f1efe9;
+  --line: #e4e1d9;
+  --ink: #111a24;
+  --ink2: #1a2230;
+  --slate7: #33414f;
+  --slate4: #7a8794;
+  --azure: #6fb4d6;
+  --confirm: #2f7a5b;
+  --attention: #b5622e;
+  --danger: #c0553a;
+  --bblue: #1b536e;
+  --bblue-deep: #123e54;
+  --bblue-tint: #e7eff3;
+  --surface: #f5f6f8;
+  --dur-quick: 0.24s;
+  --dur-base: 0.45s;
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-crisp: cubic-bezier(0.4, 0, 0.2, 1);
+  --font-display: var(--font-archivo), "Archivo", "Segoe UI", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  --font-body: var(--font-inter), "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+
+  font-family: var(--font-body);
+  color: var(--ink2);
+  background: var(--paper);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+.apexauth *,
+.apexauth *::before,
+.apexauth *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.apexauth ::selection { background: var(--bblue-tint); color: var(--bblue-deep); }
+.apexauth a { color: inherit; text-decoration: none; }
+.apexauth img, .apexauth video { display: block; max-width: 100%; }
+.apexauth .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--slate4); }
+.apexauth .reveal { opacity: 0; transform: translateY(20px); }
+@media (prefers-reduced-motion: reduce) {
+  .apexauth .reveal { opacity: 1; transform: none; }
+}
+
+/* ===== BUTTONS ===== */
+.apexauth .btn {
+  position: relative; font-family: var(--font-body); font-weight: 600; font-size: 15.5px;
+  letter-spacing: -0.01em; padding: 15px 28px; border-radius: 999px; display: inline-flex;
+  align-items: center; justify-content: center; gap: 10px; cursor: pointer; border: 0;
+  overflow: hidden; will-change: transform;
+  transition: transform var(--dur-quick) var(--ease-settle), background var(--dur-quick),
+    box-shadow var(--dur-quick), color var(--dur-quick), opacity var(--dur-quick);
+}
+.apexauth .btn .btn-inner { display: inline-flex; align-items: center; gap: 10px; position: relative; z-index: 2; }
+.apexauth .btn .arrow { transition: transform var(--dur-base) var(--ease-settle); }
+.apexauth .btn:hover .arrow { transform: translateX(4px); }
+.apexauth .btn-brand { background: var(--bblue); color: #fff; box-shadow: 0 12px 32px -12px rgba(27, 83, 110, 0.85); }
+.apexauth .btn-brand:hover { background: var(--bblue-deep); box-shadow: 0 18px 42px -12px rgba(27, 83, 110, 0.95); }
+.apexauth .btn-block { width: 100%; }
+.apexauth .btn:disabled { opacity: 0.75; cursor: default; }
+.apexauth .spin {
+  width: 19px; height: 19px; border-radius: 50%; border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff; animation: apxspin 0.7s linear infinite;
+}
+@keyframes apxspin { to { transform: rotate(360deg); } }
+
+/* Social sign-in — rendered disabled until OAuth ships. */
+.apexauth .btn-social {
+  background: #fff; color: var(--ink); border: 1px solid var(--line); font-weight: 600;
+  font-size: 14.5px; padding: 13px 20px; width: 100%;
+}
+.apexauth .btn-social svg { width: 19px; height: 19px; flex: 0 0 auto; }
+.apexauth .btn-social:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(1); }
+.apexauth .btn-social .soon {
+  margin-left: auto; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--slate4); background: var(--surface); border-radius: 999px; padding: 3px 9px;
+}
+
+/* ===== LAYOUT ===== */
+.apexauth-grid { display: grid; grid-template-columns: 55% 45%; min-height: 100vh; }
+@media (max-width: 960px) { .apexauth-grid { grid-template-columns: 1fr; } }
+
+/* left showcase */
+.apexauth .show {
+  position: relative; overflow: hidden; display: flex; flex-direction: column;
+  justify-content: space-between; padding: clamp(26px, 4vw, 52px); color: #fff;
+  background: radial-gradient(120% 90% at 85% 8%, rgba(111, 180, 214, 0.32), transparent 55%),
+    radial-gradient(90% 90% at 0% 100%, rgba(201, 123, 74, 0.16), transparent 58%),
+    linear-gradient(160deg, #14435a, #0e3345 55%, #0a2836);
+}
+@media (max-width: 960px) { .apexauth .show { min-height: 38vh; padding-bottom: 70px; } }
+.apexauth .show-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(160, 214, 236, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160, 214, 236, 0.09) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(110% 90% at 40% 40%, #000, transparent 78%);
+  -webkit-mask-image: radial-gradient(110% 90% at 40% 40%, #000, transparent 78%);
+}
+.apexauth .show-grain {
+  position: absolute; inset: 0; background: var(--grain); background-size: 150px;
+  opacity: 0.07; mix-blend-mode: overlay; pointer-events: none;
+}
+.apexauth .show-particles { position: absolute; inset: 0; pointer-events: none; }
+.apexauth .show .brand {
+  position: relative; z-index: 3; display: inline-flex; align-items: center; gap: 11px;
+  color: #fff; width: fit-content;
+}
+.apexauth .bmark {
+  width: 42px; height: 42px; flex: 0 0 auto; border-radius: 11px; overflow: hidden;
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.5);
+  transition: transform var(--dur-quick) var(--ease-settle);
+}
+.apexauth .bmark img { width: 100%; height: 100%; object-fit: cover; }
+.apexauth .brand:hover .bmark { transform: translateY(-1px); }
+.apexauth .bname {
+  font-family: var(--font-display); font-weight: 800; font-size: 16.5px; letter-spacing: -0.02em;
+  line-height: 1.05; display: flex; flex-direction: column;
+}
+.apexauth .bname small {
+  font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.65);
+}
+.apexauth .show-mid { position: relative; z-index: 3; max-width: 520px; }
+.apexauth .show-mid h2 {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.08; letter-spacing: -0.03em; text-shadow: 0 2px 26px rgba(8, 20, 30, 0.4);
+}
+.apexauth .show-mid p { margin-top: 14px; font-size: 15px; color: rgba(255, 255, 255, 0.78); line-height: 1.6; max-width: 400px; }
+.apexauth .show-chips {
+  position: relative; z-index: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  max-width: 520px; margin-top: clamp(22px, 3vw, 38px);
+}
+@media (max-width: 520px) { .apexauth .show-chips { grid-template-columns: 1fr; } }
+.apexauth .chip {
+  position: relative; background: rgba(255, 255, 255, 0.09); border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-radius: 16px;
+  padding: 15px 16px; color: #fff; box-shadow: 0 18px 44px -24px rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; gap: 12px; overflow: hidden; will-change: transform;
+}
+.apexauth .chip::after {
+  content: ""; position: absolute; inset: 0; background: var(--grain); background-size: 150px;
+  opacity: 0.06; mix-blend-mode: overlay; pointer-events: none;
+}
+.apexauth .chip .chip-ic {
+  width: 36px; height: 36px; flex: 0 0 auto; border-radius: 10px; background: rgba(111, 180, 214, 0.22);
+  display: flex; align-items: center; justify-content: center; color: #dff0f8;
+}
+.apexauth .chip .chip-ic svg { width: 19px; height: 19px; stroke-width: 1.9; }
+.apexauth .chip h4 { font-family: var(--font-display); font-weight: 700; font-size: 13.5px; letter-spacing: -0.01em; }
+.apexauth .chip p { font-size: 11.5px; color: rgba(255, 255, 255, 0.68); margin-top: 1px; line-height: 1.35; }
+.apexauth .show-foot {
+  position: relative; z-index: 3; font-size: 12px; color: rgba(255, 255, 255, 0.5);
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.apexauth .show-foot .dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); }
+@media (max-width: 960px) {
+  .apexauth .show-mid p { display: none; }
+  .apexauth .show-foot { display: none; }
+}
+
+/* right pane */
+.apexauth .pane {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  padding: clamp(26px, 4vw, 56px) clamp(20px, 4vw, 56px); background: var(--paper);
+}
+.apexauth .pane::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(70% 50% at 80% 0%, rgba(111, 180, 214, 0.08), transparent 60%);
+  pointer-events: none;
+}
+.apexauth .auth-card {
+  position: relative; width: 100%; max-width: 480px;
+  background: linear-gradient(180deg, #fff, #fdfbf7); border: 1px solid var(--line);
+  border-radius: 26px; padding: clamp(28px, 3.4vw, 44px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 30px 80px -42px rgba(20, 40, 60, 0.45);
+}
+@media (max-width: 960px) { .apexauth .auth-card { margin: -54px auto 0; z-index: 5; } }
+.apexauth .auth-head h1 {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(26px, 2.6vw, 34px);
+  letter-spacing: -0.03em; color: var(--ink); line-height: 1.08;
+}
+.apexauth .auth-head p { margin-top: 10px; font-size: 14.5px; color: var(--slate7); line-height: 1.55; }
+.apexauth .auth-body { margin-top: 26px; display: flex; flex-direction: column; gap: 16px; }
+
+/* server/API error banner */
+.apexauth .auth-alert {
+  border-radius: 13px; padding: 12px 15px; font-size: 13.5px; font-weight: 500;
+  background: #fdf1ed; color: #9c3f26; border: 1px solid #f0cec2;
+}
+
+/* ===== floating-label fields ===== */
+.apexauth .ffld { position: relative; }
+.apexauth .ffld input {
+  width: 100%; font-family: var(--font-body); font-size: 15px; color: var(--ink2); background: #fff;
+  border: 1px solid var(--line); border-radius: 13px; padding: 22px 15px 9px;
+  transition: border-color var(--dur-quick), box-shadow var(--dur-quick);
+}
+.apexauth .ffld input:focus { outline: 0; border-color: var(--bblue); box-shadow: 0 0 0 4px var(--bblue-tint); }
+.apexauth .ffld label {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 14.5px;
+  color: var(--slate4); pointer-events: none; transition: all var(--dur-quick) var(--ease-settle);
+}
+.apexauth .ffld input:focus + label,
+.apexauth .ffld input:not(:placeholder-shown) + label {
+  top: 13px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; color: var(--slate7);
+}
+.apexauth .ffld input:focus + label { color: var(--bblue); }
+.apexauth .ffld input::placeholder { color: transparent; }
+.apexauth .ffld.has-toggle input { padding-right: 48px; }
+.apexauth .ffld .eye {
+  position: absolute; right: 8px; top: 30px; transform: translateY(-50%); width: 36px; height: 36px;
+  border: 0; background: none; border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; color: var(--slate4); cursor: pointer;
+  transition: color var(--dur-quick), background var(--dur-quick);
+}
+.apexauth .ffld .eye:hover { color: var(--slate7); background: var(--surface); }
+.apexauth .ffld .eye:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--bblue-tint); }
+.apexauth .ffld .eye svg { width: 19px; height: 19px; stroke-width: 1.9; }
+
+/* validation states */
+.apexauth .ffld .msg {
+  display: block; font-size: 12px; color: var(--danger); margin-top: 6px; max-height: 0; opacity: 0;
+  overflow: hidden; transition: opacity var(--dur-quick), max-height var(--dur-quick);
+}
+.apexauth .ffld.err input { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(192, 85, 58, 0.1); }
+.apexauth .ffld.err label { color: var(--danger); }
+.apexauth .ffld.err .msg { max-height: 40px; opacity: 1; }
+.apexauth .ffld.err.shake input { animation: apxshake 0.4s var(--ease-crisp); }
+@keyframes apxshake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  55% { transform: translateX(4px); }
+  80% { transform: translateX(-2px); }
+}
+@media (prefers-reduced-motion: reduce) { .apexauth .ffld.err.shake input { animation: none; } }
+.apexauth .ffld.ok input { border-color: #8fc4ab; }
+.apexauth .ffld .tick {
+  position: absolute; right: 14px; top: 30px; transform: translateY(-50%) scale(0); width: 20px;
+  height: 20px; border-radius: 50%; background: var(--confirm); color: #fff; display: flex;
+  align-items: center; justify-content: center; transition: transform var(--dur-quick) var(--ease-settle);
+}
+.apexauth .ffld .tick svg { width: 11px; height: 11px; stroke-width: 3; }
+.apexauth .ffld.ok .tick { transform: translateY(-50%) scale(1); }
+.apexauth .ffld.has-toggle .tick { right: 48px; }
+
+/* strength meter */
+.apexauth .meter { display: flex; gap: 5px; margin-top: 8px; }
+.apexauth .meter i { flex: 1; height: 3.5px; border-radius: 3px; background: var(--line); transition: background var(--dur-base) var(--ease-settle); }
+.apexauth .meter[data-s="1"] i:nth-child(1) { background: var(--danger); }
+.apexauth .meter[data-s="2"] i:nth-child(-n + 2) { background: var(--attention); }
+.apexauth .meter[data-s="3"] i:nth-child(-n + 3) { background: #9ab86a; }
+.apexauth .meter[data-s="4"] i { background: var(--confirm); }
+.apexauth .meter-lab { font-size: 11.5px; color: var(--slate4); margin-top: 5px; }
+
+/* row utilities */
+.apexauth .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.apexauth .link { color: var(--bblue); font-weight: 600; font-size: 13.5px; transition: color var(--dur-quick); }
+.apexauth .link:hover { color: var(--bblue-deep); text-decoration: underline; }
+
+/* checkbox */
+.apexauth .chk { display: flex; gap: 11px; align-items: flex-start; cursor: pointer; user-select: none; }
+.apexauth .chk input { position: absolute; opacity: 0; width: 0; height: 0; }
+.apexauth .chk .box {
+  width: 21px; height: 21px; flex: 0 0 auto; border-radius: 7px; border: 1.5px solid var(--line);
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  transition: all var(--dur-quick) var(--ease-settle);
+}
+.apexauth .chk .box svg { width: 12px; height: 12px; color: #fff; opacity: 0; transform: scale(0.5); transition: all var(--dur-quick) var(--ease-settle); }
+.apexauth .chk input:checked + .box { background: var(--bblue); border-color: var(--bblue); }
+.apexauth .chk input:checked + .box svg { opacity: 1; transform: scale(1); }
+.apexauth .chk input:focus-visible + .box { box-shadow: 0 0 0 4px var(--bblue-tint); }
+.apexauth .chk .txt { font-size: 13.5px; color: var(--slate7); line-height: 1.45; }
+.apexauth .chk.err .box { border-color: var(--danger); }
+
+/* divider + footer */
+.apexauth .div { display: flex; align-items: center; gap: 14px; color: var(--slate4); font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; }
+.apexauth .div::before, .apexauth .div::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.apexauth .socials-col { display: flex; flex-direction: column; gap: 11px; }
+.apexauth .auth-foot { margin-top: 22px; text-align: center; font-size: 14px; color: var(--slate7); }
+.apexauth .auth-foot .link { font-size: 14px; }
+
+/* ===== segmented Sign In / Create Account toggle ===== */
+.apexauth .seg {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin-bottom: 24px;
+}
+.apexauth .seg .seg-pill {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); background: #fff;
+  border-radius: 999px; box-shadow: 0 6px 16px -8px rgba(20, 40, 60, 0.35);
+  transition: transform var(--dur-base) var(--ease-settle);
+}
+.apexauth .seg.signup .seg-pill { transform: translateX(100%); }
+.apexauth .seg a {
+  position: relative; z-index: 2; text-align: center; font-family: var(--font-body); font-weight: 600;
+  font-size: 13.5px; color: var(--slate4); padding: 9px 0; border-radius: 999px;
+  transition: color var(--dur-quick);
+}
+.apexauth .seg a.on { color: var(--ink); }
+.apexauth .seg a:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--bblue-tint); }
+
+/* view entrance */
+.apexauth .view { animation: apxviewIn 0.45s var(--ease-settle); }
+@keyframes apxviewIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .apexauth .view { animation: none; } }

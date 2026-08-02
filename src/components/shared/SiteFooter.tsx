@@ -31,8 +31,8 @@ const companyCol = [
   { label: 'How it works', href: '/how-it-works' },
   { label: 'Plans', href: '/membership-plans' },
   { label: 'Service area', href: '/service-area' },
-  { label: 'Property managers', href: '/#showcase' },
-  { label: 'Become a pro', href: '/book' },
+  { label: 'Property managers', href: '/property-managers' },
+  { label: 'Become a pro', href: '/become-a-pro' },
   { label: 'FAQ', href: '/#faq' },
 ];
 

@@ -34,7 +34,7 @@ export default function VerifyEmailPage() {
           {state === "notoken" && <div className="auth-alert err">This verification link is invalid.</div>}
           {state === "error" && <div className="auth-alert err">{msg || "This link is invalid or has expired."}</div>}
           {state === "ok" && <div className="auth-alert ok">Your email is verified. Thank you!</div>}
-          <p className="auth-foot"><Link href="/account">Go to my account →</Link></p>
+          <p className="auth-foot"><Link href="/my-bookings">Go to my bookings →</Link></p>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Archivo, Inter } from 'next/font/google';
+import { CustomerAuthProvider } from './lib/customer-auth';
 
 // Self-hosted equivalents of the original Google Fonts <link>:
 //   Archivo (display) + Inter (body). Exposed as CSS variables that
@@ -24,10 +25,16 @@ export const metadata: Metadata = {
   description: 'Premium home services, professionally delivered across Wake County, NC.',
 };
 
+// The layout stays chrome-free (no nav/footer markup) — it only wires fonts and
+// the customer session provider. The provider has to live here rather than in the
+// (customer) route group because the shared <SiteNav/> renders on every marketing
+// page and needs the session to decide between "Sign in" and the account avatar.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${archivo.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        <CustomerAuthProvider>{children}</CustomerAuthProvider>
+      </body>
     </html>
   );
 }

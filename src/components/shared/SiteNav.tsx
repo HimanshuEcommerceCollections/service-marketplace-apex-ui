@@ -11,9 +11,16 @@
 // the .navtoggle hamburger opens a slide-down panel by adding `.open` to #nav
 // (panel styling lives in the chrome sheets). The panel closes on route change
 // (usePathname) and on any link tap.
+//
+// The trailing <NavAuth/> is the session control: "Sign in" when signed out, an
+// initials avatar with a My Bookings / Logout menu when signed in. Its styles
+// live in app/nav-auth.css, imported here so they load with the nav itself
+// instead of being duplicated into both apex.css and chrome.css.
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import NavAuth from './NavAuth';
+import '../../app/nav-auth.css';
 
 const services = [
   { label: 'Cleaning', href: '/services/house-cleaning' },
@@ -82,13 +89,14 @@ export default function SiteNav() {
           <Link href="/membership-plans" onClick={close}>Plans</Link>
           <Link href="/pricing" onClick={close}>Pricing</Link>
           <Link href="/service-area" onClick={close}>Service area</Link>
-          <Link href="/#showcase" onClick={close}>For property managers</Link>
-          <Link href="/book" className="becomepro" onClick={close}>
+          <Link href="/property-managers" onClick={close}>For property managers</Link>
+          <Link href="/become-a-pro" className="becomepro" onClick={close}>
             Become a pro
           </Link>
           <Link className="nav-cta magnetic" href="/book" onClick={close}>
             Book now
           </Link>
+          <NavAuth onNavigate={close} />
         </div>
         <button
           className="navtoggle"

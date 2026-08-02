@@ -3,7 +3,7 @@ import '../../chrome.css';
 import '../service.css';
 import '../../testimonials.css';
 import LawnCarePage from '../../../components/lawncare/LawnCarePage';
-import { livePrice } from '../../../lib/catalog';
+import { getRecurringSection, livePrice } from '../../../lib/catalog';
 
 export const metadata: Metadata = {
   // Preserved from the source document.
@@ -13,5 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  return <LawnCarePage heroPrice={await livePrice('lawn-care')} />;
+  return (
+    <LawnCarePage heroPrice={await livePrice('lawn-care')} recurring={await getRecurringSection('lawn-care')} />
+  );
 }

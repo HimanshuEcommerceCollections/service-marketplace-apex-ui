@@ -4,10 +4,24 @@
 // build/prerender and on revalidation; if the API is unreachable they resolve to
 // null so pages fall back to their static content instead of failing the build.
 
+import type { ServiceConfig, ServicePlan } from "../data/serviceContent";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const TTL_SECONDS = 300;
 
 export type PricingMode = "PRICED" | "FROM" | "QUOTE";
+
+/** One "Recurring plans" card (service detail only; admin-controlled). */
+export interface RecurringPlanView {
+  id: string;
+  name: string;
+  freq: string;
+  amount: string;
+  unit: string | null;
+  disc: string | null;
+  best: boolean;
+  cta: string;
+}
 
 export interface CatalogService {
   id: string;
@@ -21,6 +35,9 @@ export interface CatalogService {
   isRecurringEligible: boolean;
   typicalDuration: string | null; // e.g. "2–3 hrs"
   recurringDiscount: string | null; // e.g. "up to 15%"
+  // Detail-only (GET /services/:slug): the service page's Recurring section.
+  recurringHeading?: string | null;
+  recurringPlans?: RecurringPlanView[];
 }
 
 export interface MembershipPlanView {
@@ -83,13 +100,51 @@ export async function livePrice(slug: string): Promise<string | undefined> {
   return svc?.fromPrice != null ? formatFromPrice(svc.fromPrice, svc.currency) : undefined;
 }
 
-/** Overlay a shared service page's hero "from" price with the live catalog value (by slug). */
-export async function overlayHeroPrice<T extends { content: { hero: { price: string } } }>(
-  config: T,
-  slug: string,
-): Promise<T> {
-  const label = await livePrice(slug);
-  return label
-    ? { ...config, content: { ...config.content, hero: { ...config.content.hero, price: label } } }
-    : config;
+/** A service page's Recurring section (admin-controlled), or null if none is configured. */
+export interface RecurringSection {
+  heading: string; // "" when the admin hasn't set one — callers fall back to their own copy
+  plans: ServicePlan[];
+}
+
+/** Map the API's recurring cards to the shape the <Recurring/> component renders. */
+function toRecurringPlans(svc: CatalogService): ServicePlan[] | null {
+  if (!svc.recurringPlans?.length) return null;
+  return svc.recurringPlans.map((p) => ({
+    name: p.name,
+    freq: p.freq,
+    amount: p.amount,
+    unit: p.unit ?? undefined,
+    disc: p.disc ?? undefined,
+    best: p.best || undefined,
+    choose: p.cta,
+  }));
+}
+
+/**
+ * Overlay a shared <ServicePage/> config with live catalog data: the hero "from"
+ * price and the whole Recurring section (heading + plans). Falls back to the
+ * static content per-field when the API is down or a field isn't configured.
+ */
+export async function overlayServicePage(config: ServiceConfig, slug: string): Promise<ServiceConfig> {
+  const svc = await getService(slug);
+  if (!svc) return config;
+  const hero =
+    svc.fromPrice != null
+      ? { ...config.content.hero, price: formatFromPrice(svc.fromPrice, svc.currency) }
+      : config.content.hero;
+  const plans = toRecurringPlans(svc);
+  const recurring = plans ? { heading: svc.recurringHeading || config.recurring.heading, plans } : config.recurring;
+  return { ...config, content: { ...config.content, hero }, recurring };
+}
+
+/**
+ * Live Recurring section for a service by slug — used by the dedicated (non-shared)
+ * pages (cleaning, lawn care) that keep their plans in the component. Returns null
+ * so the page falls back to its hardcoded plans.
+ */
+export async function getRecurringSection(slug: string): Promise<RecurringSection | null> {
+  const svc = await getService(slug);
+  if (!svc) return null;
+  const plans = toRecurringPlans(svc);
+  return plans ? { heading: svc.recurringHeading ?? "", plans } : null;
 }

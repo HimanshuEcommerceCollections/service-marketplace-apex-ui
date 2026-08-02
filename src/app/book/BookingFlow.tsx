@@ -3,7 +3,7 @@
 import "../auth.css";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useCustomerAuth } from "../(customer)/customer-auth";
+import { useCustomerAuth } from "../lib/customer-auth";
 import { api, ApiError } from "../lib/api-client";
 
 type Mode = "PRICED" | "FROM" | "QUOTE";
@@ -35,7 +35,7 @@ function Shell({ step, children }: { step: string; children: React.ReactNode }) 
       <div className="bk-wrap">
         <div className="bk-head">
           <h1>Book a service</h1>
-          <Link className="auth-linkbtn" href="/account">My account</Link>
+          <Link className="auth-linkbtn" href="/my-bookings">My bookings</Link>
         </div>
         <div className="bk-steps">
           {STEPS.map((s) => (
@@ -253,7 +253,7 @@ export default function BookingFlow() {
             <>
               <div className="auth-alert ok">Booking received!</div>
               <p>Your reference is <strong>{result.reference}</strong>. A coordinator will confirm shortly.</p>
-              <p className="auth-foot"><Link href="/account">View my bookings →</Link></p>
+              <p className="auth-foot"><Link href="/my-bookings">View my bookings →</Link></p>
             </>
           ) : (
             <>

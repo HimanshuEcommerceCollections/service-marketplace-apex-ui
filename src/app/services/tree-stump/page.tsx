@@ -3,7 +3,7 @@ import '../../chrome.css';
 import '../service.css';
 import '../../testimonials.css';
 import ServicePage from '../../../components/service/ServicePage';
-import { overlayHeroPrice } from '../../../lib/catalog';
+import { overlayServicePage } from '../../../lib/catalog';
 import { content } from '../../../data/services/tree-stump/content';
 
 // TODO(design): update metadata when the Tree & Stump design is delivered.
@@ -13,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  return <ServicePage config={await overlayHeroPrice(content, 'tree-stump')} />;
+  return <ServicePage config={await overlayServicePage(content, 'tree-stump')} />;
 }
