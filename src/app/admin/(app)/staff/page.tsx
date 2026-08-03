@@ -80,19 +80,26 @@ export default function StaffPage() {
     }
   }
 
-  /** Pending invites only: deletes the account so the emailed link stops working. */
-  async function revokeInvite(u: StaffUser) {
-    if (!window.confirm(`Revoke the invite for ${u.email}? Their invite link stops working immediately and the account is removed.`)) {
-      return;
-    }
+  /**
+   * Soft delete. The account keeps its row (bookings and assignments reference
+   * it) but can no longer sign in, hold a session, or redeem an outstanding
+   * invite link, and it drops off this list.
+   */
+  async function remove(u: StaffUser) {
+    const pending = u.status === "INVITED";
+    const question = pending
+      ? `Revoke the invite for ${u.email}? Their invite link stops working immediately.`
+      : `Delete ${u.name} (${u.email})? They are signed out everywhere and can no longer sign in. Their booking and assignment history is kept.`;
+    if (!window.confirm(question)) return;
+
     setErr(null);
     setNotice(null);
     try {
       await api(`/admin/users/${u.id}`, { method: "DELETE" });
-      setNotice(`Invite for ${u.email} revoked.`);
+      setNotice(pending ? `Invite for ${u.email} revoked.` : `${u.email} deleted.`);
       await load();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Could not revoke the invite");
+      setErr(e instanceof ApiError ? e.message : pending ? "Could not revoke the invite" : "Could not delete the account");
     }
   }
 
@@ -157,19 +164,21 @@ export default function StaffPage() {
                   <span className={`ax-badge ${statusBadge[u.status]}`}>{u.status}</span>
                 </td>
                 <td>
-                  {u.status === "SUSPENDED" ? (
-                    <button className="ax-btn ghost sm" onClick={() => void setStatus(u.id, "ACTIVE")}>
-                      Reactivate
+                  <div className="ax-row" style={{ gap: 8, justifyContent: "flex-end" }}>
+                    {u.status === "SUSPENDED" && (
+                      <button className="ax-btn ghost sm" onClick={() => void setStatus(u.id, "ACTIVE")}>
+                        Reactivate
+                      </button>
+                    )}
+                    {u.status === "ACTIVE" && (
+                      <button className="ax-btn ghost sm" onClick={() => void setStatus(u.id, "SUSPENDED")}>
+                        Suspend
+                      </button>
+                    )}
+                    <button className="ax-btn danger sm" onClick={() => void remove(u)}>
+                      {u.status === "INVITED" ? "Revoke invite" : "Delete"}
                     </button>
-                  ) : u.status === "ACTIVE" ? (
-                    <button className="ax-btn danger sm" onClick={() => void setStatus(u.id, "SUSPENDED")}>
-                      Suspend
-                    </button>
-                  ) : (
-                    <button className="ax-btn danger sm" onClick={() => void revokeInvite(u)}>
-                      Revoke invite
-                    </button>
-                  )}
+                  </div>
                 </td>
               </tr>
             ))}
