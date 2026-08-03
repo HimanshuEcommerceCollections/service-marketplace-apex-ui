@@ -69,12 +69,27 @@ img,svg,video{display:block}
 .pg-pro .sec-head h2{font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;line-height:1.04;font-size:clamp(28px,4vw,50px);color:var(--ink2);margin-top:12px}
 .pg-pro .sec-head p.lede{margin:14px auto 0;color:var(--slate7);font-size:clamp(15px,1.3vw,17px);line-height:1.6}
 
-/* ---------- HERO ---------- */
+/* ---------- HERO ----------
+   Layer order inside .pro-hero: video 0, veil 1, grid + glow 1 (above the veil by
+   DOM order), particles 2, copy + chips + scroll indicator 3. The gradient below
+   stays as the video's fallback — it shows until the first frame decodes and is
+   what you see if the file is missing. */
 .pg-pro .pro-hero{position:relative;overflow:hidden;isolation:isolate;min-height:clamp(600px,90vh,880px);display:flex;align-items:center;
   margin:14px clamp(12px,2.6vw,34px) clamp(34px,4vw,56px);border-radius:34px;
   background:radial-gradient(120% 90% at 82% 8%,rgba(111,180,214,.20),transparent 55%),
     radial-gradient(90% 80% at 6% 100%,rgba(201,123,74,.10),transparent 60%),
     linear-gradient(180deg,#0f3040 0%,#123e54 42%,#0e3345 100%)}
+.pg-pro .pro-hero-vid{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+/* Graded across so the copy column stays legible while the right side (chips)
+   keeps more of the footage visible. */
+.pg-pro .pro-hero-veil{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(100deg,rgba(9,32,44,.88) 0%,rgba(12,40,54,.66) 46%,rgba(12,40,54,.34) 100%),
+             linear-gradient(0deg,rgba(9,32,44,.6),transparent 46%)}
+/* Single-column below 900px: the copy no longer sits in the veil's dark left
+   band, so darken the whole overlay instead of grading it across. */
+@media(max-width:900px){
+  .pg-pro .pro-hero-veil{background:linear-gradient(180deg,rgba(9,32,44,.88),rgba(12,40,54,.72) 60%,rgba(12,40,54,.58))}
+}
 .pg-pro .pro-hero-grid{position:absolute;inset:0;z-index:1;pointer-events:none;
   background-image:linear-gradient(rgba(160,214,236,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(160,214,236,.10) 1px,transparent 1px);
   background-size:52px 52px;mask-image:radial-gradient(120% 100% at 70% 20%,#000,transparent 78%);-webkit-mask-image:radial-gradient(120% 100% at 70% 20%,#000,transparent 78%)}
@@ -95,12 +110,36 @@ img,svg,video{display:block}
 .pg-pro .pro-hero .btn-line{border-color:rgba(255,255,255,.5);color:#fff;background:rgba(255,255,255,.05)}
 .pg-pro .pro-hero .btn-line:hover{background:rgba(255,255,255,.14)}
 .pg-pro .hero-chips{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-content:center}
-.pg-pro .hchip{position:relative;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border-radius:18px;padding:20px 20px 18px;color:#fff;box-shadow:0 20px 50px -24px rgba(0,0,0,.6)}
-.pg-pro .hchip .ci{width:40px;height:40px;border-radius:11px;background:rgba(111,180,214,.24);display:grid;place-items:center;color:#dff0f8;margin-bottom:14px}
+/* Frosted glass over the hero video — same treatment as the property-managers
+   hero chips, and for the same reason: a flat white tint reads as a scrim once
+   there is footage moving behind it. Four layers do the work: a heavier blur +
+   saturate/brightness on what shows through; a diagonal white gradient so the
+   panel looks like a lit pane; a specular bloom off the top-left (kept in
+   `background` rather than a ::before so it can't wash over the chip's own text);
+   and inset hairlines top and bottom over a deeper drop shadow. */
+.pg-pro .hchip{position:relative;border-radius:18px;padding:20px 20px 18px;color:#fff;
+  background:radial-gradient(120% 90% at 8% -18%,rgba(255,255,255,.30),transparent 56%),
+    linear-gradient(150deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,.09) 48%,rgba(255,255,255,.15) 100%);
+  border:1px solid rgba(255,255,255,.30);
+  backdrop-filter:blur(28px) saturate(150%) brightness(112%);
+  -webkit-backdrop-filter:blur(28px) saturate(150%) brightness(112%);
+  box-shadow:0 28px 64px -26px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -1px 0 rgba(255,255,255,.12)}
+/* No backdrop-filter (older Firefox, blur disabled): lean on an opaque teal wash
+   so the copy keeps its contrast against the video instead of going murky. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .pg-pro .hchip{background:radial-gradient(120% 90% at 8% -18%,rgba(255,255,255,.22),transparent 56%),
+    linear-gradient(150deg,rgba(23,58,78,.78),rgba(14,42,58,.86))}
+}
+.pg-pro .hchip .ci{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#eaf6fc;margin-bottom:14px;
+  background:linear-gradient(155deg,rgba(160,214,236,.38),rgba(111,180,214,.20));
+  border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .pg-pro .hchip .ci svg{width:21px;height:21px;stroke-width:1.9}
 .pg-pro .hchip h4{font-family:var(--font-display);font-weight:700;font-size:15.5px;letter-spacing:-.01em;color:#fff}
-.pg-pro .hchip p{font-size:12.5px;color:rgba(255,255,255,.72);margin-top:3px;line-height:1.45}
+/* Nudged up from .72: the panel is brighter now, so the caption needs a little
+   more weight to keep the same contrast against it. */
+.pg-pro .hchip p{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px;line-height:1.45;text-shadow:0 1px 8px rgba(6,22,32,.35)}
 .pg-pro .hchip:nth-child(2){margin-top:26px}
 .pg-pro .hchip:nth-child(3){margin-top:-6px}
 .pg-pro .hchip.f1{animation:flt1 7s ease-in-out infinite alternate}
