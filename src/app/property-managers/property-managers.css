@@ -74,9 +74,11 @@ img,svg,video{display:block}
    Layer order inside .pm-hero: video 0, veil 1, grid + glow 1 (above the veil by
    DOM order), particles 2, copy + chips + scroll indicator 3. The gradient below
    stays as the video's fallback — it shows until the first frame decodes and is
-   what you see if hero.mp4 is missing. */
+   what you see if hero.mp4 is missing.
+   Full-bleed: no outer margin, no corner radius. Separation from the next
+   section comes from that section's own `.sec` padding-top, same as the
+   pricing / service-area heroes. */
 .pg-pm .pm-hero{position:relative;overflow:hidden;isolation:isolate;min-height:clamp(600px,90vh,880px);display:flex;align-items:center;
-  margin:14px clamp(12px,2.6vw,34px) clamp(34px,4vw,56px);border-radius:34px;
   background:radial-gradient(120% 90% at 82% 8%,rgba(111,180,214,.20),transparent 55%),
     radial-gradient(90% 80% at 6% 100%,rgba(201,123,74,.10),transparent 60%),
     linear-gradient(180deg,#0f3040 0%,#123e54 42%,#0e3345 100%)}
