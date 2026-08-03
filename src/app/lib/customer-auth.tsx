@@ -10,20 +10,24 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { api, refresh, setAccessToken } from "./api-client";
+import type { Role } from "./post-login-redirect";
 
 export interface CustomerUser {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: Role;
   emailVerified: boolean;
+  /** Set once professional onboarding ships; absent means not verified. */
+  professionalVerified?: boolean;
 }
 
 interface CustomerAuthState {
   user: CustomerUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string, phone?: string) => Promise<void>;
+  /** Resolves with the signed-in user so callers can route on role immediately. */
+  login: (email: string, password: string) => Promise<CustomerUser>;
+  signup: (name: string, email: string, password: string, phone?: string) => Promise<CustomerUser>;
   logout: () => Promise<void>;
 }
 
@@ -67,6 +71,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return data.user;
   };
 
   const signup = async (name: string, email: string, password: string, phone?: string) => {
@@ -76,6 +81,7 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return data.user;
   };
 
   const logout = async () => {

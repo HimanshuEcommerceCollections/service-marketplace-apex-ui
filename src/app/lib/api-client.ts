@@ -1,7 +1,13 @@
-// Shared API client for the public/customer auth surface (mirrors the admin
-// client): in-memory access token + refresh-on-401 + envelope unwrap. Separate
-// module instance from the admin client, so customer and staff sessions are
-// independent.
+// THE API client for the whole app — customer surface and staff console alike:
+// in-memory access token + refresh-on-401 + envelope unwrap.
+//
+// There is one sign-in (/login) and therefore one session. The access token and
+// the refresh rotation must live in exactly one module: the refresh cookie
+// rotates on every use and the server treats a replayed refresh token as a
+// compromised family (revoke + tokenVersion bump — auth.service.ts refresh()),
+// so two clients each holding their own token would eventually race on the same
+// cookie and log the user out. The admin client layers its pagination helpers
+// over this module rather than duplicating it.
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -9,6 +15,7 @@ let accessToken: string | null = null;
 export const setAccessToken = (t: string | null) => {
   accessToken = t;
 };
+export const getAccessToken = () => accessToken;
 
 export class ApiError extends Error {
   status: number;

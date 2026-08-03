@@ -7,6 +7,7 @@ import AuthShell from '../../../components/auth/AuthShell';
 import Field, { useField } from '../../../components/auth/Field';
 import SocialRow from '../../../components/auth/SocialRow';
 import { useCustomerAuth } from '../../lib/customer-auth';
+import { destinationFor } from '../../lib/post-login-redirect';
 import { ApiError } from '../../lib/api-client';
 
 const emailOK = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -16,8 +17,10 @@ export default function SignInView() {
   const router = useRouter();
   const params = useSearchParams();
   // /login?next=/book returns the user where they were headed after signing in.
+  // Staff and professionals are routed by role instead — this form is open to
+  // every role (the server's login is role-blind), so an admin signing in here
+  // lands in the console rather than on the customer booking history.
   const next = params.get('next');
-  const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/my-bookings';
 
   const email = useField(emailOK);
   const password = useField((v) => v.length > 0);
@@ -25,8 +28,8 @@ export default function SignInView() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace(dest);
-  }, [loading, user, router, dest]);
+    if (!loading && user) router.replace(destinationFor(user, next));
+  }, [loading, user, router, next]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,8 +40,8 @@ export default function SignInView() {
 
     setBusy(true);
     try {
-      await login(email.value.trim(), password.value);
-      router.replace(dest);
+      const signedIn = await login(email.value.trim(), password.value);
+      router.replace(destinationFor(signedIn, next));
     } catch (e2) {
       setErr(e2 instanceof ApiError ? e2.message : 'Sign in failed. Please try again.');
       setBusy(false);

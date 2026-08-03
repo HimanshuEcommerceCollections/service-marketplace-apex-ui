@@ -7,6 +7,7 @@ import AuthShell from '../../../components/auth/AuthShell';
 import Field, { useField } from '../../../components/auth/Field';
 import SocialRow from '../../../components/auth/SocialRow';
 import { useCustomerAuth } from '../../lib/customer-auth';
+import { destinationFor } from '../../lib/post-login-redirect';
 import { ApiError } from '../../lib/api-client';
 
 const emailOK = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -41,8 +42,10 @@ export default function SignUpView() {
 
   const s = strength(password.value);
 
+  // Registration always mints a CUSTOMER, but an already-signed-in visitor here
+  // can be any role — route them by it rather than assuming the customer sheet.
   useEffect(() => {
-    if (!loading && user) router.replace('/my-bookings');
+    if (!loading && user) router.replace(destinationFor(user));
   }, [loading, user, router]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {

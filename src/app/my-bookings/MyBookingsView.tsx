@@ -5,14 +5,16 @@
 // /me/bookings data, but on the shared site chrome instead of the bare auth
 // sheet, and with sign-out living in the navbar menu.
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import SiteNav from '../../components/shared/SiteNav';
 import SiteFooter from '../../components/shared/SiteFooter';
 import { mountChrome } from '../../lib/shared/chrome';
-import { useCustomerAuth } from '../lib/customer-auth';
+import { useRoleGuard } from '../lib/use-role-guard';
 import { api } from '../lib/api-client';
+
+/** Customers only — staff and professionals get routed to their own surface. */
+const ALLOWED = ['CUSTOMER'] as const;
 
 interface MyBooking {
   reference: string;
@@ -35,27 +37,17 @@ const day = (iso: string) =>
 const label = (status: string) => status.replace(/_/g, ' ').toLowerCase();
 
 export default function MyBookingsView() {
-  const { user, loading } = useCustomerAuth();
-  const router = useRouter();
+  const { status, user } = useRoleGuard(ALLOWED);
   const [bookings, setBookings] = useState<MyBooking[] | null>(null);
   const [failed, setFailed] = useState(false);
-  // `user` also drops to null when the navbar menu logs out, and that redirects
-  // home. Without this the sign-in guard below would race it and win, bouncing
-  // the user to /login instead. Only guard the arrive-signed-out case.
-  const everSignedIn = useRef(false);
-  useEffect(() => {
-    if (user) everSignedIn.current = true;
-  }, [user]);
 
   useEffect(() => {
     const dispose = mountChrome();
     return dispose;
   }, []);
 
-  useEffect(() => {
-    if (!loading && !user && !everSignedIn.current) router.replace('/login?next=/my-bookings');
-  }, [loading, user, router]);
-
+  // Hold the fetch until the role checks out — a professional passing through
+  // shouldn't fire a request that only exists to be redirected away from.
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -78,8 +70,8 @@ export default function MyBookingsView() {
     <div className="pg-mybookings">
       <SiteNav />
       <main className="mb-wrap">
-        {loading || !user ? (
-          <p className="mb-muted">Loading…</p>
+        {status !== 'allowed' ? (
+          <p className="mb-muted">{status === 'loading' ? 'Loading…' : 'Redirecting…'}</p>
         ) : (
           <>
             <div className="mb-head">

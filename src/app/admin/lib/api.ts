@@ -1,26 +1,18 @@
-// Admin API client: attaches the in-memory access token, transparently refreshes
-// on 401, and unwraps the { success, message, data } envelope. The refresh token
-// lives in an httpOnly cookie (credentials: "include"); the access token is held
-// in memory only (never localStorage) — matches the server auth design (07 §3).
+// Admin API client: the console's envelope + pagination helpers layered over
+// the SHARED session in app/lib/api-client.
+//
+// It deliberately does NOT own an access token or its own refresh. There is one
+// sign-in (/login) and one session for the whole app; a second in-memory token
+// here would mean two providers racing to rotate the same refresh cookie, and
+// the server treats a replayed refresh token as a compromised family — revoke
+// every session and bump tokenVersion. Token storage and rotation live in
+// app/lib/api-client; this module only adds `meta` unwrapping on top.
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
+import { ApiError, getAccessToken, refresh } from "../../lib/api-client";
 
-let accessToken: string | null = null;
-export const setAccessToken = (t: string | null) => {
-  accessToken = t;
-};
-export const getAccessToken = () => accessToken;
+export { ApiError, refresh, setAccessToken, getAccessToken } from "../../lib/api-client";
 
-export class ApiError extends Error {
-  status: number;
-  code?: string;
-  constructor(message: string, status: number, code?: string) {
-    super(message);
-    this.status = status;
-    this.code = code;
-  }
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -31,29 +23,14 @@ interface ApiOptions {
 async function rawFetch(path: string, opts: ApiOptions): Promise<Response> {
   const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
-  if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   return fetch(`${API_BASE}${path}`, {
     method: opts.method ?? "GET",
     headers,
     credentials: "include",
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
-}
-
-/** Exchange the refresh cookie for a fresh access token. Returns success. */
-export async function refresh(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "X-Apex-Client": "admin" },
-  });
-  if (!res.ok) {
-    accessToken = null;
-    return false;
-  }
-  const json = await res.json();
-  accessToken = json?.data?.accessToken ?? null;
-  return accessToken !== null;
 }
 
 export interface PageMeta {
