@@ -183,7 +183,11 @@ img,svg,video{display:block}
 .pg-pro .req-note b{color:var(--slate7);font-weight:600}
 .pg-pro .req-list{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:780px){.pg-pro .req-list{grid-template-columns:1fr}}
-.pg-pro .req{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:border-color .25s,box-shadow .25s;align-self:start}
+/* .req-w is the grid item and carries .reveal; .req is the card React toggles.
+   Splitting them keeps the runtime's imperative `in` class off an attribute
+   React rewrites — see the comment in Requirements.tsx. */
+.pg-pro .req-w{align-self:start}
+.pg-pro .req{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:border-color .25s,box-shadow .25s}
 .pg-pro .req.open{border-color:var(--azure);box-shadow:var(--shadow)}
 .pg-pro .req-head{width:100%;display:flex;align-items:center;gap:14px;padding:18px 20px;background:none;border:0;cursor:pointer;text-align:left;font-family:var(--font-body)}
 .pg-pro .req-head .r-ic{width:42px;height:42px;flex:0 0 auto;border-radius:11px;background:var(--blue-tint);display:grid;place-items:center;color:var(--blue)}

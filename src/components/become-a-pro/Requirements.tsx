@@ -4,6 +4,13 @@
 // expectations. Local open/closed state (React) rather than the runtime's
 // class-toggling, since the panel content is React-rendered.
 //
+// The .req-w wrapper is load-bearing: reveal-on-scroll is driven imperatively
+// (runtime.js adds `in` via classList, then unobserves), while `open` is driven
+// by React. Both on one element means React's re-render rewrites the whole
+// class attribute from the string it remembers — silently dropping `in` and
+// leaving the card stuck at opacity:0 forever, since the observer is gone.
+// Two elements, two owners: the runtime owns .req-w, React owns .req.
+//
 // The intro note is deliberate: these are expectations, not verified checks —
 // nothing here is enforced by the API.
 import { useState } from 'react';
@@ -27,32 +34,34 @@ export default function Requirements() {
           {trades.map((t) => {
             const isOpen = open === t.slug;
             return (
-              <div className={`req reveal${isOpen ? ' open' : ''}`} key={t.slug}>
-                <button
-                  className="req-head"
-                  type="button"
-                  aria-expanded={isOpen}
-                  onClick={() => setOpen(isOpen ? null : t.slug)}
-                >
-                  <span className="r-ic">
-                    <Icon name={t.icon} />
-                  </span>
-                  <h4>{t.label}</h4>
-                  <span className="r-tog">
-                    <Plus />
-                  </span>
-                </button>
-                <div className="req-body">
-                  <div className="req-body-in">
-                    {t.licence && <span className="req-tag">{t.licence}</span>}
-                    <ul>
-                      {t.requirements.map((r) => (
-                        <li key={r}>
-                          <Check />
-                          <span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
+              <div className="req-w reveal" key={t.slug}>
+                <div className={`req${isOpen ? ' open' : ''}`}>
+                  <button
+                    className="req-head"
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpen(isOpen ? null : t.slug)}
+                  >
+                    <span className="r-ic">
+                      <Icon name={t.icon} />
+                    </span>
+                    <h4>{t.label}</h4>
+                    <span className="r-tog">
+                      <Plus />
+                    </span>
+                  </button>
+                  <div className="req-body">
+                    <div className="req-body-in">
+                      {t.licence && <span className="req-tag">{t.licence}</span>}
+                      <ul>
+                        {t.requirements.map((r) => (
+                          <li key={r}>
+                            <Check />
+                            <span>{r}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
