@@ -70,12 +70,27 @@ img,svg,video{display:block}
 .pg-pm .sec-head.left{margin-left:0;margin-right:0;text-align:left;max-width:none}
 .pg-pm .sec-head.left p.lede{margin-left:0}
 
-/* ---------- HERO ---------- */
+/* ---------- HERO ----------
+   Layer order inside .pm-hero: video 0, veil 1, grid + glow 1 (above the veil by
+   DOM order), particles 2, copy + chips + scroll indicator 3. The gradient below
+   stays as the video's fallback — it shows until the first frame decodes and is
+   what you see if hero.mp4 is missing. */
 .pg-pm .pm-hero{position:relative;overflow:hidden;isolation:isolate;min-height:clamp(600px,90vh,880px);display:flex;align-items:center;
   margin:14px clamp(12px,2.6vw,34px) clamp(34px,4vw,56px);border-radius:34px;
   background:radial-gradient(120% 90% at 82% 8%,rgba(111,180,214,.20),transparent 55%),
     radial-gradient(90% 80% at 6% 100%,rgba(201,123,74,.10),transparent 60%),
     linear-gradient(180deg,#0f3040 0%,#123e54 42%,#0e3345 100%)}
+.pg-pm .pm-hero-vid{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+/* Graded across so the copy column stays legible while the right side (chips)
+   keeps more of the footage visible. */
+.pg-pm .pm-hero-veil{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(100deg,rgba(9,32,44,.88) 0%,rgba(12,40,54,.66) 46%,rgba(12,40,54,.34) 100%),
+             linear-gradient(0deg,rgba(9,32,44,.6),transparent 46%)}
+/* Single-column below 900px: the copy no longer sits in the veil's dark left
+   band, so darken the whole overlay instead of grading it across. */
+@media(max-width:900px){
+  .pg-pm .pm-hero-veil{background:linear-gradient(180deg,rgba(9,32,44,.88),rgba(12,40,54,.72) 60%,rgba(12,40,54,.58))}
+}
 .pg-pm .pm-hero-grid{position:absolute;inset:0;z-index:1;pointer-events:none;
   background-image:linear-gradient(rgba(160,214,236,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(160,214,236,.10) 1px,transparent 1px);
   background-size:52px 52px;mask-image:radial-gradient(120% 100% at 70% 20%,#000,transparent 78%);-webkit-mask-image:radial-gradient(120% 100% at 70% 20%,#000,transparent 78%)}
@@ -96,12 +111,40 @@ img,svg,video{display:block}
 .pg-pm .pm-hero .btn-line{border-color:rgba(255,255,255,.5);color:#fff;background:rgba(255,255,255,.05)}
 .pg-pm .pm-hero .btn-line:hover{background:rgba(255,255,255,.14)}
 .pg-pm .hero-chips{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-content:center}
-.pg-pm .hchip{position:relative;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border-radius:18px;padding:20px 20px 18px;color:#fff;box-shadow:0 20px 50px -24px rgba(0,0,0,.6)}
-.pg-pm .hchip .ci{width:40px;height:40px;border-radius:11px;background:rgba(111,180,214,.24);display:grid;place-items:center;color:#dff0f8;margin-bottom:14px}
+/* Frosted glass over the hero video. Four layers do the work:
+   1. a heavier blur + saturate/brightness on what shows through (the video), so
+      the panel reads as thick frosted glass rather than a flat tint;
+   2. a diagonal white gradient — brighter at the top-left, thinner across the
+      middle — which is what makes it look like a lit pane instead of a scrim;
+   3. a soft specular bloom off the top-left corner (kept in `background` rather
+      than a ::before so it can't wash over the chip's own text);
+   4. inset hairlines top and bottom for the polished glass edge, over a deeper
+      drop shadow so the panel lifts off the footage.
+   The gradients alone still hold up where backdrop-filter is unsupported (see the
+   @supports fallback below), so nothing depends on the blur landing. */
+.pg-pm .hchip{position:relative;border-radius:18px;padding:20px 20px 18px;color:#fff;
+  background:radial-gradient(120% 90% at 8% -18%,rgba(255,255,255,.30),transparent 56%),
+    linear-gradient(150deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,.09) 48%,rgba(255,255,255,.15) 100%);
+  border:1px solid rgba(255,255,255,.30);
+  backdrop-filter:blur(28px) saturate(150%) brightness(112%);
+  -webkit-backdrop-filter:blur(28px) saturate(150%) brightness(112%);
+  box-shadow:0 28px 64px -26px rgba(0,0,0,.62),
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -1px 0 rgba(255,255,255,.12)}
+/* No backdrop-filter (older Firefox, blur disabled): lean on an opaque teal wash
+   so the copy keeps its contrast against the video instead of going murky. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .pg-pm .hchip{background:radial-gradient(120% 90% at 8% -18%,rgba(255,255,255,.22),transparent 56%),
+    linear-gradient(150deg,rgba(23,58,78,.78),rgba(14,42,58,.86))}
+}
+.pg-pm .hchip .ci{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#eaf6fc;margin-bottom:14px;
+  background:linear-gradient(155deg,rgba(160,214,236,.38),rgba(111,180,214,.20));
+  border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 .pg-pm .hchip .ci svg{width:21px;height:21px;stroke-width:1.9}
 .pg-pm .hchip h4{font-family:var(--font-display);font-weight:700;font-size:15.5px;letter-spacing:-.01em;color:#fff}
-.pg-pm .hchip p{font-size:12.5px;color:rgba(255,255,255,.72);margin-top:3px;line-height:1.45}
+/* Nudged up from .72: the panel is brighter now, so the caption needs a little
+   more weight to keep the same contrast against it. */
+.pg-pm .hchip p{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px;line-height:1.45;text-shadow:0 1px 8px rgba(6,22,32,.35)}
 .pg-pm .hchip:nth-child(2){margin-top:26px}
 .pg-pm .hchip:nth-child(3){margin-top:-6px}
 .pg-pm .hchip.f1{animation:flt1 7s ease-in-out infinite alternate}
@@ -185,6 +228,12 @@ img,svg,video{display:block}
   background:linear-gradient(180deg,rgba(30,40,50,.05),rgba(30,40,50,.16)),repeating-linear-gradient(45deg,#d8d2c4 0 14px,#cfc9bb 14px 28px)}
 .pg-pm .ba-half.after{clip-path:polygon(54% 0,100% 0,100% 100%,46% 100%);justify-content:flex-end;
   background:radial-gradient(120% 100% at 80% 0%,rgba(111,180,214,.35),transparent 60%),linear-gradient(180deg,#eef4f7,#dcebf2)}
+/* Each half holds a full-bleed photo clipped to its side of the diagonal, so the
+   two shots read as one wipe. Layers inside a half: image 0, scrim 1, pill 4.
+   The half's own gradient/stripe background stays underneath as the fallback. */
+.pg-pm .ba-img{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover}
+.pg-pm .ba-half::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(0deg,rgba(10,26,36,.5),transparent 42%)}
 .pg-pm .ba-divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;transform:translateX(-50%) skewX(-4.5deg);
   box-shadow:0 0 0 1px rgba(20,40,60,.08),0 0 30px rgba(255,255,255,.9);z-index:3}
 .pg-pm .ba-pill{position:relative;z-index:4;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:1px solid rgba(20,40,60,.08);border-radius:999px;
@@ -233,20 +282,12 @@ img,svg,video{display:block}
 /* ---------- SERVICE COVERAGE ---------- */
 .pg-pm .coverage{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,4vw,56px);align-items:center}
 @media(max-width:920px){.pg-pm .coverage{grid-template-columns:1fr}}
-.pg-pm .cov-map{position:relative;border-radius:24px;border:1px solid var(--line);min-height:400px;overflow:hidden;
+/* The frame the illustrated map used to fill, now holding the coverage video. The
+   gradient stays as the backdrop until the first frame decodes; the map's roads
+   SVG and pulsing pins are gone. */
+.pg-pm .cov-map{position:relative;border-radius:24px;border:1px solid var(--line);min-height:400px;overflow:hidden;box-shadow:var(--shadow);
   background:radial-gradient(90% 80% at 70% 20%,rgba(111,180,214,.2),transparent 60%),linear-gradient(180deg,#f7f9fa,#eef3f5)}
-.pg-pm .cov-map .grid-bg{position:absolute;inset:0;
-  background-image:linear-gradient(rgba(31,93,122,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(31,93,122,.07) 1px,transparent 1px);
-  background-size:44px 44px;mask-image:radial-gradient(90% 90% at 50% 50%,#000,transparent 80%);-webkit-mask-image:radial-gradient(90% 90% at 50% 50%,#000,transparent 80%)}
-.pg-pm .cov-map svg.roads{position:absolute;inset:0;width:100%;height:100%}
-.pg-pm .pin{position:absolute;z-index:3;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%)}
-.pg-pm .pin .p-dot{width:16px;height:16px;border-radius:50%;background:var(--bblue);border:3px solid #fff;box-shadow:0 8px 18px -6px rgba(27,83,110,.7);position:relative}
-.pg-pm .pin .p-dot::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:2px solid rgba(27,83,110,.35);animation:pinpulse 2.4s var(--ease) infinite}
-@keyframes pinpulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:0}}
-.pg-pm .pin .p-lab{margin-top:8px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--ink);
-  box-shadow:0 10px 22px -14px rgba(20,40,60,.4);white-space:nowrap}
-.pg-pm .pin.hq .p-dot{background:var(--clay)}
-.pg-pm .pin.hq .p-dot::after{border-color:rgba(201,123,74,.4)}
+.pg-pm .cov-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pg-pm .cov-list{display:flex;flex-direction:column;gap:14px}
 .pg-pm .cov-item{display:flex;gap:15px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:18px 20px;
   transition:transform .25s var(--ease),border-color .25s,box-shadow .25s}
@@ -321,29 +362,9 @@ img,svg,video{display:block}
 .pg-pm .faq-a{max-height:0;overflow:hidden;transition:max-height .4s var(--ease)}
 .pg-pm .faq-a p{padding:0 20px 18px;font-size:14px;color:var(--slate7);line-height:1.6;margin:0}
 
-/* ---------- FINAL CTA ---------- */
-.pg-pm .cta-band{position:relative;overflow:hidden;margin:0 clamp(14px,3vw,40px) clamp(40px,5vw,64px);border-radius:32px;color:#fff;text-align:center;
-  padding:clamp(52px,7vw,90px) clamp(24px,5vw,80px);
-  background:radial-gradient(110% 90% at 80% 0%,rgba(111,180,214,.28),transparent 55%),
-    radial-gradient(90% 90% at 10% 100%,rgba(201,123,74,.14),transparent 60%),
-    linear-gradient(180deg,#123e54,#0e3345)}
-.pg-pm .cta-band .fc-grid{position:absolute;inset:0;pointer-events:none;z-index:1;
-  background-image:linear-gradient(rgba(160,214,236,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(160,214,236,.09) 1px,transparent 1px);
-  background-size:54px 54px;mask-image:radial-gradient(90% 80% at 50% 30%,#000,transparent 76%);-webkit-mask-image:radial-gradient(90% 80% at 50% 30%,#000,transparent 76%)}
-.pg-pm .cta-band .glow{position:absolute;top:-40%;right:-8%;width:55%;height:180%;background:radial-gradient(closest-side,rgba(111,180,214,.4),transparent 70%);
-  animation:gfloatA 11s var(--ease) infinite alternate;pointer-events:none;z-index:2}
-.pg-pm .cta-band h2{position:relative;z-index:3;font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;line-height:1.05;font-size:clamp(30px,4.4vw,52px)}
-.pg-pm .cta-band p{position:relative;z-index:3;margin:16px auto 0;max-width:52ch;color:rgba(255,255,255,.8);font-size:clamp(15px,1.3vw,17px)}
-.pg-pm .cta-band .cta-row{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:30px}
-.pg-pm .cta-band .btn-primary{background:#fff;color:var(--ink)}
-.pg-pm .cta-band .btn-line{border-color:rgba(255,255,255,.5);color:#fff;background:transparent}
-.pg-pm .cta-band .btn-line:hover{background:rgba(255,255,255,.12)}
-.pg-pm .fc-trust{position:relative;z-index:3;margin-top:26px;font-size:13px;color:rgba(255,255,255,.6);display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
-.pg-pm .fc-trust .dot{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.4)}
-
 /* ---------- reduced motion ---------- */
 @media(prefers-reduced-motion:reduce){
   .pg-pm .reveal,.pg-pm .xcard .xi,.pg-pm .step{opacity:1!important;transform:none!important}
-  .pg-pm .hchip,.pg-pm .pm-hero .glow,.pg-pm .scroll-ind span,.pg-pm .cta-band .glow,.pg-pm .pin .p-dot::after{animation:none!important}
+  .pg-pm .hchip,.pg-pm .pm-hero .glow,.pg-pm .scroll-ind span{animation:none!important}
   .pg-pm .tl-fill,.pg-pm .fstep .f-link i{transition:none}
 }

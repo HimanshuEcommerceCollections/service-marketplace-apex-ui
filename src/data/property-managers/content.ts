@@ -140,14 +140,8 @@ export const coverageHead = {
   lede: 'Our professionals live and work here — which means faster scheduling and coordinators who know the area.',
 };
 
-/** Decorative map pins (percentage positions from the source design). */
-export const coveragePins: { name: string; left: string; top: string; hq?: boolean }[] = [
-  { name: 'Apex', left: '34%', top: '64%', hq: true },
-  { name: 'Cary', left: '30%', top: '40%' },
-  { name: 'Raleigh', left: '62%', top: '48%' },
-  { name: 'Wake Forest', left: '56%', top: '20%' },
-  { name: 'Nearby Areas', left: '76%', top: '76%' },
-];
+// The source design's decorative map pins are gone: the coverage frame holds the
+// coverage video (see data/property-managers/media.ts → coverageVideo).
 
 export const coverageAreas: IconCard[] = [
   {

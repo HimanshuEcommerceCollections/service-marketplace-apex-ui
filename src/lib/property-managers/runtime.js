@@ -7,6 +7,9 @@
 //     page-only scroll drivers: the turnover chain activation (initFlow), the
 //     horizontal How-It-Works progress line (initTimeline) and the hero particle
 //     field (initParticles).
+//   - initVideos() is not from the source design: the hero background video and
+//     the coverage video were added later and need the same forced-autoplay
+//     handling as the pricing / service-area heroes.
 //
 // Adaptations for React (same spirit as the how-it-works port):
 //   - The load-time IIFEs become an exported mountPropertyManagers() the page's
@@ -33,6 +36,7 @@ export function mountPropertyManagers() {
   };
   const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
+  initVideos();
   initReveal();
   initStats();
   initFaq();
@@ -48,6 +52,75 @@ export function mountPropertyManagers() {
       } catch (e) {}
     });
   };
+
+  // ======================================================================
+  // background-video autoplay (with mobile / paused-tab retries)
+  // ======================================================================
+  // Same helper as the service-area port. The autoPlay attribute alone is not
+  // enough: browsers block autoplay until the element is provably muted+inline,
+  // and a tab that starts hidden never gets to play at all. Force the flags, then
+  // retry on every signal that the situation may have changed. Under
+  // reduced-motion, hold the poster frame.
+  //
+  // Two videos: the hero plays from load, the coverage one is below the fold and
+  // only runs while it is actually on screen — no point decoding footage nobody
+  // is looking at. That one carries no autoPlay attribute, so playback here is
+  // the only thing that starts it.
+  function initVideos() {
+    startVideo(document.querySelector('.pm-hero-vid'), false);
+    startVideo(document.querySelector('.cov-vid'), true);
+  }
+
+  function startVideo(v, whenVisible) {
+    if (!v) return;
+    try {
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+    } catch (e) {}
+    if (reduce) {
+      try {
+        v.pause();
+      } catch (e) {}
+      return;
+    }
+    // For the on-screen-only video every retry below has to respect visibility,
+    // or `canplay` would start it while it is still parked off-screen.
+    let allowed = !whenVisible;
+    const tryPlay = () => {
+      if (!allowed) return;
+      const p = v.play && v.play();
+      if (p && p.catch) p.catch(() => {});
+    };
+
+    if (whenVisible) {
+      const io = new IntersectionObserver(
+        (es) =>
+          es.forEach((e) => {
+            allowed = e.isIntersecting;
+            if (allowed) tryPlay();
+            else
+              try {
+                v.pause();
+              } catch (err) {}
+          }),
+        { threshold: 0.25 }
+      );
+      io.observe(v);
+      cleanups.push(() => io.disconnect());
+    } else {
+      tryPlay();
+      ['pointerdown', 'touchstart', 'scroll', 'keydown', 'mousemove'].forEach((ev) => {
+        on(window, ev, tryPlay, { once: true, passive: true });
+      });
+    }
+
+    on(v, 'loadeddata', tryPlay);
+    on(v, 'canplay', tryPlay);
+    on(document, 'visibilitychange', () => {
+      if (!document.hidden) tryPlay();
+    });
+  }
 
   // ======================================================================
   // reveal-on-scroll
