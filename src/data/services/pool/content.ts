@@ -2,7 +2,7 @@
 // testimonials and recurring plans when the Pool Service design is delivered. All UI
 // comes from the shared components — this file is the only thing to change.
 import type { ServiceConfig } from '../../serviceContent';
-import { placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { placeholderTestimonials } from '../placeholder';
 import { heroBig, heroTiles } from './media';
 
 export const content: ServiceConfig = {
@@ -49,7 +49,6 @@ export const content: ServiceConfig = {
   },
   finalCta: {
     blurb: 'Skimming, vacuuming, brushing and chemical balancing on a schedule that fits your pool.',
-    ctaVideo: placeholderCtaVideo,
   },
   testimonials: placeholderTestimonials,
 };

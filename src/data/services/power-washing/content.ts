@@ -3,7 +3,7 @@
 // from the shared components — this file is the only thing to change.
 // Hero media is real (see ./media.ts); the final-CTA film is still the placeholder.
 import type { ServiceConfig } from '../../serviceContent';
-import { placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { placeholderTestimonials } from '../placeholder';
 import { heroBig, heroTiles } from './media';
 
 export const content: ServiceConfig = {
@@ -50,7 +50,6 @@ export const content: ServiceConfig = {
   },
   finalCta: {
     blurb: 'Driveways, siding, decks and walkways restored to like-new — priced up front, booked in about 90 seconds.',
-    ctaVideo: placeholderCtaVideo,
   },
   testimonials: placeholderTestimonials,
 };

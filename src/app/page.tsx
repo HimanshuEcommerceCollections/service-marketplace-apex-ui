@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './apex.css';
+import './cta-band.css';
 import './testimonials.css';
 import ApexHome from '../components/apex/ApexHome';
 import { chapters as staticChapters, type Chapter } from '../data/apex/chapters';

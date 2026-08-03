@@ -5,8 +5,3 @@ export const heroBg = {
   src: '/assets/membership/images/hero-bg.webp',
   alt: 'The Apex team caring for a home',
 };
-
-export const ctaVideo = {
-  src: '/assets/membership/videos/cta-bg.mp4',
-  poster: '/assets/membership/images/cta-poster.jpg',
-};

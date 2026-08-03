@@ -10,9 +10,10 @@ import Coverage from './Coverage';
 import Testimonials from '../shared/Testimonials';
 import Recurring from './Recurring';
 import Faq from './Faq';
-import Cta from './Cta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountApex } from '../../lib/apex/runtime';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 import type { Chapter } from '../../data/apex/chapters';
 import type { CoverageTown } from './Coverage';
 
@@ -35,9 +36,14 @@ export default function ApexHome({ chapters, towns, townCount }: ApexHomeProps) 
       else dispose = d;
     });
 
+    // The closing CTA is the shared section; its film + cursor keyhole are wired
+    // by mountCtaBand on every page, home included, rather than by mountApex.
+    const disposeCta = mountCtaBand();
+
     return () => {
       disposed = true;
       if (dispose) dispose();
+      disposeCta();
     };
   }, []);
 
@@ -52,7 +58,11 @@ export default function ApexHome({ chapters, towns, townCount }: ApexHomeProps) 
       <Testimonials />
       <Recurring />
       <Faq />
-      <Cta />
+      <CtaBand
+        heading="The whole house, handled by one team."
+        body="Tell us what your home needs. We’ll bring the right trade, a clear price, and a coordinator who owns the outcome."
+        primary={{ label: 'Book a Service', href: '/book' }}
+      />
       <SiteFooter />
     </div>
   );

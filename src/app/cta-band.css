@@ -1,0 +1,230 @@
+/* ===========================================================================
+   Shared closing CTA band — styling for components/shared/CtaBand.tsx.
+   Imported by every page that renders the section (18 routes).
+
+   A verbatim port of the home page's CTA declarations (formerly the
+   `.pg-home .cta-band` block in apex.css), which was chosen as the canonical
+   design over the four other variants that used to exist.
+
+   Deliberately SELF-CONTAINED: every value is literal rather than a var(),
+   because the eight page stylesheets define --blue / --ink / --font-display /
+   --ease-* with different values (and the `.btn` base differs too — home is
+   15.5px/999px, the rest 14px/100px). Resolving tokens per page would make the
+   section look subtly different on each one, which is exactly what this
+   consolidation removes. The only exception is the font stack, which is wired
+   globally by next/font in the root layout.
+
+   Namespaced `.acta*` rather than `.cta-band` — six page stylesheets still own
+   unrelated `.cta-row` / `.glow` rules and this section must not inherit them.
+   =========================================================================== */
+
+.acta-wrap {
+  position: relative;
+  z-index: 5;
+  padding: clamp(20px, 3vw, 40px) clamp(18px, 6vw, 120px) 0;
+}
+
+.acta {
+  position: relative;
+  background: linear-gradient(135deg, #14435a, #1f5d7a);
+  border-radius: 28px;
+  padding: clamp(48px, 7vw, 92px);
+  color: #fff;
+  overflow: hidden;
+  text-align: center;
+  box-shadow: 0 40px 90px -50px rgba(20, 67, 90, 0.9);
+}
+
+/* --- layers: video z0 · tint z1 · corner glow z2 · copy z3 ---------------- */
+
+.acta .acta-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.acta .acta-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    135deg,
+    rgba(18, 62, 84, 0.9),
+    rgba(27, 83, 110, 0.68) 55%,
+    rgba(20, 67, 90, 0.82)
+  );
+}
+
+/* Cursor keyhole — the runtime sets --cx/--cy and toggles .spot, which masks a
+   hole in the tint so the film shows through under the pointer. Pointer-driven
+   only (never on touch: a synthesised move would latch the mask open). */
+.acta.spot .acta-overlay {
+  -webkit-mask-image: radial-gradient(
+    circle var(--acta-spot, 210px) at var(--cx, 50%) var(--cy, 50%),
+    transparent 0,
+    rgba(0, 0, 0, 0.35) 46%,
+    #000 78%
+  );
+  mask-image: radial-gradient(
+    circle var(--acta-spot, 210px) at var(--cx, 50%) var(--cy, 50%),
+    transparent 0,
+    rgba(0, 0, 0, 0.35) 46%,
+    #000 78%
+  );
+}
+
+.acta::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  width: 52vw;
+  height: 52vw;
+  right: -16vw;
+  top: -26vw;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(111, 180, 214, 0.5), transparent 70%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* --- copy ----------------------------------------------------------------- */
+
+.acta h2 {
+  position: relative;
+  z-index: 3;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(28px, 3.8vw, 48px);
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+}
+
+.acta p {
+  position: relative;
+  z-index: 3;
+  margin: 14px auto 0;
+  max-width: 560px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 16.5px;
+}
+
+/* --- buttons -------------------------------------------------------------
+   The `.btn` base is restated here (matching the home page's metrics) instead
+   of inheriting the host page's, so the buttons are identical on all routes.
+   The row carries the 30px offset the single home button used to carry itself,
+   which keeps the one-button case pixel-identical to before. */
+
+.acta .acta-row {
+  position: relative;
+  z-index: 3;
+  margin-top: 30px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.acta .btn {
+  position: relative;
+  font-weight: 600;
+  font-size: 15.5px;
+  padding: 15px 28px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  will-change: transform;
+  text-decoration: none;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), background 0.24s,
+    box-shadow 0.24s, color 0.24s, border-color 0.24s;
+}
+
+.acta .btn .btn-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  will-change: transform;
+}
+
+.acta .btn .arrow {
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.acta .btn:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* Primary — solid white on the dark band (the home page's CTA button). */
+.acta .acta-btn {
+  background: #fff;
+  color: #14435a;
+}
+
+.acta .acta-btn:hover {
+  background: #fcfbf8;
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.4);
+}
+
+/* Secondary — the home page's `.btn-ghost` treatment, for the 17 routes that
+   carry a second action (home is the only single-button page). */
+.acta .acta-btn-line {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.acta .acta-btn-line:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+}
+
+/* --- trust points (property-managers, become-a-pro) ---------------------- */
+
+.acta .acta-trust {
+  position: relative;
+  z-index: 3;
+  margin-top: 26px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.acta .acta-trust .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* --- narrow viewports ---------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .acta .acta-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* --- reduced motion ------------------------------------------------------
+   The film is left in the layer stack but never played (the runtime skips
+   play()), rather than `display:none`d as the home page used to do — so that
+   adding a `poster` to the <video> is all it takes to give these users a still
+   image instead of a bare gradient. See the note in CtaBand.tsx. */
+
+@media (prefers-reduced-motion: reduce) {
+  .acta.spot .acta-overlay {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

@@ -5,8 +5,3 @@ export const heroVideo = {
   src: '/assets/pricing/videos/hero-bg.mp4',
   poster: '/assets/pricing/images/hero-poster.jpg',
 };
-
-export const ctaBg = {
-  src: '/assets/pricing/images/cta-bg.webp',
-  alt: '',
-};

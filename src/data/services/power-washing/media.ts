@@ -22,7 +22,3 @@ export const heroTiles: MediaTile[] = [
   { src: '/assets/power-washing/images/hero-l1.jpg', alt: 'House siding and stonework washed clean' },
   { src: '/assets/power-washing/images/hero-l2.jpg', alt: 'Washing a multi-storey commercial exterior from lifts' },
 ];
-
-// TODO(design): no power-washing final-CTA film was delivered, so content.ts still
-// points at placeholderCtaVideo. Drop cta-bg.mp4 + cta-poster.jpg into
-// assets/power-washing/{videos,images}/ and export ctaVideo here to swap it.

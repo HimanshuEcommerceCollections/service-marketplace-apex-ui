@@ -9,15 +9,16 @@ import Effortless from './Effortless';
 import AllServices from './AllServices';
 import Testimonials from '../shared/Testimonials';
 import Faq from './Faq';
-import FinalCta from './FinalCta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountHowItWorks } from '../../lib/how-it-works/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 // Reuse the existing (identical) testimonial set + portraits rather than a
 // page-local copy — same five Wake County reviewers as the cleaning page.
 import { testimonials } from '../../data/cleaning/testimonials';
-import { testimonialsHead } from '../../data/how-it-works/content';
+import { testimonialsHead, cta } from '../../data/how-it-works/content';
 
 export default function HowItWorksPage() {
   useEffect(() => {
@@ -26,12 +27,14 @@ export default function HowItWorksPage() {
     // testimonials carousel driver. Compose all teardowns.
     const disposeHiw = mountHowItWorks();
     const disposeChrome = mountChrome();
+    const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(
       testimonials.map((t) => ({ name: t.name, role: t.tag, quote: t.quote, portrait: t.portrait }))
     );
     return () => {
       disposeHiw();
       disposeChrome();
+      disposeCta();
       disposeTst();
     };
   }, []);
@@ -51,7 +54,7 @@ export default function HowItWorksPage() {
         blurb={testimonialsHead.blurb}
       />
       <Faq />
-      <FinalCta />
+      <CtaBand heading={cta.title} body={cta.body} primary={cta.primary} secondary={cta.secondary} />
       <SiteFooter />
     </div>
   );

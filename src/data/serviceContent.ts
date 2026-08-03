@@ -80,6 +80,6 @@ export interface ServiceConfig {
   slug: string;
   content: ServiceContent;
   recurring: { heading: string; plans: ServicePlan[] };
-  finalCta: { blurb: string; ctaVideo: { src: string; poster: string } };
+  finalCta: { blurb: string };
   testimonials: ServiceTestimonial[];
 }

@@ -7,14 +7,14 @@ import Expect from '../service/Expect';
 import Configurator from '../service/Configurator';
 import Recurring, { type ServicePlan } from '../service/Recurring';
 import Testimonials from '../shared/Testimonials';
-import FinalCta from '../service/FinalCta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountService } from '../../lib/service/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 import type { RecurringSection } from '../../lib/catalog';
 import { testimonials } from '../../data/lawncare/testimonials';
-import { ctaVideo } from '../../data/lawncare/media';
 import { content } from '../../data/lawncare/content';
 
 // Fallback recurring plans (used only if the API is unreachable / not configured).
@@ -38,12 +38,14 @@ export default function LawnCarePage({
     // 'lawn-care' selects the configurator spec; testimonials feed the carousel.
     const disposeService = mountService('lawn-care', testimonials);
     const disposeChrome = mountChrome();
+    const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(
       testimonials.map((t) => ({ name: t.name, role: t.tag, quote: t.quote, portrait: t.portrait }))
     );
     return () => {
       disposeService();
       disposeChrome();
+      disposeCta();
       disposeTst();
     };
   }, []);
@@ -60,7 +62,12 @@ export default function LawnCarePage({
         serviceSlug="lawn-care"
       />
       <Testimonials />
-      <FinalCta blurb={finalBlurb} serviceSlug="lawn-care" ctaVideo={ctaVideo} />
+      <CtaBand
+        heading="One call. Whole house handled."
+        body={finalBlurb}
+        primary={{ label: 'Book this service', href: '/book?service=lawn-care' }}
+        secondary={{ label: 'Call (919) 555-0100', href: 'tel:+19195550100' }}
+      />
       <SiteFooter />
     </div>
   );

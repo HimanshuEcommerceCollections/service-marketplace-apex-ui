@@ -10,10 +10,11 @@ import Services from './Services';
 import Waitlist from './Waitlist';
 import WhyChoose from './WhyChoose';
 import Faq from './Faq';
-import FinalCta from './FinalCta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountServiceArea } from '../../lib/service-area/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 
 export default function ServiceAreaPage() {
   // A ZIP miss offers "Join the waitlist"; that ZIP is handed to the waitlist
@@ -28,9 +29,11 @@ export default function ServiceAreaPage() {
     // and live in their own components.
     const disposeServiceArea = mountServiceArea();
     const disposeChrome = mountChrome();
+    const disposeCta = mountCtaBand();
     return () => {
       disposeServiceArea();
       disposeChrome();
+      disposeCta();
     };
   }, []);
 
@@ -45,7 +48,12 @@ export default function ServiceAreaPage() {
       <Waitlist prefillZip={waitlistZip} />
       <WhyChoose />
       <Faq />
-      <FinalCta />
+      <CtaBand
+        heading="Your home deserves the Apex experience."
+        body="Check availability today and schedule trusted professionals for your home."
+        primary={{ label: 'Check my ZIP', href: '#zip' }}
+        secondary={{ label: 'Book a service', href: '/book' }}
+      />
       <SiteFooter />
     </div>
   );

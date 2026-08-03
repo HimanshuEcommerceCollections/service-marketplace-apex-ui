@@ -22,11 +22,6 @@ export const placeholderBigMedia: HeroBigMedia = {
   alt: 'Apex home service',
 };
 
-export const placeholderCtaVideo = {
-  src: '/assets/cleaning/videos/cta-bg.mp4',
-  poster: '/assets/cleaning/images/cta-poster.jpg',
-};
-
 export const placeholderTestimonials: ServiceTestimonial[] = [
   { name: 'Priya Anand', role: 'North Hills', quote: 'Booked in minutes and the same trusted team every time — exactly what I hoped for.', portrait: '/assets/images/portrait-priya.webp' },
   { name: 'Maya Chen', role: 'Cary', quote: 'Clean, professional and no surprises. They treated my home like their own.', portrait: '/assets/images/portrait-maya.webp' },

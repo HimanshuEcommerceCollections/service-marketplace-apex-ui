@@ -11,15 +11,16 @@ import ApplyForm from './ApplyForm';
 import Stats from './Stats';
 import Testimonials from '../shared/Testimonials';
 import Faq from './Faq';
-import FinalCta from './FinalCta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountBecomeAPro } from '../../lib/become-a-pro/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 // Reuse the existing (identical) testimonial set + portraits rather than a
 // page-local copy — same convention as the how-it-works page.
 import { testimonials } from '../../data/cleaning/testimonials';
-import { testimonialsHead } from '../../data/become-a-pro/content';
+import { testimonialsHead, finalCta } from '../../data/become-a-pro/content';
 
 export default function BecomeAProPage() {
   // Single source of truth for the trade selection, shared by the Available
@@ -36,12 +37,14 @@ export default function BecomeAProPage() {
     // testimonials carousel driver. Compose all teardowns.
     const disposePro = mountBecomeAPro();
     const disposeChrome = mountChrome();
+    const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(
       testimonials.map((t) => ({ name: t.name, role: t.tag, quote: t.quote, portrait: t.portrait }))
     );
     return () => {
       disposePro();
       disposeChrome();
+      disposeCta();
       disposeTst();
     };
   }, []);
@@ -63,7 +66,14 @@ export default function BecomeAProPage() {
         blurb={testimonialsHead.blurb}
       />
       <Faq />
-      <FinalCta />
+      <CtaBand
+        id="join"
+        heading={finalCta.title}
+        body={finalCta.lede}
+        primary={finalCta.primary}
+        secondary={finalCta.secondary}
+        trust={finalCta.trust}
+      />
       <SiteFooter />
     </div>
   );
