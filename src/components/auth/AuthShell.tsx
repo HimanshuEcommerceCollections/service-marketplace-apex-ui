@@ -1,11 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-// Split-screen shell shared by /login and /signup: the dark showcase panel on the
-// left, the card on the right. The segmented Sign In / Create Account control is
-// real routing (two <Link>s) rather than in-page view swapping, so both routes,
-// their metadata and any deep links keep working — the pill just slides based on
-// `mode`.
+// Split-screen shell shared by /login, /signup and /accept-invite: the dark
+// showcase panel on the left, the card on the right. The segmented Sign In /
+// Create Account control is real routing (two <Link>s) rather than in-page view
+// swapping, so both routes, their metadata and any deep links keep working —
+// the pill just slides based on `mode`.
+//
+// `mode` is optional: omit it and the switcher is not rendered at all. Someone
+// completing a staff invite has nowhere to switch to, and offering "Create
+// Account" mid-invite would be actively misleading.
 
 import Link from 'next/link';
 import { useEffect } from 'react';
@@ -53,7 +57,7 @@ export default function AuthShell({
   mode,
   children,
 }: {
-  mode: 'login' | 'signup';
+  mode?: 'login' | 'signup';
   children: React.ReactNode;
 }) {
   useEffect(() => mountAuth(), []);
@@ -117,15 +121,17 @@ export default function AuthShell({
         {/* ---------- right pane ---------- */}
         <main className="pane">
           <div className="auth-card">
-            <div className={`seg${mode === 'signup' ? ' signup' : ''}`}>
-              <span className="seg-pill" aria-hidden="true" />
-              <Link href="/login" className={mode === 'login' ? 'on' : ''} aria-current={mode === 'login' ? 'page' : undefined}>
-                Sign In
-              </Link>
-              <Link href="/signup" className={mode === 'signup' ? 'on' : ''} aria-current={mode === 'signup' ? 'page' : undefined}>
-                Create Account
-              </Link>
-            </div>
+            {mode && (
+              <div className={`seg${mode === 'signup' ? ' signup' : ''}`}>
+                <span className="seg-pill" aria-hidden="true" />
+                <Link href="/login" className={mode === 'login' ? 'on' : ''} aria-current={mode === 'login' ? 'page' : undefined}>
+                  Sign In
+                </Link>
+                <Link href="/signup" className={mode === 'signup' ? 'on' : ''} aria-current={mode === 'signup' ? 'page' : undefined}>
+                  Create Account
+                </Link>
+              </div>
+            )}
             <section className="view">{children}</section>
           </div>
         </main>

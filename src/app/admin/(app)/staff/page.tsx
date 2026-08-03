@@ -70,11 +70,29 @@ export default function StaffPage() {
 
   async function setStatus(id: string, status: "ACTIVE" | "SUSPENDED") {
     setErr(null);
+    setNotice(null);
     try {
       await api<StaffUser>(`/admin/users/${id}`, { method: "PATCH", body: { status } });
+      setNotice(status === "SUSPENDED" ? "Account suspended — their sessions were signed out." : "Account reactivated.");
       await load();
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Update failed");
+    }
+  }
+
+  /** Pending invites only: deletes the account so the emailed link stops working. */
+  async function revokeInvite(u: StaffUser) {
+    if (!window.confirm(`Revoke the invite for ${u.email}? Their invite link stops working immediately and the account is removed.`)) {
+      return;
+    }
+    setErr(null);
+    setNotice(null);
+    try {
+      await api(`/admin/users/${u.id}`, { method: "DELETE" });
+      setNotice(`Invite for ${u.email} revoked.`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Could not revoke the invite");
     }
   }
 
@@ -148,7 +166,9 @@ export default function StaffPage() {
                       Suspend
                     </button>
                   ) : (
-                    <span className="ax-muted">Invite pending</span>
+                    <button className="ax-btn danger sm" onClick={() => void revokeInvite(u)}>
+                      Revoke invite
+                    </button>
                   )}
                 </td>
               </tr>

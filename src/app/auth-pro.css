@@ -1,4 +1,6 @@
-/* Split-screen auth design (apex-auth.html) ported for /login and /signup.
+/* Split-screen auth design (apex-auth.html), shared by /login, /signup and
+ * /accept-invite. Lives at the app root rather than inside the (customer) route
+ * group because /accept-invite is a STAFF page and sits outside that group.
  *
  * Everything is scoped under `.apexauth` so the generic class names the design
  * uses (.btn, .link, .chip, .brand, .view, .row-between …) can't leak into — or
@@ -7,7 +9,9 @@
  *
  * The segmented Sign In / Create Account toggle is real routing: each half links
  * to /login or /signup and the pill slides based on the `signup` class the page
- * sets from its own mode. Fonts come from next/font via --font-archivo/--font-inter.
+ * sets from its own mode. It is omitted entirely when AuthShell gets no `mode`
+ * (the invite flow has nowhere to switch to). Fonts come from next/font via
+ * --font-archivo/--font-inter.
  */
 
 .apexauth {
