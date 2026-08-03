@@ -1,7 +1,12 @@
-// section 3: COVERAGE — the big map beside four glass stat cards (counters
-// animate via the runtime when they scroll into view).
-import Map from './Map';
+// section 3: COVERAGE — a video beside four glass stat cards (counters animate
+// via the runtime when they scroll into view).
+//
+// The video inherits the frame the Wake-County map used to occupy: .cov-vid
+// reuses the .map glass treatment, so it keeps the same rounded, bordered box
+// at the same aspect beside the stat grid. Below the fold, so it preloads
+// metadata only and the runtime plays it only while it is on screen.
 import SecHead from './SecHead';
+import { coverageVideo } from '../../data/service-area/media';
 import { coverageStats } from '../../data/service-area/content';
 
 export default function Coverage() {
@@ -11,7 +16,9 @@ export default function Coverage() {
       <div className="swrap">
         <div className="cov-grid">
           <div className="cov-map reveal">
-            <Map variant="big-map" gradientId="mg-coverage" hint />
+            <video className="cov-vid" muted loop playsInline preload="metadata">
+              <source src={coverageVideo.src} type="video/mp4" />
+            </video>
           </div>
           <div className="cov-stats reveal sc">
             {coverageStats.map((s) => (

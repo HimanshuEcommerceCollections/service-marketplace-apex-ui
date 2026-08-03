@@ -2,21 +2,21 @@
 // Apex Service Area page runtime.
 //
 // Ported from the <script> block of apex-service-area_extracted.html:
-//   reveal-on-scroll, the coverage stat count-up, map-pin -> city scroll,
-//   the ZIP-availability checker, the waitlist form (validation + success),
-//   the FAQ accordion, and the button ripple.
+//   reveal-on-scroll, the coverage stat count-up, the FAQ accordion and the
+//   button ripple. The ZIP checker and waitlist form were ported out of here
+//   into React components once they started talking to the API.
 //
 // React adaptations (same spirit as the pricing/membership ports):
-//   - The load-time IIFE becomes mountServiceArea(servedZips), called from the
-//     page's useEffect once the DOM is committed. The served-ZIP set comes from
-//     the data layer (data/service-area/content.ts), not from here.
+//   - The load-time IIFE becomes mountServiceArea(), called from the page's
+//     useEffect once the DOM is committed. The ZIP checker is NOT here: it asks
+//     the API and renders in React (components/service-area/ZipChecker.tsx).
 //   - The source's nav-shrink/burger + footer reveal/watermark handlers are
 //     dropped: the page renders the shared <SiteNav/>/<SiteFooter/>, driven by
 //     mountChrome().
 //   - Everything registers a disposer so listeners / observers / timeouts tear
 //     down cleanly on unmount (StrictMode-safe).
 
-export function mountServiceArea(servedZips) {
+export function mountServiceArea() {
   const cleanups = [];
   const on = (t, type, fn, opts) => {
     if (!t) return;
@@ -25,16 +25,9 @@ export function mountServiceArea(servedZips) {
   };
   const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  const SERVED = {};
-  (servedZips || []).forEach((z) => {
-    SERVED[z] = 1;
-  });
-
+  initVideos();
   initReveal();
   initStats();
-  initPins();
-  initZip();
-  initWaitlist();
   initFaq();
   initRipple();
 
@@ -45,6 +38,74 @@ export function mountServiceArea(servedZips) {
       } catch (e) {}
     });
   };
+
+  // ======================================================================
+  // background-video autoplay (with mobile / paused-tab retries)
+  // ======================================================================
+  // The autoPlay attribute alone is not enough: browsers block autoplay until
+  // the element is provably muted+inline, and a tab that starts hidden never
+  // gets to play at all. Force the flags, then retry on every signal that the
+  // situation may have changed. Under reduced-motion, hold the first frame.
+  //
+  // Two videos: the hero plays from load, the coverage one is below the fold
+  // and only runs while it is actually on screen — no point decoding ~3MB of
+  // footage nobody is looking at. That one carries no autoPlay attribute, so
+  // playback here is the only thing that starts it.
+  function initVideos() {
+    startVideo(document.querySelector('.sa-hero-vid'), false);
+    startVideo(document.querySelector('.cov-vid'), true);
+  }
+
+  function startVideo(v, whenVisible) {
+    if (!v) return;
+    try {
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+    } catch (e) {}
+    if (reduce) {
+      try {
+        v.pause();
+      } catch (e) {}
+      return;
+    }
+    // For the on-screen-only video every retry below has to respect visibility,
+    // or `canplay` would start it while it is still parked off-screen.
+    let allowed = !whenVisible;
+    const tryPlay = () => {
+      if (!allowed) return;
+      const p = v.play && v.play();
+      if (p && p.catch) p.catch(() => {});
+    };
+
+    if (whenVisible) {
+      const io = new IntersectionObserver(
+        (es) =>
+          es.forEach((e) => {
+            allowed = e.isIntersecting;
+            if (allowed) tryPlay();
+            else
+              try {
+                v.pause();
+              } catch (err) {}
+          }),
+        { threshold: 0.25 }
+      );
+      io.observe(v);
+      cleanups.push(() => io.disconnect());
+    } else {
+      tryPlay();
+      ['pointerdown', 'touchstart', 'scroll', 'keydown', 'mousemove'].forEach((ev) => {
+        on(window, ev, tryPlay, { once: true, passive: true });
+      });
+    }
+
+    on(v, 'loadeddata', tryPlay);
+    on(v, 'canplay', tryPlay);
+    on(document, 'visibilitychange', () => {
+      if (!document.hidden) tryPlay();
+    });
+  }
 
   // ======================================================================
   // reveal-on-scroll
@@ -100,116 +161,6 @@ export function mountServiceArea(servedZips) {
     );
     [].slice.call(document.querySelectorAll('.cstat')).forEach((s) => io.observe(s));
     cleanups.push(() => io.disconnect());
-  }
-
-  // ======================================================================
-  // map pins -> scroll to the matching city card
-  // ======================================================================
-  function initPins() {
-    [].slice.call(document.querySelectorAll('.pin')).forEach((p) => {
-      on(p, 'click', () => {
-        const c = document.getElementById('city-' + p.dataset.city);
-        if (c) c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-      });
-    });
-  }
-
-  // ======================================================================
-  // ZIP-availability checker
-  // ======================================================================
-  function initZip() {
-    const zi = document.getElementById('zipInput');
-    const zr = document.getElementById('zipResult');
-    if (!zi || !zr) return;
-
-    function checkZip() {
-      const v = (zi.value || '').trim();
-      const wrap = zi.closest('.ff');
-      wrap.classList.remove('err');
-      const msg = wrap.querySelector('.msg');
-      if (msg) msg.textContent = '';
-      if (!/^\d{5}$/.test(v)) {
-        wrap.classList.add('err');
-        if (msg) msg.textContent = 'Enter a valid 5-digit ZIP code';
-        zr.innerHTML = '';
-        return;
-      }
-      if (SERVED[v]) {
-        zr.innerHTML =
-          '<div class="zip-state ok show"><div class="zh"><span class="zbadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>Great news! Apex serves your area.</div><p>Book online in about 90 seconds — same trusted local team, transparent pricing.</p><div class="zbtns"><a class="btn btn-primary ripple" href="/book">Book now</a><a class="btn btn-line ripple" href="#services">View services</a></div></div>';
-      } else {
-        zr.innerHTML =
-          '<div class="zip-state no show"><div class="zh"><span class="zbadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>We’re not in your area yet.</div><p>We’re expanding across the Triangle fast. Join the waitlist and we’ll notify you the moment we reach ' +
-          v +
-          '.</p><div class="zbtns"><a class="btn btn-primary ripple" href="#waitlist" id="toWait">Join the waitlist</a></div></div>';
-        const tw = document.getElementById('toWait');
-        on(tw, 'click', () => {
-          const wz = document.getElementById('wZip');
-          if (wz) {
-            wz.value = v;
-            wz.dispatchEvent(new Event('input'));
-          }
-        });
-      }
-    }
-
-    on(document.getElementById('zipCheck'), 'click', checkZip);
-    on(zi, 'keydown', (e) => {
-      if (e.key === 'Enter') checkZip();
-    });
-    on(zi, 'input', () => {
-      zi.value = zi.value.replace(/\D/g, '').slice(0, 5);
-    });
-  }
-
-  // ======================================================================
-  // waitlist form — per-field validation + success state
-  // ======================================================================
-  function initWaitlist() {
-    const wf = {
-      wName: (v) => v.length > 1,
-      wEmail: (v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v),
-      wPhone: (v) => v.replace(/\D/g, '').length >= 10,
-      wZip: (v) => /^\d{5}$/.test(v),
-    };
-    Object.keys(wf).forEach((id) => {
-      const e = document.getElementById(id);
-      if (!e) return;
-      on(e, 'input', () => {
-        const wrap = e.closest('.ff');
-        const ok = wf[id](e.value.trim());
-        wrap.classList.toggle('ok', ok && e.value.length > 0);
-        wrap.classList.toggle('err', !ok && e.value.length > 0);
-      });
-    });
-
-    const btn = document.getElementById('waitBtn');
-    if (!btn) return;
-    on(btn, 'click', function () {
-      let allok = true;
-      Object.keys(wf).forEach((id) => {
-        const e = document.getElementById(id);
-        if (!e) return;
-        const ok = wf[id](e.value.trim());
-        const wrap = e.closest('.ff');
-        wrap.classList.toggle('ok', ok);
-        wrap.classList.toggle('err', !ok);
-        if (!ok) allok = false;
-      });
-      if (!allok) return;
-      btn.disabled = true;
-      btn.textContent = 'Joining…';
-      const to = setTimeout(() => {
-        const s = document.getElementById('waitSuccess');
-        if (s) {
-          s.classList.add('show');
-          s.innerHTML =
-            '<span class="wb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><div><b>You’re on the list!</b><span>We’ll notify you when Apex expands into your neighborhood.</span></div>';
-        }
-        btn.style.display = 'none';
-      }, 700);
-      cleanups.push(() => clearTimeout(to));
-    });
   }
 
   // ======================================================================
