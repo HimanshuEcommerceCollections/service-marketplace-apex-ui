@@ -691,21 +691,10 @@ img,svg,video{display:block}
 .pg-service-area .hero-badges .hb-ic svg{width:18px;height:18px}
 @media(max-width:900px){.pg-service-area .sa-hero .swrap{grid-template-columns:1fr}}
 
-/* map */
-.pg-service-area .map{position:relative;aspect-ratio:1/.92;border-radius:24px;background:rgba(252,251,248,.5);backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
-.pg-service-area .map-glow{position:absolute;inset:0;background:radial-gradient(closest-side at 55% 45%,rgba(111,180,214,.16),transparent 70%);pointer-events:none}
-.pg-service-area .map-blob{position:absolute;inset:6% 8%;width:84%;height:88%}
-.pg-service-area .pin{position:absolute;transform:translate(-50%,-100%);background:none;border:0;cursor:pointer;z-index:2}
-.pg-service-area .ppulse{position:absolute;left:50%;top:70%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:rgba(27,83,110,.28);animation:ppulse 2.2s ease-out infinite}
-@keyframes ppulse{0%{transform:translate(-50%,-50%) scale(.5);opacity:.8}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
-.pg-service-area .pdot{position:relative;display:block;width:26px;height:34px;color:var(--bblue);filter:drop-shadow(0 6px 8px rgba(20,50,70,.35));transition:transform .25s var(--ease),color .25s}
-.pg-service-area .pdot svg{width:100%;height:100%}
-.pg-service-area .pin:hover .pdot{transform:scale(1.18);color:var(--clay)}
-.pg-service-area .ptip{position:absolute;left:50%;bottom:calc(100% + 4px);transform:translateX(-50%) translateY(6px);white-space:nowrap;font-size:12px;font-weight:700;color:#fff;background:var(--ink2);padding:5px 10px;border-radius:100px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
-.pg-service-area .pin:hover .ptip{opacity:1;transform:translateX(-50%) translateY(0)}
-.pg-service-area .hero-map{max-width:440px;margin-left:auto}
-.pg-service-area .big-map{max-width:100%}
-.pg-service-area .map-hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;color:var(--slate4);z-index:1}
+/* coverage video — keeps the glass frame the Wake-County map used to fill, so
+   it still reads as a pair with the stat cards beside it. object-fit:cover
+   fills the near-square box whatever aspect the clip itself is. */
+.pg-service-area .cov-vid{display:block;width:100%;aspect-ratio:1/.92;object-fit:cover;border-radius:24px;background:rgba(252,251,248,.5);border:1px solid var(--line);box-shadow:var(--shadow)}
 .pg-service-area .float-ic{position:absolute;z-index:3;width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:#fff;background:linear-gradient(150deg,#2E86AA,var(--teal-deep));box-shadow:0 14px 26px -14px rgba(22,50,58,.8)}
 .pg-service-area .float-ic svg{width:22px;height:22px}
 /* hero floating service icons (.sfi1..3) removed; .float-ic + flt* keyframes kept for the final-CTA pins */
@@ -736,6 +725,10 @@ img,svg,video{display:block}
 .pg-service-area .zip-state .zbadge{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#fff;flex:0 0 auto}
 .pg-service-area .zip-state.ok .zbadge{background:#2E7D5B}
 .pg-service-area .zip-state.no .zbadge{background:var(--clay)}
+/* lookup failed — deliberately neutral, so a dropped request never looks like
+   a "we don't serve you" answer */
+.pg-service-area .zip-state.warn{background:linear-gradient(180deg,rgba(90,105,115,.08),transparent);border:1px solid var(--line)}
+.pg-service-area .zip-state.warn .zbadge{background:var(--slate4)}
 .pg-service-area .zip-state .zbadge svg{width:20px;height:20px}
 .pg-service-area .zip-state p{font-size:14px;color:var(--slate7);margin:10px 0 0}
 .pg-service-area .zip-state .zbtns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
@@ -814,4 +807,36 @@ img,svg,video{display:block}
 .pg-service-area .btn.ripple{position:relative;overflow:hidden}
 .pg-service-area .rip{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,.5);animation:rip .6s var(--ease);pointer-events:none}
 @keyframes rip{to{transform:scale(4);opacity:0}}
-@media(prefers-reduced-motion:reduce){.pg-service-area .ppulse,.pg-service-area .float-ic,.pg-service-area .sa-hero .glow{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.pg-service-area .float-ic,.pg-service-area .sa-hero .glow{animation:none!important}}
+
+/* ---------- hero background video ----------
+   Layer order inside .sa-hero: video 0, veil 1, glows 2, content 3.
+   `isolation:isolate` keeps that stack from interacting with the page behind. */
+.pg-service-area .sa-hero{isolation:isolate;background:#0b1e28}
+.pg-service-area .sa-hero-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.pg-service-area .sa-hero-veil{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(100deg,rgba(8,24,32,.82) 0%,rgba(8,24,32,.5) 44%,rgba(8,24,32,.14) 100%),
+             linear-gradient(0deg,rgba(8,24,32,.55),transparent 42%)}
+.pg-service-area .sa-hero .glow{z-index:2}
+.pg-service-area .sa-hero .swrap{z-index:3}
+/* Single-column below 900px: the copy no longer sits in the veil's dark left
+   band, so darken the whole overlay instead of grading it across. */
+@media(max-width:900px){
+  .pg-service-area .sa-hero-veil{background:linear-gradient(180deg,rgba(8,24,32,.86),rgba(8,24,32,.66) 60%,rgba(8,24,32,.5))}
+}
+
+/* copy + controls, recoloured for the dark hero */
+.pg-service-area .sa-hero .eyebrow{color:#F0C9AC}
+.pg-service-area .sa-hero .eyebrow::before{background:rgba(255,255,255,.35)}
+.pg-service-area .sa-hero h1{color:#fff;text-shadow:0 2px 30px rgba(0,0,0,.28)}
+.pg-service-area .sa-hero h1 em{color:var(--azure)}
+.pg-service-area .sa-hero .lede{color:rgba(255,255,255,.86)}
+.pg-service-area .sa-hero .btn-primary{background:#fff;color:var(--ink);box-shadow:0 14px 28px -14px rgba(0,0,0,.6)}
+.pg-service-area .sa-hero .btn-line{border-color:rgba(255,255,255,.5);color:#fff;background:rgba(255,255,255,.05)}
+.pg-service-area .sa-hero .hero-badges{color:rgba(255,255,255,.82)}
+.pg-service-area .sa-hero .hero-badges .hb-ic{color:var(--azure)}
+
+/* Single column: no map beside the copy, so cap the measure and leave the
+   right-hand side as open footage — the veil grades dark-to-clear that way. */
+.pg-service-area .sa-hero .swrap{grid-template-columns:1fr}
+.pg-service-area .sa-hero .swrap > .reveal{max-width:660px}
