@@ -183,5 +183,4 @@ export const cta = {
   body: 'Book your first service today and discover why homeowners trust Apex for every part of their home.',
   primary: { label: 'Book now', href: '/book' } as Cta,
   secondary: { label: 'Explore services', href: '/pricing' } as Cta,
-  floatIcons: ['cleaning', 'lawn', 'pool', 'handyman'] as IconKey[],
 };

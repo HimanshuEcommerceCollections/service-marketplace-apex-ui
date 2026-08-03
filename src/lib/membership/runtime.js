@@ -6,7 +6,6 @@
 //      and the FAQ accordion
 //   2. the testimonial carousel (identical engine to the shared service pages)
 //   3. the how-it-works timeline draw-in
-//   4. the final-CTA background video + cursor spotlight
 //
 // Adaptations for React (same spirit as the home/service ports):
 //   - The IIFEs that ran on load are replaced by an exported mountMembership(testimonials)
@@ -37,7 +36,6 @@ export function mountMembership(testimonials) {
   initFaq();
   initTestimonials();
   initTimeline();
-  initFinalCta();
 
   return () => {
     cleanups.forEach((c) => {
@@ -273,30 +271,4 @@ export function mountMembership(testimonials) {
     // node/number/text animations key off) is set by the reveal observer above.
   }
 
-  // ======================================================================
-  // 4. final CTA — background video + cursor spotlight
-  // ======================================================================
-  function initFinalCta() {
-    const f = document.querySelector('.cta-band');
-    if (!f) return;
-    const v = f.querySelector('video');
-    if (v) {
-      if (reduce) {
-        try {
-          v.pause();
-        } catch (e) {}
-      } else {
-        const p = v.play && v.play();
-        if (p && p.catch) p.catch(() => {});
-      }
-    }
-    if (reduce) return;
-    on(f, 'mousemove', (e) => {
-      const r = f.getBoundingClientRect();
-      f.classList.add('live');
-      f.style.setProperty('--px', ((e.clientX - r.left) / r.width) * 100 + '%');
-      f.style.setProperty('--py', ((e.clientY - r.top) / r.height) * 100 + '%');
-    });
-    on(f, 'mouseleave', () => f.classList.remove('live'));
-  }
 }

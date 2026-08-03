@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../chrome.css';
+import '../cta-band.css';
 import './how-it-works.css';
 import '../testimonials.css';
 import HowItWorksPage from '../../components/how-it-works/HowItWorksPage';

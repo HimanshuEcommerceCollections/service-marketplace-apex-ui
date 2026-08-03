@@ -7,14 +7,14 @@ import Expect from '../service/Expect';
 import Configurator from '../service/Configurator';
 import Recurring, { type ServicePlan } from '../service/Recurring';
 import Testimonials from '../shared/Testimonials';
-import FinalCta from '../service/FinalCta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountService } from '../../lib/service/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 import type { RecurringSection } from '../../lib/catalog';
 import { testimonials } from '../../data/cleaning/testimonials';
-import { ctaVideo } from '../../data/cleaning/media';
 import { content } from '../../data/cleaning/content';
 
 // Fallback recurring plans (used only if the API is unreachable / not configured).
@@ -36,17 +36,19 @@ export default function CleaningPage({
   recurring?: RecurringSection | null;
 }) {
   useEffect(() => {
-    // mountService wires the configurator engine, testimonial carousel and
-    // final-CTA spotlight, returning a teardown fn. 'cleaning' selects the
-    // configurator spec; testimonials feed the carousel. Safe under StrictMode.
+    // mountService wires the configurator engine and testimonial carousel,
+    // returning a teardown fn. 'cleaning' selects the configurator spec;
+    // testimonials feed the carousel. Safe under StrictMode.
     const disposeService = mountService('cleaning', testimonials);
     const disposeChrome = mountChrome();
+    const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(
       testimonials.map((t) => ({ name: t.name, role: t.tag, quote: t.quote, portrait: t.portrait }))
     );
     return () => {
       disposeService();
       disposeChrome();
+      disposeCta();
       disposeTst();
     };
   }, []);
@@ -63,7 +65,12 @@ export default function CleaningPage({
         serviceSlug="cleaning"
       />
       <Testimonials />
-      <FinalCta blurb={finalBlurb} serviceSlug="cleaning" ctaVideo={ctaVideo} />
+      <CtaBand
+        heading="One call. Whole house handled."
+        body={finalBlurb}
+        primary={{ label: 'Book this service', href: '/book?service=cleaning' }}
+        secondary={{ label: 'Call (919) 555-0100', href: 'tel:+19195550100' }}
+      />
       <SiteFooter />
     </div>
   );

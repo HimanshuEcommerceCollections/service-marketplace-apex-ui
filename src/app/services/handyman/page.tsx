@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../../chrome.css';
+import '../../cta-band.css';
 import '../service.css';
 import '../../testimonials.css';
 import ServicePage from '../../../components/service/ServicePage';

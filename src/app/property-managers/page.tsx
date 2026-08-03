@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../chrome.css';
+import '../cta-band.css';
 import './property-managers.css';
 import '../testimonials.css';
 import PropertyManagersPage from '../../components/property-managers/PropertyManagersPage';

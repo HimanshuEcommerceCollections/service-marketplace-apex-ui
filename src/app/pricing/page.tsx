@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../chrome.css';
+import '../cta-band.css';
 import './pricing.css';
 import PricingPage from '../../components/pricing/PricingPage';
 import {

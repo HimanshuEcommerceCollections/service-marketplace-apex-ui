@@ -83,8 +83,13 @@ export async function mountApex() {
   };
 
   // ======================================================================
-  // MAIN (nav, Lenis, in-view video, GSAP choreography, spotlight, magnetic,
-  // hero parallax, particles, booking wizard)
+  // MAIN (nav, Lenis, in-view video, GSAP choreography, magnetic, hero
+  // parallax, particles, booking wizard)
+  //
+  // The closing CTA band is NOT here — it is the shared section
+  // (components/shared/CtaBand.tsx), and its film + cursor keyhole are wired by
+  // mountCtaBand(), which ApexHome calls alongside mountApex. Only the GSAP
+  // reveal/copy-stagger for `.acta` stays below, since GSAP is home-only.
   // ======================================================================
   function initMain() {
     bookingInit();
@@ -126,7 +131,7 @@ export async function mountApex() {
     );
 
     /* VIDEO play/pause in view (perf) */
-    document.querySelectorAll('.ch-media video,.cta-video,#heroMedia video,#heroHouse video,.bridge-vid').forEach((v) => {
+    document.querySelectorAll('.ch-media video,#heroMedia video,#heroHouse video,.bridge-vid').forEach((v) => {
       const io = new IntersectionObserver(
         (es) =>
           es.forEach((e) => {
@@ -218,8 +223,8 @@ export async function mountApex() {
         }
       });
 
-      gsap.utils.toArray('.sample-note.reveal,.cta-band.reveal').forEach((el) => gsap.to(el, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
-      gsap.from('.cta-band h2,.cta-band p,.cta-band .btn', { y: 26, opacity: 0, duration: 0.85, stagger: 0.14, ease: 'power3.out', scrollTrigger: { trigger: '.cta-band', start: 'top 78%' } });
+      gsap.utils.toArray('.sample-note.reveal,.acta.reveal').forEach((el) => gsap.to(el, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
+      gsap.from('.acta h2,.acta p,.acta .btn', { y: 26, opacity: 0, duration: 0.85, stagger: 0.14, ease: 'power3.out', scrollTrigger: { trigger: '.acta', start: 'top 78%' } });
     } else {
       // No GSAP or reduced motion: drop the FOUC guard so the hero copy shows.
       window.__apexHeroIntroPlayed = true;
@@ -234,18 +239,6 @@ export async function mountApex() {
         const i = f.querySelector('img');
         if (i) i.style.transform = 'none';
       });
-    }
-
-    /* CTA spotlight — cursor parts the overlay to reveal the film */
-    const band = document.querySelector('.cta-band');
-    if (band && fine && !reduce) {
-      on(band, 'pointermove', (e) => {
-        const b = band.getBoundingClientRect();
-        band.style.setProperty('--cx', (((e.clientX - b.left) / b.width) * 100).toFixed(2) + '%');
-        band.style.setProperty('--cy', (((e.clientY - b.top) / b.height) * 100).toFixed(2) + '%');
-        band.classList.add('spot');
-      });
-      on(band, 'pointerleave', () => band.classList.remove('spot'));
     }
 
     /* Magnetic */

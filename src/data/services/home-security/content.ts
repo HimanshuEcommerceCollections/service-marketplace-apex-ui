@@ -2,7 +2,7 @@
 // testimonials and recurring plans when the Home Security design is delivered. All UI
 // comes from the shared components — this file is the only thing to change.
 import type { ServiceConfig } from '../../serviceContent';
-import { placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { placeholderTestimonials } from '../placeholder';
 import { heroBig, heroTiles } from './media';
 
 export const content: ServiceConfig = {
@@ -49,7 +49,6 @@ export const content: ServiceConfig = {
   },
   finalCta: {
     blurb: 'Cameras, sensors and monitoring, tailored to your home and set up by trained pros.',
-    ctaVideo: placeholderCtaVideo,
   },
   testimonials: placeholderTestimonials,
 };

@@ -210,35 +210,10 @@ img,svg,video{display:block}
 .pg-hiw .faq-a{max-height:0;overflow:hidden;transition:max-height .4s var(--ease)}
 .pg-hiw .faq-a p{padding:0 20px 18px;font-size:14px;color:var(--slate7);line-height:1.6;margin:0}
 
-/* ---------- FINAL CTA ---------- */
-.pg-hiw .cta-band{position:relative;overflow:hidden;margin:0 clamp(14px,3vw,40px) clamp(40px,5vw,64px);border-radius:32px;
-  background:linear-gradient(135deg,var(--blue-deep),var(--bblue) 55%,#20516b);color:#fff;text-align:center;
-  padding:clamp(52px,7vw,90px) clamp(24px,5vw,80px)}
-.pg-hiw .cta-band .cta-bg{position:absolute;inset:0;z-index:0}
-.pg-hiw .cta-band .cta-bg img{width:100%;height:100%;object-fit:cover}
-.pg-hiw .cta-band .cta-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(16,60,82,.92),rgba(27,83,110,.82) 55%,rgba(32,81,107,.78))}
-.pg-hiw .cta-band .glow{position:absolute;top:-40%;right:-8%;width:55%;height:180%;background:radial-gradient(closest-side,rgba(111,180,214,.4),transparent 70%);
-  animation:gfloatA 11s var(--ease) infinite alternate;pointer-events:none;z-index:2}
-.pg-hiw .cta-band h2{position:relative;z-index:3;font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;line-height:1.05;font-size:clamp(30px,4.4vw,52px)}
-.pg-hiw .cta-band p{position:relative;z-index:3;margin:16px auto 0;max-width:52ch;color:rgba(255,255,255,.8);font-size:clamp(15px,1.3vw,17px)}
-.pg-hiw .cta-band .cta-row{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:30px}
-.pg-hiw .cta-band .btn-primary{background:#fff;color:var(--ink)}
-.pg-hiw .cta-band .btn-line{border-color:rgba(255,255,255,.5);color:#fff;background:transparent}
-.pg-hiw .float-ic{position:absolute;z-index:2;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px)}
-.pg-hiw .float-ic svg{width:22px;height:22px}
-.pg-hiw .float-ic.fi1{top:16%;left:8%;animation:flt1 7s ease-in-out infinite alternate}
-.pg-hiw .float-ic.fi2{top:24%;right:10%;animation:flt2 8s ease-in-out infinite alternate}
-.pg-hiw .float-ic.fi3{bottom:20%;left:14%;animation:flt3 6.5s ease-in-out infinite alternate}
-.pg-hiw .float-ic.fi4{bottom:16%;right:8%;animation:flt1 7.5s ease-in-out infinite alternate}
-@keyframes flt1{to{transform:translateY(-14px)}}
-@keyframes flt2{to{transform:translateY(12px)}}
-@keyframes flt3{to{transform:translateY(-10px)}}
-@media(max-width:640px){.pg-hiw .float-ic{display:none}}
-
 /* ---------- reduced motion ---------- */
 @media(prefers-reduced-motion:reduce){
   .pg-hiw .reveal,.pg-hiw .xcard .xi{opacity:1!important;transform:none!important}
-  .pg-hiw .float-ic,.pg-hiw .hiw-hero .glow,.pg-hiw .hh-bg img,.pg-hiw .hh-card,.pg-hiw .scroll-ind span,.pg-hiw .cta-band .glow{animation:none!important}
+  .pg-hiw .hiw-hero .glow,.pg-hiw .hh-bg img,.pg-hiw .hh-card,.pg-hiw .scroll-ind span{animation:none!important}
   .pg-hiw .pstep .pic,.pg-hiw .pstep .pnum{transform:none!important}
   .pg-hiw .proc-progress{transition:none}
 }

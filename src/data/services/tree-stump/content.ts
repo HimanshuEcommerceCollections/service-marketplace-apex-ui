@@ -2,7 +2,7 @@
 // testimonials and recurring plans when the Tree & Stump design is delivered. All UI
 // comes from the shared components — this file is the only thing to change.
 import type { ServiceConfig } from '../../serviceContent';
-import { placeholderCtaVideo, placeholderTestimonials } from '../placeholder';
+import { placeholderTestimonials } from '../placeholder';
 import { heroBig, heroTiles } from './media';
 
 export const content: ServiceConfig = {
@@ -49,7 +49,6 @@ export const content: ServiceConfig = {
   },
   finalCta: {
     blurb: 'Trimming, removal and stump grinding by insured crews with the right equipment.',
-    ctaVideo: placeholderCtaVideo,
   },
   testimonials: placeholderTestimonials,
 };

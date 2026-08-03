@@ -11,8 +11,3 @@ export const heroBg: Media = {
   src: '/assets/how-it-works/images/hero-bg.webp',
   alt: 'A homeowner booking an Apex service on a tablet',
 };
-
-export const ctaBg: Media = {
-  src: '/assets/how-it-works/images/cta-bg.webp',
-  alt: '',
-};

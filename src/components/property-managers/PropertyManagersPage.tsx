@@ -12,15 +12,16 @@ import Coverage from './Coverage';
 import Testimonials from '../shared/Testimonials';
 import QuoteForm from './QuoteForm';
 import Faq from './Faq';
-import FinalCta from './FinalCta';
+import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountPropertyManagers } from '../../lib/property-managers/runtime';
 import { mountChrome } from '../../lib/shared/chrome';
+import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 // Reuse the existing (identical) testimonial set + portraits rather than a
 // page-local copy — same convention as the how-it-works page.
 import { testimonials } from '../../data/cleaning/testimonials';
-import { testimonialsHead } from '../../data/property-managers/content';
+import { testimonialsHead, finalCta } from '../../data/property-managers/content';
 
 export default function PropertyManagersPage() {
   useEffect(() => {
@@ -29,12 +30,14 @@ export default function PropertyManagersPage() {
     // + the shared testimonials carousel driver. Compose all teardowns.
     const disposePm = mountPropertyManagers();
     const disposeChrome = mountChrome();
+    const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(
       testimonials.map((t) => ({ name: t.name, role: t.tag, quote: t.quote, portrait: t.portrait }))
     );
     return () => {
       disposePm();
       disposeChrome();
+      disposeCta();
       disposeTst();
     };
   }, []);
@@ -57,7 +60,14 @@ export default function PropertyManagersPage() {
       />
       <QuoteForm />
       <Faq />
-      <FinalCta />
+      <CtaBand
+        id="join"
+        heading={finalCta.title}
+        body={finalCta.lede}
+        primary={finalCta.primary}
+        secondary={finalCta.secondary}
+        trust={finalCta.trust}
+      />
       <SiteFooter />
     </div>
   );

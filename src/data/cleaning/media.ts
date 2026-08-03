@@ -24,7 +24,3 @@ export const heroTiles: Media[] = [
 ];
 
 // Final-CTA background video + its poster still.
-export const ctaVideo = {
-  src: '/assets/cleaning/videos/cta-bg.mp4',
-  poster: '/assets/cleaning/images/cta-poster.jpg',
-};

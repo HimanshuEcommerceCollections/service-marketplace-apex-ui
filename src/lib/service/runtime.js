@@ -7,7 +7,6 @@
 //   2. the testimonial carousel
 //   3. the .anav navbar + footer reveal + watermark parallax (inert now — the
 //      pages use the shared <SiteNav/>/<SiteFooter/>; guarded no-ops)
-//   4. the final-CTA video + cursor spotlight
 //
 // Deliberate adaptations for React (same spirit as the home page port):
 //   1. The bootstrap that read `document.body.dataset.service` on DOMContentLoaded
@@ -48,7 +47,6 @@ export function mountService(slug, testimonials) {
   initConfig(slug);
   initTestimonials();
   initNavFooter();
-  initFinalCta();
 
   return () => {
     cleanups.forEach((c) => {
@@ -606,30 +604,4 @@ export function mountService(slug, testimonials) {
     }
   }
 
-  // ======================================================================
-  // 4. Final CTA — background video + cursor spotlight
-  // ======================================================================
-  function initFinalCta() {
-    const f = document.querySelector('.final.has-video');
-    if (!f) return;
-    const v = f.querySelector('video');
-    if (v) {
-      if (reduce) {
-        try {
-          v.pause();
-        } catch (e) {}
-      } else {
-        const p = v.play && v.play();
-        if (p && p.catch) p.catch(() => {});
-      }
-    }
-    if (reduce) return;
-    on(f, 'mousemove', (e) => {
-      const r = f.getBoundingClientRect();
-      f.classList.add('live');
-      f.style.setProperty('--px', ((e.clientX - r.left) / r.width) * 100 + '%');
-      f.style.setProperty('--py', ((e.clientY - r.top) / r.height) * 100 + '%');
-    });
-    on(f, 'mouseleave', () => f.classList.remove('live'));
-  }
 }

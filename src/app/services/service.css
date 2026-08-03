@@ -225,19 +225,6 @@ img,svg,video{display:block}
 .pg-service .review .who{margin-top:22px;font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
 .pg-service .review .role{font-size:13px;color:var(--slate4);margin-top:3px}
 
-/* ---------- FINAL CTA ---------- */
-.pg-service .final{position:relative;margin:0 clamp(14px,3vw,40px) clamp(30px,4vw,50px);border-radius:32px;overflow:hidden;
-  background:linear-gradient(135deg,var(--blue-deep),var(--bblue) 55%,var(--blue));color:#fff;
-  padding:clamp(48px,7vw,90px) clamp(24px,5vw,80px);text-align:center}
-.pg-service .final::before{content:"";position:absolute;top:-40%;right:-10%;width:60%;height:180%;background:radial-gradient(closest-side,rgba(111,180,214,.4),transparent 70%);pointer-events:none}
-.pg-service .final h2{position:relative;font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;line-height:1.02;font-size:clamp(28px,4.4vw,56px)}
-.pg-service .final p{position:relative;margin:16px auto 30px;max-width:48ch;color:rgba(255,255,255,.82);font-size:clamp(15px,1.3vw,17px);line-height:1.6}
-.pg-service .final .row{position:relative;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.pg-service .final .btn-primary{background:#fff;color:var(--blue-deep)}
-.pg-service .final .btn-primary:hover{background:#fff}
-.pg-service .final .btn-line{background:transparent;border-color:rgba(255,255,255,.4);color:#fff}
-.pg-service .final .btn-line:hover{background:rgba(255,255,255,.12)}
-
 /* ---------- FOOTER ---------- */
 .pg-service .foot{background:var(--ink);color:rgba(255,255,255,.7);padding:clamp(56px,6vw,80px) clamp(18px,5vw,84px) 30px}
 .pg-service .foot-top{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:clamp(24px,3vw,50px)}
@@ -438,23 +425,6 @@ img,svg,video{display:block}
 }
 @media(max-width:520px){.pg-service .afoot-cols{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.pg-service .afoot-glow, .pg-service .afoot-wm{animation:none!important}}
-
-
-/* ===== final CTA: video background + spotlight ===== */
-.pg-service .final.has-video{background:linear-gradient(135deg,var(--blue-deep),var(--bblue) 55%,var(--blue))}
-.pg-service .final .final-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-.pg-service .final .final-veil{position:absolute;inset:0;z-index:1;
-  background:linear-gradient(135deg,rgba(18,63,86,.88),rgba(27,83,110,.78) 52%,rgba(31,93,122,.72))}
-.pg-service .final.has-video::before{z-index:2}
-.pg-service .final .final-spot{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
-.pg-service .final .final-spot .blob{position:absolute;width:min(560px,70%);height:min(560px,120%);left:50%;top:50%;
-  transform:translate(-50%,-50%);border-radius:50%;mix-blend-mode:screen;filter:blur(10px);
-  background:radial-gradient(closest-side,rgba(255,255,255,.24),rgba(255,255,255,.07) 45%,transparent 72%);
-  animation:spotdrift 11s ease-in-out infinite alternate}
-@keyframes spotdrift{0%{left:20%;top:32%}50%{left:80%;top:58%;opacity:.95}100%{left:46%;top:18%}}
-.pg-service .final.live .final-spot .blob{animation:none;left:var(--px,50%);top:var(--py,50%);transition:left .14s ease-out,top .14s ease-out}
-.pg-service .final.has-video>h2, .pg-service .final.has-video>p, .pg-service .final.has-video>.row{position:relative;z-index:4}
-@media(prefers-reduced-motion:reduce){.pg-service .final .final-spot .blob{animation:none;left:50%;top:32%}}
 
 
 /* ===== Included / Not included cards ===== */

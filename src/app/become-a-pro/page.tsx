@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../chrome.css';
+import '../cta-band.css';
 import './become-a-pro.css';
 import '../testimonials.css';
 import BecomeAProPage from '../../components/become-a-pro/BecomeAProPage';
