@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import '../auth-pro.css';
+import '../../auth-pro.css';
 import SignUpView from './SignUpView';
 
 export const metadata: Metadata = {

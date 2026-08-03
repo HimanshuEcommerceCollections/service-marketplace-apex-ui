@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import '../auth-pro.css';
+import '../../auth-pro.css';
 import SignInView from './SignInView';
 
 export const metadata: Metadata = {
