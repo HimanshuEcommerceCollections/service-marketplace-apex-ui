@@ -1,17 +1,37 @@
-// section: HERO — dark full-bleed gradient with a grid overlay, a drifting glow,
-// the particle canvas (painted by the runtime's initParticles) and four floating
-// glass chips.
+// section: HERO — full-bleed background video under a dark veil, with the grid
+// overlay, a drifting glow, the particle canvas (painted by the runtime's
+// initParticles) and four floating glass chips on top.
+//
+// The .pro-hero gradient is kept as the video's fallback: it shows through until
+// the first frame decodes and stays if the file is missing. Autoplay is forced by
+// the runtime (mountBecomeAPro → initVideos), same as the property-managers,
+// pricing and service-area heroes — the attribute alone is not enough on mobile
+// or in a tab that starts hidden.
 //
 // The copy block uses the codebase's standard hero text format — eyebrow / h1
 // with an <em> accent / .lede / .cta-row inside a single `.reveal` — matching the
 // pricing, how-it-works and property-managers heroes rather than the source
 // design's per-line GSAP mask.
 import { hero } from '../../data/become-a-pro/content';
+import { heroVideo } from '../../data/become-a-pro/media';
 import { Icon, Arrow } from './icons';
 
 export default function Hero() {
   return (
     <header className="pro-hero">
+      <video
+        className="pro-hero-vid"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster={heroVideo.poster}
+        aria-hidden="true"
+      >
+        <source src={heroVideo.src} type="video/mp4" />
+      </video>
+      <div className="pro-hero-veil" aria-hidden="true" />
       <div className="pro-hero-grid" aria-hidden="true" />
       <span className="glow" aria-hidden="true" />
       <canvas className="pro-particles" aria-hidden="true" />

@@ -6,6 +6,9 @@
 //     ripple (shared with the property-managers / how-it-works ports), plus the
 //     How-It-Works progress line (initTimeline) and the hero particle field
 //     (initParticles).
+//   - initVideos() is not from the source design: the hero background video was
+//     added later and needs the same forced-autoplay handling as the
+//     property-managers / pricing / service-area heroes.
 //
 // Deliberately NOT ported here: the trade multi-select, the requirements
 // accordion, and the application form. In the source those are vanilla DOM
@@ -26,6 +29,7 @@ export function mountBecomeAPro() {
   };
   const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
+  initVideos();
   initReveal();
   initStats();
   initFaq();
@@ -40,6 +44,43 @@ export function mountBecomeAPro() {
       } catch (e) {}
     });
   };
+
+  // ======================================================================
+  // hero background-video autoplay (with mobile / paused-tab retries)
+  // ======================================================================
+  // Same helper as the property-managers / service-area ports. The autoPlay
+  // attribute alone is not enough: browsers block autoplay until the element is
+  // provably muted+inline, and a tab that starts hidden never gets to play at all.
+  // Force the flags, then retry on every signal that the situation may have
+  // changed. Under reduced-motion, hold the first frame.
+  function initVideos() {
+    const v = document.querySelector('.pro-hero-vid');
+    if (!v) return;
+    try {
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+    } catch (e) {}
+    if (reduce) {
+      try {
+        v.pause();
+      } catch (e) {}
+      return;
+    }
+    const tryPlay = () => {
+      const p = v.play && v.play();
+      if (p && p.catch) p.catch(() => {});
+    };
+    tryPlay();
+    ['pointerdown', 'touchstart', 'scroll', 'keydown', 'mousemove'].forEach((ev) => {
+      on(window, ev, tryPlay, { once: true, passive: true });
+    });
+    on(v, 'loadeddata', tryPlay);
+    on(v, 'canplay', tryPlay);
+    on(document, 'visibilitychange', () => {
+      if (!document.hidden) tryPlay();
+    });
+  }
 
   // ======================================================================
   // reveal-on-scroll
