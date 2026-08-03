@@ -1,8 +1,15 @@
+/* eslint-disable @next/next/no-img-element */
 // section: LISTING PREPARATION — left column is a left-aligned SecHead plus the
 // icon/label tile grid; right column is the diagonal before/after card with two
-// floating chips. The before/after is a pure-CSS illustration (clip-path halves),
-// not photography, so it needs no assets.
+// floating chips.
+//
+// Each half of the card holds a full-bleed photo clipped to its side of the
+// diagonal, so the split reads as a wipe between the two states of the same
+// room. The halves keep their original gradient/stripe backgrounds underneath as
+// the fallback while the images load. Plain <img> (not next/image) to match the
+// rest of the ported marketing pages.
 import { listingHead, listingItems, listingChips } from '../../data/property-managers/content';
+import { listingBeforeAfter } from '../../data/property-managers/media';
 import SecHead from './SecHead';
 import { Icon } from './icons';
 
@@ -30,15 +37,23 @@ export default function ListingPrep() {
             </div>
           </div>
 
-          <div
-            className="ba-card reveal"
-            role="img"
-            aria-label="Before and after listing preparation illustration"
-          >
+          <div className="ba-card reveal">
             <div className="ba-half before">
+              <img
+                className="ba-img"
+                src={listingBeforeAfter.before.src}
+                alt={listingBeforeAfter.before.alt}
+                loading="lazy"
+              />
               <span className="ba-pill">Before</span>
             </div>
             <div className="ba-half after">
+              <img
+                className="ba-img"
+                src={listingBeforeAfter.after.src}
+                alt={listingBeforeAfter.after.alt}
+                loading="lazy"
+              />
               <span className="ba-pill">After</span>
             </div>
             <div className="ba-divider" aria-hidden="true" />
