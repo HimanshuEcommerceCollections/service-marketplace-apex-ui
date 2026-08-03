@@ -1,75 +1,31 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { api, refresh, setAccessToken } from "./api";
+// The console reads the SAME session as the rest of the app.
+//
+// There used to be a second AuthProvider here with its own access token and its
+// own refresh-on-mount. Because CustomerAuthProvider lives in the root layout it
+// also mounts on /admin/*, so both providers refreshed the same rotating cookie
+// on every console page load — and the server treats a replayed refresh token as
+// a compromised family (revoke + tokenVersion bump), which signs the user out.
+// One sign-in, one provider, one token.
+//
+// This module stays as the console's import surface so the pages that already
+// call useAuth() don't each have to know where the session comes from.
 
-export type Role = "CUSTOMER" | "PROFESSIONAL" | "COORDINATOR" | "ADMIN";
+import { useCustomerAuth, type CustomerUser } from "../../lib/customer-auth";
 
-export interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  role: Role;
-  emailVerified: boolean;
-  mfaEnabled: boolean;
-}
+export type { Role } from "../../lib/post-login-redirect";
+
+/** The console's view of the session user (the app-wide user; alias kept for clarity). */
+export type AdminUser = CustomerUser;
 
 interface AuthState {
   user: AdminUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthState | null>(null);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        if (await refresh()) {
-          const me = await api<AdminUser>("/me");
-          if (active) setUser(me);
-        }
-      } catch {
-        /* unauthenticated */
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    const data = await api<{ user: AdminUser; accessToken: string }>("/auth/login", {
-      method: "POST",
-      body: { email, password },
-    });
-    setAccessToken(data.accessToken);
-    setUser(data.user);
-  };
-
-  const logout = async () => {
-    try {
-      await api("/auth/logout", { method: "POST" });
-    } catch {
-      /* ignore */
-    }
-    setAccessToken(null);
-    setUser(null);
-  };
-
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
-}
-
 export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
-  return ctx;
+  const { user, loading, logout } = useCustomerAuth();
+  return { user, loading, logout };
 }

@@ -1,0 +1,38 @@
+/* /pro — placeholder dashboard for professionals.
+   Sits on the shared chrome (chrome.css supplies the tokens plus the floating
+   nav and footer), so this sheet only styles the page body. */
+
+.pg-pro { background: var(--paper); min-height: 100vh; }
+
+.pro-wrap { max-width: 940px; margin: 0 auto; padding: calc(var(--nav-h) + 54px) clamp(20px, 5vw, 32px) 96px; }
+
+.pro-head h1 {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 4vw, 44px);
+  letter-spacing: -0.03em; line-height: 1.06; color: var(--ink);
+}
+.pro-sub { margin-top: 10px; font-size: 15px; color: var(--slate7); }
+
+.pro-panel {
+  margin-top: 30px; padding: 54px 28px; text-align: center; border-radius: 22px;
+  border: 1px dashed var(--line); background: rgba(255, 255, 255, 0.6);
+}
+.pro-panel h2 {
+  font-family: var(--font-display); font-weight: 800; font-size: 21px;
+  letter-spacing: -0.02em; color: var(--ink);
+}
+.pro-panel p { margin-top: 8px; font-size: 14.5px; color: var(--slate7); }
+
+.pro-badge {
+  display: inline-block; margin-bottom: 16px; padding: 4px 11px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  background: #f7ecdf; color: var(--attention);
+}
+.pro-badge.is-verified { background: #e6f2ec; color: var(--confirm); }
+
+.pro-cta {
+  display: inline-flex; align-items: center; gap: 9px; margin-top: 20px; padding: 13px 26px;
+  border-radius: 999px; background: var(--bblue); color: #fff; font-weight: 700; font-size: 14.5px;
+  box-shadow: 0 12px 30px -12px rgba(27, 83, 110, 0.8);
+  transition: background var(--dur-quick), box-shadow var(--dur-quick), transform var(--dur-quick) var(--ease-settle);
+}
+.pro-cta:hover { background: var(--bblue-deep); transform: translateY(-1px); box-shadow: 0 16px 38px -12px rgba(27, 83, 110, 0.9); }
