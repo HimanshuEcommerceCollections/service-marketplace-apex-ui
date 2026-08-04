@@ -104,6 +104,18 @@
     linear-gradient(160deg, #14435a, #0e3345 55%, #0a2836);
 }
 @media (max-width: 960px) { .apexauth .show { min-height: 38vh; padding-bottom: 70px; } }
+/* Photo backdrop, bottom-most layer of the panel: the teal gradient above shows
+   through the partial opacity, and the ::after scrim is what keeps the white
+   showcase copy legible over a bright daylight shot. */
+.apexauth .show-photo {
+  position: absolute; inset: 0; pointer-events: none;
+  background: url('/assets/auth/images/showcase.jpg') center / cover no-repeat;
+  opacity: 0.46;
+}
+.apexauth .show-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(165deg, rgba(20, 67, 90, 0.62), rgba(12, 46, 62, 0.82) 55%, rgba(10, 40, 54, 0.94));
+}
 .apexauth .show-grid {
   position: absolute; inset: 0; pointer-events: none;
   background-image: linear-gradient(rgba(160, 214, 236, 0.09) 1px, transparent 1px),
