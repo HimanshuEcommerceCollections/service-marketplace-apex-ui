@@ -12,6 +12,8 @@ interface Quote {
   contactName: string;
   contactEmail: string;
   quotedAmount: number | null;
+  /** Engine total for the customer's configuration (cents) — indicative, never binding. */
+  indicativeAmount: number | null;
   currency: string;
   booking: { reference: string } | null;
   service: { slug: string; name: string } | null;
@@ -89,6 +91,7 @@ export default function QuotesPage() {
             <th>Booking</th>
             <th>Contact</th>
             <th>Description</th>
+            <th>Indicative</th>
             <th>Quoted price</th>
             <th>Status</th>
           </tr>
@@ -100,6 +103,22 @@ export default function QuotesPage() {
               <td className="ax-muted">{q.booking?.reference ?? q.source}</td>
               <td className="ax-muted">{q.contactEmail}</td>
               <td style={{ maxWidth: 260 }}>{q.description.length > 80 ? q.description.slice(0, 80) + "…" : q.description}</td>
+              <td>
+                {q.indicativeAmount != null ? (
+                  // The engine total for the customer's configuration — a starting
+                  // point, not a price. "Use" copies it into the quote input.
+                  <button
+                    type="button"
+                    className="ax-btn ghost sm"
+                    title="Copy the configured-total into the quoted price"
+                    onClick={() => setAmounts((a) => ({ ...a, [q.id]: (q.indicativeAmount! / 100).toFixed(2) }))}
+                  >
+                    ~${(q.indicativeAmount / 100).toFixed(2)} · use
+                  </button>
+                ) : (
+                  <span className="ax-muted">—</span>
+                )}
+              </td>
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
                   <span className="ax-muted">$</span>
@@ -122,7 +141,7 @@ export default function QuotesPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={6} className="ax-muted">No quote requests found.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={7} className="ax-muted">No quote requests found.</td></tr>}
         </tbody>
       </table>
 

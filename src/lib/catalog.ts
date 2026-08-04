@@ -9,7 +9,7 @@ import type { ServiceConfig, ServicePlan } from "../data/serviceContent";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const TTL_SECONDS = 300;
 
-export type PricingMode = "PRICED" | "FROM" | "QUOTE";
+export type PricingMode = "FROM" | "QUOTE";
 
 /** One "Recurring plans" card (service detail only; admin-controlled). */
 export interface RecurringPlanView {

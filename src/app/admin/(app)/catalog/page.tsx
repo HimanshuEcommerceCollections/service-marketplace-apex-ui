@@ -7,11 +7,13 @@ interface ServiceOption { id: string; name: string; slug: string }
 interface EditOption { id: string; key: string; label: string; priceDelta: number }
 interface EditGroup { key: string; label: string; inputType: string; options: EditOption[] }
 interface EditRule { id: string; key: string; label: string; kind: string; calc: string; value: number }
+type PricingMode = "FROM" | "QUOTE";
+
 interface EditView {
   id: string;
   slug: string;
   name: string;
-  pricingMode: "PRICED" | "FROM" | "QUOTE";
+  pricingMode: PricingMode;
   basePrice: number;
   fromPrice: number | null;
   currency: string;
@@ -21,6 +23,11 @@ interface EditView {
   rules: EditRule[];
 }
 
+const MODE_HELP: Record<PricingMode, string> = {
+  FROM: "Binding — customers pay the configured total when they book. Base price is the payable minimum; add-on deltas can be $0 (free).",
+  QUOTE: "Coordinator-priced — customers see the configured total as an indication only; you set the final amount on the Quotes page before they can pay.",
+};
+
 const c2d = (c: number) => (c / 100).toFixed(2);
 const d2c = (s: string) => Math.round(Number(s) * 100);
 
@@ -28,6 +35,7 @@ export default function EditPricingPage() {
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [slug, setSlug] = useState("");
   const [view, setView] = useState<EditView | null>(null);
+  const [mode, setMode] = useState<PricingMode>("FROM");
   const [basePrice, setBasePrice] = useState("");
   const [fromPrice, setFromPrice] = useState("");
   const [typicalDuration, setTypicalDuration] = useState("");
@@ -51,6 +59,7 @@ export default function EditPricingPage() {
     try {
       const v = await api<EditView>(`/admin/catalog/services/${s}`);
       setView(v);
+      setMode(v.pricingMode);
       setBasePrice(c2d(v.basePrice));
       setFromPrice(v.fromPrice != null ? c2d(v.fromPrice) : "");
       setTypicalDuration(v.typicalDuration ?? "");
@@ -68,20 +77,21 @@ export default function EditPricingPage() {
     setErr(null);
     setNotice(null);
     try {
+      // Both modes carry the full base + add-ons pricing now: FROM charges it at
+      // booking; QUOTE shows it as the indicative figure the coordinator starts from.
       const body: Record<string, unknown> = {
-        // Compare-table labels apply to every service, including QUOTE.
+        pricingMode: mode,
+        basePrice: d2c(basePrice),
         typicalDuration: typicalDuration.trim() || null,
         recurringDiscount: recurringDiscount.trim() || null,
-      };
-      if (view.pricingMode !== "QUOTE") {
-        body.basePrice = d2c(basePrice);
-        if (view.pricingMode === "FROM" && fromPrice !== "") body.fromPrice = d2c(fromPrice);
-        body.options = view.groups.flatMap((g) => g.options.map((o) => ({ id: o.id, priceDelta: d2c(optDeltas[o.id] ?? "0") })));
-        body.rules = view.rules.map((r) => ({
+        options: view.groups.flatMap((g) => g.options.map((o) => ({ id: o.id, priceDelta: d2c(optDeltas[o.id] ?? "0") }))),
+        rules: view.rules.map((r) => ({
           id: r.id,
           value: r.calc === "percent" ? Number(ruleVals[r.id] ?? "0") : d2c(ruleVals[r.id] ?? "0"),
-        }));
-      }
+        })),
+      };
+      // The "from $X" band is a FROM-only display teaser.
+      if (mode === "FROM" && fromPrice !== "") body.fromPrice = d2c(fromPrice);
       await api(`/admin/catalog/services/${view.slug}/pricing`, { method: "PUT", body });
       setNotice("Saved — live on the site within ~5 min.");
     } catch (e) {
@@ -125,28 +135,43 @@ export default function EditPricingPage() {
             </div>
           </div>
 
-          {view.pricingMode === "QUOTE" && (
-            <div className="ax-card" style={{ marginTop: 12 }}>
-              <p className="ax-muted">{view.name} is a quote service — no configurable pricing (the labels above still apply).</p>
+          <div className="ax-card" style={{ marginTop: 12 }}>
+            <h3>Pricing mode</h3>
+            <div className="ax-row" style={{ gap: 8, marginTop: 10 }}>
+              {(["FROM", "QUOTE"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`ax-btn sm${mode === m ? "" : " ghost"}`}
+                  aria-pressed={mode === m}
+                  onClick={() => setMode(m)}
+                >
+                  {m === "FROM" ? "FROM — pay at booking" : "QUOTE — coordinator priced"}
+                </button>
+              ))}
             </div>
-          )}
+            <p className="ax-muted" style={{ marginTop: 10 }}>{MODE_HELP[mode]}</p>
+          </div>
 
-          {view.pricingMode !== "QUOTE" && (
-            <div className="ax-card" style={{ marginTop: 12 }}>
-              <div className="ax-row" style={{ gap: 16 }}>
-                <div className="ax-field" style={{ width: 160 }}>
-                  <label>Base price ($)</label>
-                  <input className="ax-input" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
-                </div>
-                {view.pricingMode === "FROM" && (
-                  <div className="ax-field" style={{ width: 160 }}>
-                    <label>From price ($)</label>
-                    <input className="ax-input" value={fromPrice} onChange={(e) => setFromPrice(e.target.value)} />
-                  </div>
-                )}
+          <div className="ax-card" style={{ marginTop: 12 }}>
+            <div className="ax-row" style={{ gap: 16 }}>
+              <div className="ax-field" style={{ width: 160 }}>
+                <label>Base price ($)</label>
+                <input className="ax-input" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
               </div>
+              {mode === "FROM" && (
+                <div className="ax-field" style={{ width: 160 }}>
+                  <label>From price ($)</label>
+                  <input className="ax-input" value={fromPrice} onChange={(e) => setFromPrice(e.target.value)} />
+                </div>
+              )}
             </div>
-          )}
+            <p className="ax-muted" style={{ marginTop: 8 }}>
+              {mode === "FROM"
+                ? "Base price is the minimum a customer pays; add-on deltas below stack on top. “From price” is the marketing teaser shown on the site — it never enters the math."
+                : "Base price + add-ons below produce the indicative figure shown to the customer and next to the quote request — the final amount is whatever you set on the Quotes page."}
+            </p>
+          </div>
 
           {view.groups.filter((g) => g.options.length > 0).map((g) => (
             <div className="ax-card" style={{ marginTop: 12 }} key={g.key}>

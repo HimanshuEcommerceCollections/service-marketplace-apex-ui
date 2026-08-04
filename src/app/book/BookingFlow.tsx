@@ -31,7 +31,7 @@ import { useCustomerAuth } from "../lib/customer-auth";
 import { api, ApiError } from "../lib/api-client";
 import { SERVICE_ICON, Check, Arrow, Info, Lock } from "./icons";
 
-type Mode = "PRICED" | "FROM" | "QUOTE";
+type Mode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
 type SelectionValue = string | number | boolean | string[];
 
@@ -288,7 +288,9 @@ export default function BookingFlow() {
           },
           address,
           request_id: crypto.randomUUID(),
-          ...(preview?.displayed_price ? { displayed_price: { total: preview.displayed_price.total } } : {}),
+          // Never echo a price for QUOTE: its preview total is indicative, and the
+          // server 422s (QUOTE_PRICE_NOT_ALLOWED) if a client presents one as a price.
+          ...(!isQuote && preview?.displayed_price ? { displayed_price: { total: preview.displayed_price.total } } : {}),
           notes,
         },
       });
