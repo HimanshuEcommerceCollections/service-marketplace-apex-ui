@@ -15,7 +15,6 @@ interface EditView {
   name: string;
   pricingMode: PricingMode;
   basePrice: number;
-  fromPrice: number | null;
   currency: string;
   typicalDuration: string | null;
   recurringDiscount: string | null;
@@ -24,7 +23,7 @@ interface EditView {
 }
 
 const MODE_HELP: Record<PricingMode, string> = {
-  FROM: "Binding — customers pay the configured total when they book. Base price is the payable minimum; add-on deltas can be $0 (free).",
+  FROM: "Binding — customers pay the configured total when they book. Base price is the payable minimum AND the “from $X” listed on the site; add-on deltas can be $0 (free).",
   QUOTE: "Coordinator-priced — customers see the configured total as an indication only; you set the final amount on the Quotes page before they can pay.",
 };
 
@@ -37,7 +36,6 @@ export default function EditPricingPage() {
   const [view, setView] = useState<EditView | null>(null);
   const [mode, setMode] = useState<PricingMode>("FROM");
   const [basePrice, setBasePrice] = useState("");
-  const [fromPrice, setFromPrice] = useState("");
   const [typicalDuration, setTypicalDuration] = useState("");
   const [recurringDiscount, setRecurringDiscount] = useState("");
   const [optDeltas, setOptDeltas] = useState<Record<string, string>>({});
@@ -61,7 +59,6 @@ export default function EditPricingPage() {
       setView(v);
       setMode(v.pricingMode);
       setBasePrice(c2d(v.basePrice));
-      setFromPrice(v.fromPrice != null ? c2d(v.fromPrice) : "");
       setTypicalDuration(v.typicalDuration ?? "");
       setRecurringDiscount(v.recurringDiscount ?? "");
       setOptDeltas(Object.fromEntries(v.groups.flatMap((g) => g.options.map((o) => [o.id, c2d(o.priceDelta)]))));
@@ -90,8 +87,6 @@ export default function EditPricingPage() {
           value: r.calc === "percent" ? Number(ruleVals[r.id] ?? "0") : d2c(ruleVals[r.id] ?? "0"),
         })),
       };
-      // The "from $X" band is a FROM-only display teaser.
-      if (mode === "FROM" && fromPrice !== "") body.fromPrice = d2c(fromPrice);
       await api(`/admin/catalog/services/${view.slug}/pricing`, { method: "PUT", body });
       setNotice("Saved — live on the site within ~5 min.");
     } catch (e) {
@@ -159,16 +154,10 @@ export default function EditPricingPage() {
                 <label>Base price ($)</label>
                 <input className="ax-input" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
               </div>
-              {mode === "FROM" && (
-                <div className="ax-field" style={{ width: 160 }}>
-                  <label>From price ($)</label>
-                  <input className="ax-input" value={fromPrice} onChange={(e) => setFromPrice(e.target.value)} />
-                </div>
-              )}
             </div>
             <p className="ax-muted" style={{ marginTop: 8 }}>
               {mode === "FROM"
-                ? "Base price is the minimum a customer pays; add-on deltas below stack on top. “From price” is the marketing teaser shown on the site — it never enters the math."
+                ? "The one number: the minimum a customer pays AND the “from $X” the site lists. Add-on deltas below stack on top — keep each required group's cheapest option at $0 so the cheapest configuration costs exactly this. Set to $0 to list no from-price."
                 : "Base price + add-ons below produce the indicative figure shown to the customer and next to the quote request — the final amount is whatever you set on the Quotes page."}
             </p>
           </div>

@@ -231,7 +231,7 @@ export default function ServicesPage() {
                   </div>
                   {preview.is_from_band && preview.from_price && (
                     <p className="ax-muted" style={{ marginTop: 8 }}>
-                      Shown as “From {money(preview.from_price)}” — final pricing confirmed by your pro.
+                      Listed as “From {money(preview.from_price)}” (the base price) — customers pay the configured total at booking.
                     </p>
                   )}
                 </>
