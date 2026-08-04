@@ -39,6 +39,13 @@ img,svg,video{display:block}
 .pg-book .btn-primary:hover svg{transform:translateX(3px)}
 .pg-book .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
 .pg-book .btn-ghost:hover{background:var(--mist);transform:translateY(-2px)}
+/* The source design puts `btn btn-line` on every step's Back button but only ever
+   defines .btn-line inside .final, where it sits on a dark panel. On the booking
+   steps that left those buttons with the bare .btn base — no border, no surface.
+   Give it the light outline treatment (.btn-ghost) it clearly intends here; the
+   .final override below still wins on the dark CTA band. */
+.pg-book .btn-line{background:#fff;border-color:var(--line);color:var(--ink2)}
+.pg-book .btn-line:hover{background:var(--mist);transform:translateY(-2px)}
 .pg-book .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
 .pg-book .reveal.in{opacity:1;transform:none}
 .pg-book .wrap{max-width:1240px;margin:0 auto}
@@ -512,6 +519,21 @@ img,svg,video{display:block}
   display:grid;grid-template-columns:1fr 360px;gap:clamp(28px,3.5vw,52px);align-items:start}
 @media(max-width:960px){.pg-book .bk-wrap{grid-template-columns:1fr}}
 
+/* Signed-out gate. There is nothing to step through and nothing to summarise
+   without a session, so the stepper and the summary rail are not rendered at all:
+   the wrap collapses to one centred column and takes over the fixed nav clearance
+   that the sticky .bk-progress bar normally provides. */
+.pg-book .bk-wrap.solo{grid-template-columns:minmax(0,1fr);justify-items:center;align-content:center;
+  min-height:72vh;padding-top:clamp(118px,15vh,180px)}
+.pg-book .bk-gate{width:100%;max-width:520px;text-align:center;background:var(--paper);border:1px solid var(--line);
+  border-radius:24px;padding:clamp(28px,3.4vw,44px);box-shadow:var(--shadow)}
+.pg-book .bk-gate .gi{width:64px;height:64px;border-radius:18px;margin:0 auto 20px;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(150deg,#2E86AA,var(--teal-deep));box-shadow:0 16px 30px -14px rgba(22,50,58,.8)}
+.pg-book .bk-gate .gi svg{width:30px;height:30px}
+.pg-book .bk-gate h2{font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;font-size:clamp(24px,3vw,34px);color:var(--ink)}
+.pg-book .bk-gate p{margin-top:10px;color:var(--slate7);font-size:15px;line-height:1.6}
+.pg-book .bk-gate .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+
 .pg-book .step{display:none}
 .pg-book .step.active{display:block;animation:stepin .5s var(--ease)}
 @keyframes stepin{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
@@ -651,6 +673,10 @@ img,svg,video{display:block}
 .pg-book .sum{background:rgba(252,251,248,.6);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);
   border:1px solid rgba(255,255,255,.6);border-radius:24px;box-shadow:var(--shadow);padding:24px;overflow:hidden}
 .pg-book .sum h4{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:9px;margin-bottom:4px}
+/* The source design sized this icon with inline width/height attributes on the
+   <svg> rather than in CSS, so a shared icon component renders it full-bleed and it
+   swallows the panel. Size it here instead. */
+.pg-book .sum h4 svg{width:16px;height:16px;flex:0 0 auto}
 .pg-book .sum .prog{height:5px;border-radius:5px;background:var(--line);overflow:hidden;margin:14px 0 18px}
 .pg-book .sum .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--azure),var(--bblue));width:20%;transition:width .5s var(--ease)}
 .pg-book .sum .srv{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}

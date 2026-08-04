@@ -1,17 +1,23 @@
 import type { Metadata } from 'next';
+import '../chrome.css';
+import './booking.css';
 import BookingFlow from './BookingFlow';
 
 export const metadata: Metadata = {
+  // Preserved from the source document (apex-booking.html).
   title: 'Book a Service — Apex Total Home Services',
   description:
-    "Book any of Apex's home services: sign in, configure, see live pricing, and request your booking.",
+    "Book any of Apex's home services in a few steps. Configure, see live pricing, and request your booking.",
 };
 
-// API-driven booking flow (login-gated, live server pricing, real submit).
+// API-driven booking flow (login-gated, live server pricing, real submit) on the
+// apex-booking.html design: booking.css is that document's <style> block scoped
+// under .pg-book, and BookingFlow renders its 5-step markup against the real
+// endpoints. Its own nav/footer are dropped for the shared <SiteNav/>/<SiteFooter/>
+// (chrome.css), per the porting rules in CLAUDE.md.
+//
 // The customer session comes from the root layout's CustomerAuthProvider — this
 // route must NOT mount its own, or it would run a second, independent session.
-// The earlier GSAP/vanilla-JS design (BookingPage.tsx + lib/booking/runtime.js)
-// is retained for future re-skinning but no longer wired to this route.
 export default function Page() {
   return <BookingFlow />;
 }
