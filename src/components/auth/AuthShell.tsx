@@ -68,7 +68,6 @@ export default function AuthShell({
         {/* ---------- left showcase ---------- */}
         <aside className="show">
           <div className="show-photo" aria-hidden="true" />
-          <div className="show-grid" aria-hidden="true" />
           <div className="show-grain" aria-hidden="true" />
           <canvas className="show-particles" aria-hidden="true" />
 

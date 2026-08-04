@@ -14,12 +14,6 @@ export const hero = {
   lede: 'Join a trusted network of local professionals delivering exceptional home services across Wake County.',
   primary: { label: 'Apply now', href: '#apply' },
   secondary: { label: 'See requirements', href: '#requirements' },
-  chips: [
-    { icon: 'check-circle', title: 'Verified Jobs', body: 'Real requests from local homeowners.' },
-    { icon: 'calendar', title: 'Weekly Opportunities', body: 'A steady flow of work near you.' },
-    { icon: 'clock', title: 'Flexible Schedule', body: 'Take the jobs that fit your week.' },
-    { icon: 'pin', title: 'Local Customers', body: 'Serve neighbors across Wake County.' },
-  ],
 };
 
 export const whyHead = {

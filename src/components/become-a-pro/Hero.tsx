@@ -1,6 +1,5 @@
-// section: HERO — full-bleed background video under a dark veil, with the grid
-// overlay, a drifting glow, the particle canvas (painted by the runtime's
-// initParticles) and four floating glass chips on top.
+// section: HERO — full-bleed background video under a dark veil, with a drifting
+// glow and the particle canvas (painted by the runtime's initParticles) on top.
 //
 // The .pro-hero gradient is kept as the video's fallback: it shows through until
 // the first frame decodes and stays if the file is missing. Autoplay is forced by
@@ -14,7 +13,7 @@
 // design's per-line GSAP mask.
 import { hero } from '../../data/become-a-pro/content';
 import { heroVideo } from '../../data/become-a-pro/media';
-import { Icon, Arrow } from './icons';
+import { Arrow } from './icons';
 
 export default function Hero() {
   return (
@@ -32,7 +31,6 @@ export default function Hero() {
         <source src={heroVideo.src} type="video/mp4" />
       </video>
       <div className="pro-hero-veil" aria-hidden="true" />
-      <div className="pro-hero-grid" aria-hidden="true" />
       <span className="glow" aria-hidden="true" />
       <canvas className="pro-particles" aria-hidden="true" />
       <div className="swrap">
@@ -51,17 +49,6 @@ export default function Hero() {
               {hero.secondary.label}
             </a>
           </div>
-        </div>
-        <div className="hero-chips reveal sc" aria-hidden="true">
-          {hero.chips.map((c, i) => (
-            <div className={`hchip f${i + 1}`} key={c.title}>
-              <span className="ci">
-                <Icon name={c.icon} />
-              </span>
-              <h4>{c.title}</h4>
-              <p>{c.body}</p>
-            </div>
-          ))}
         </div>
       </div>
       <a className="scroll-ind" href="#why" aria-label="Scroll">

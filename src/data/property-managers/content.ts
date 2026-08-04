@@ -16,12 +16,6 @@ export const hero = {
   lede: 'From move-out cleaning to repairs, landscaping, pressure washing, junk removal and final listing preparation, Apex coordinates every service your property needs.',
   primary: { label: 'Request a quote', href: '#quote' },
   secondary: { label: 'See turnover services', href: '#bundle' },
-  chips: [
-    { icon: 'check-circle', title: 'Move-Out Ready', body: 'Units prepared end to end.' },
-    { icon: 'bolt', title: 'Fast Turnaround', body: 'Trades sequenced without gaps.' },
-    { icon: 'pin', title: 'Local Coordination', body: 'One coordinator, Wake County.' },
-    { icon: 'wrench', title: 'Multiple Trades', body: 'Cleaning to repairs, one vendor.' },
-  ],
 };
 
 export const whyHead = {
