@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 
-type Mode = "PRICED" | "FROM" | "QUOTE";
+type Mode = "FROM" | "QUOTE";
 
 interface ServiceListItem {
   id: string;
@@ -141,8 +141,8 @@ export default function ServicesPage() {
                 <td>{s.name}</td>
                 <td className="ax-muted">{s.slug}</td>
                 <td>
-                  <span className={`ax-badge ${s.pricingMode === "QUOTE" ? "muted" : s.pricingMode === "FROM" ? "warn" : "ok"}`}>
-                    {s.pricingMode}
+                  <span className={`ax-badge ${s.pricingMode === "QUOTE" ? "muted" : "ok"}`}>
+                    {s.pricingMode === "QUOTE" ? "QUOTE — coordinator priced" : "FROM — pay at booking"}
                   </span>
                 </td>
                 <td>{s.fromPrice != null ? `From $${(s.fromPrice / 100).toFixed(0)}` : "—"}</td>
@@ -199,17 +199,20 @@ export default function ServicesPage() {
               </div>
             ))}
 
-            {selected.pricingMode !== "QUOTE" && (
-              <button className="ax-btn" onClick={() => void getPrice()} disabled={pricing}>
-                {pricing ? "Pricing…" : "Get live price"}
-              </button>
-            )}
+            <button className="ax-btn" onClick={() => void getPrice()} disabled={pricing}>
+              {pricing ? "Pricing…" : selected.pricingMode === "QUOTE" ? "Get indicative price" : "Get live price"}
+            </button>
           </div>
 
           {preview && (
             <div className="ax-card" style={{ marginTop: 16 }}>
-              {preview.mode === "QUOTE" || !preview.displayed_price ? (
-                <p className="ax-muted">This is a quote service — final pricing is confirmed by a pro.</p>
+              {preview.mode === "QUOTE" && preview.displayed_price && (
+                <p className="ax-muted" style={{ marginBottom: 8 }}>
+                  Indicative only — the coordinator sets the final amount on the Quotes page.
+                </p>
+              )}
+              {!preview.displayed_price ? (
+                <p className="ax-muted">No price for this configuration.</p>
               ) : (
                 <>
                   <div className="ax-lines">
