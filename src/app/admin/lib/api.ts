@@ -7,12 +7,15 @@
 // the server treats a replayed refresh token as a compromised family — revoke
 // every session and bump tokenVersion. Token storage and rotation live in
 // app/lib/api-client; this module only adds `meta` unwrapping on top.
+//
+// API_BASE is imported from there too, so console calls go through the same
+// same-origin proxy path. Pointing them at the API's own origin instead would make
+// them cross-site, and the SameSite=Strict refresh cookie would not ride along on
+// the retry after a 401.
 
-import { ApiError, getAccessToken, refresh } from "../../lib/api-client";
+import { API_BASE, ApiError, getAccessToken, refresh } from "../../lib/api-client";
 
 export { ApiError, refresh, setAccessToken, getAccessToken } from "../../lib/api-client";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";

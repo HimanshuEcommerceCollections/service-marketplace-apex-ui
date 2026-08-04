@@ -9,7 +9,7 @@
 // is in fact signed in.
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { api, refresh, setAccessToken } from "./api-client";
+import { api, onSessionLost, refresh, setAccessToken } from "./api-client";
 import type { Role } from "./post-login-redirect";
 
 export interface CustomerUser {
@@ -63,6 +63,12 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
       active = false;
     };
   }, []);
+
+  // A refresh can fail for a session this provider still believes is live — an
+  // expired or revoked refresh token, or a tokenVersion bump. Without this the nav
+  // would keep showing the account avatar for a session the server has already
+  // thrown away, and every subsequent call would 401.
+  useEffect(() => onSessionLost(() => setUser(null)), []);
 
   const login = async (email: string, password: string) => {
     const data = await api<{ user: CustomerUser; accessToken: string }>("/auth/login", {
