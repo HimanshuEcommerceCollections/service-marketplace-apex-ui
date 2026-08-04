@@ -48,6 +48,13 @@
 .apexauth *,
 .apexauth *::before,
 .apexauth *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* The reset above only reaches .apexauth's descendants, so it cannot clear the UA
+   default `body { margin: 8px }` the way the marketing sheets' unscoped `*` reset
+   does. Left alone that margin shows as an 8px band of bare browser canvas around
+   the split screen, and pushes the 100vh grid 16px past the viewport. Matched via
+   :has() rather than a bare `body` rule to keep this sheet from leaking into the
+   marketing chrome or the admin sheet, per the note at the top of the file. */
+body:has(.apexauth) { margin: 0; }
 .apexauth ::selection { background: var(--bblue-tint); color: var(--bblue-deep); }
 .apexauth a { color: inherit; text-decoration: none; }
 .apexauth img, .apexauth video { display: block; max-width: 100%; }
