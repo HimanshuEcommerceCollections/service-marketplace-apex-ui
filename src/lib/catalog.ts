@@ -40,15 +40,17 @@ export interface CatalogService {
   recurringPlans?: RecurringPlanView[];
 }
 
+/** Plans on the membership wire (fromPrice = the plan's BINDING per-cycle price). */
 export interface MembershipPlanView {
   id: string;
   key: string;
   name: string;
   description: string | null;
-  interval: "WEEK" | "MONTH";
+  interval: "NONE" | "WEEK" | "MONTH";
   intervalCount: number;
-  fromPrice: number | null; // cents; display "from $X / visit" member price
+  fromPrice: number | null; // cents; the BINDING per-cycle amount (wire name kept)
   currency: string;
+  bullets?: string[]; // up to 4 admin-written feature points
   service: { slug: string; name: string } | null;
 }
 
