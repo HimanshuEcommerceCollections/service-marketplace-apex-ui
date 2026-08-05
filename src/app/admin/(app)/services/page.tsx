@@ -25,8 +25,13 @@ interface ConfigOption {
 interface ConfigGroup {
   key: string;
   label: string;
+  description: string | null;
   inputType: "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
   isRequired: boolean;
+  quantityMin: number | null;
+  quantityMax: number | null;
+  unitLabel: string | null;
+  unitPrice: number | null;
   options: ConfigOption[];
 }
 interface ServiceConfig {
@@ -64,7 +69,7 @@ const money = (m: Money | null | undefined) =>
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceListItem[] | null>(null);
   const [selected, setSelected] = useState<ServiceConfig | null>(null);
-  const [selections, setSelections] = useState<Record<string, string | string[]>>({});
+  const [selections, setSelections] = useState<Record<string, string | number | string[]>>({});
   const [preview, setPreview] = useState<PricePreview | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [pricing, setPricing] = useState(false);
@@ -87,7 +92,7 @@ export default function ServicesPage() {
     }
   }
 
-  function setSelect(key: string, value: string) {
+  function setSelect(key: string, value: string | number) {
     setSelections((s) => ({ ...s, [key]: value }));
   }
   function toggleMulti(key: string, optKey: string) {
@@ -193,9 +198,26 @@ export default function ServicesPage() {
                     })}
                   </div>
                 )}
+                {g.inputType === "QUANTITY" && (
+                  <div className="ax-row" style={{ gap: 8, alignItems: "center" }}>
+                    <input
+                      type="number"
+                      className="ax-input"
+                      style={{ width: 100 }}
+                      min={g.quantityMin ?? 0}
+                      max={g.quantityMax ?? 999}
+                      value={typeof selections[g.key] === "number" ? (selections[g.key] as number) : (g.quantityMin ?? 0)}
+                      onChange={(e) => setSelect(g.key, Number(e.target.value))}
+                    />
+                    <span className="ax-muted">
+                      {g.unitLabel ?? "per unit"} @ ${((g.unitPrice ?? 0) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 {g.inputType === "TEXTAREA" && (
                   <p className="ax-muted">Quote service — a pro provides a custom quote (no live price).</p>
                 )}
+                {g.description && <p className="ax-muted" style={{ marginTop: 4 }}>{g.description}</p>}
               </div>
             ))}
 

@@ -52,10 +52,16 @@ interface Opt {
 interface Grp {
   key: string;
   label: string;
+  description: string | null;
   inputType: InputType;
   isRequired: boolean;
   selectMin: number | null;
   selectMax: number | null;
+  // QUANTITY groups: numeric bounds + the unit strategy (quantity × unitPrice).
+  quantityMin: number | null;
+  quantityMax: number | null;
+  unitLabel: string | null;
+  unitPrice: number | null;
   options: Opt[];
 }
 interface Cfg {
@@ -199,11 +205,12 @@ export default function BookingFlow() {
       const c = await api<Cfg>(`/services/${slug}/config`);
       setCfg(c);
       // Seed required single-selects with their first option so the first price
-      // call is valid and the summary is not empty on arrival.
+      // call is valid and the summary is not empty on arrival. Quantity groups
+      // seed at their minimum (0 is legitimate — e.g. "Additional hours").
       const seed: Record<string, SelectionValue> = {};
       for (const g of c.configGroups) {
         if (g.inputType === "SELECT" && g.isRequired && g.options[0]) seed[g.key] = g.options[0].key;
-        if (g.inputType === "QUANTITY") seed[g.key] = Math.max(1, g.selectMin ?? 1);
+        if (g.inputType === "QUANTITY") seed[g.key] = g.quantityMin ?? 1;
       }
       setSelections(seed);
       setStep(2);
@@ -233,6 +240,7 @@ export default function BookingFlow() {
     for (const g of cfg.configGroups) {
       const v = selections[g.key];
       if (v == null || v === "" || (Array.isArray(v) && v.length === 0)) continue;
+      if (typeof v === "number" && v === 0) continue; // 0-quantity adds nothing
       const labelOf = (k: string) => g.options.find((o) => o.key === k)?.label ?? k;
       if (Array.isArray(v)) out.push([g.label, v.map(labelOf).join(", ")]);
       else if (typeof v === "boolean") out.push([g.label, v ? "Yes" : "No"]);
@@ -493,18 +501,22 @@ export default function BookingFlow() {
 
                         {g.inputType === "QUANTITY" && (
                           <div className="stepper">
+                            {/* `?? bound` not `|| 1`: 0 is a legitimate quantity. */}
                             <button
                               onClick={() =>
-                                setValue(g.key, Math.max(g.selectMin ?? 1, (Number(v) || 1) - 1))
+                                setValue(g.key, Math.max(g.quantityMin ?? 1, (typeof v === "number" ? v : g.quantityMin ?? 1) - 1))
                               }
                               aria-label={`Decrease ${g.label}`}
                             >
                               −
                             </button>
-                            <span className="val">{Number(v) || 1}</span>
+                            <span className="val">
+                              {typeof v === "number" ? v : g.quantityMin ?? 1}
+                              {g.unitLabel ? <small style={{ fontSize: 11, fontWeight: 600, color: "var(--slate4)", marginLeft: 4 }}>{g.unitLabel.replace(/^per\s+/i, "")}{(typeof v === "number" ? v : 1) === 1 ? "" : "s"}</small> : null}
+                            </span>
                             <button
                               onClick={() =>
-                                setValue(g.key, Math.min(g.selectMax ?? 20, (Number(v) || 1) + 1))
+                                setValue(g.key, Math.min(g.quantityMax ?? 20, (typeof v === "number" ? v : g.quantityMin ?? 1) + 1))
                               }
                               aria-label={`Increase ${g.label}`}
                             >
