@@ -41,7 +41,9 @@ export default function PlansPage() {
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // create form
+  // create/edit form — editingId null = create mode; set = the plan being edited
+  // (the service is locked while editing: a plan cannot move between services).
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [serviceId, setServiceId] = useState("");
   const [cadenceId, setCadenceId] = useState("");
   const [name, setName] = useState("");
@@ -86,7 +88,33 @@ export default function PlansPage() {
       .slice(0, 4);
   }
 
-  async function create() {
+  function resetForm() {
+    setEditingId(null);
+    setServiceId("");
+    setCadenceId("");
+    setName("");
+    setPrice("");
+    setPriceType("PER_VISIT");
+    setBullets("");
+    setFeatured(false);
+  }
+
+  function startEdit(p: Plan) {
+    setEditingId(p.id);
+    setServiceId(p.serviceId);
+    setCadenceId(p.cadenceId);
+    setName(p.name);
+    setPrice(c2d(p.price));
+    setPriceType(p.priceType);
+    setBullets(p.bullets.join("\n"));
+    setFeatured(p.featured);
+    setErr(null);
+    setNotice(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /** Create in create mode; PATCH the edited plan in edit mode (service is locked). */
+  async function save() {
     if (!serviceId || !cadenceId || !name.trim() || !price) {
       setErr("Service, cadence, name and price are required.");
       return;
@@ -95,26 +123,25 @@ export default function PlansPage() {
     setErr(null);
     setNotice(null);
     try {
-      await api("/admin/catalog/plans", {
-        method: "POST",
-        body: {
-          serviceId,
-          cadenceId,
-          name: name.trim(),
-          bullets: parsedBullets(),
-          price: Math.round(Number(price) * 100),
-          priceType,
-          featured,
-        },
-      });
-      setName("");
-      setPrice("");
-      setBullets("");
-      setFeatured(false);
-      setNotice("Plan created.");
+      const body = {
+        cadenceId,
+        name: name.trim(),
+        bullets: parsedBullets(),
+        price: Math.round(Number(price) * 100),
+        priceType,
+        featured,
+      };
+      if (editingId) {
+        await api(`/admin/catalog/plans/${editingId}`, { method: "PATCH", body });
+        setNotice("Plan updated.");
+      } else {
+        await api("/admin/catalog/plans", { method: "POST", body: { ...body, serviceId } });
+        setNotice("Plan created.");
+      }
+      resetForm();
       await load();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Create failed");
+      setErr(e instanceof ApiError ? e.message : editingId ? "Update failed" : "Create failed");
     } finally {
       setBusy(false);
     }
@@ -138,12 +165,19 @@ export default function PlansPage() {
       {notice && <div className="ax-alert ok">{notice}</div>}
 
       <div className="ax-card">
-        <h3>Create plan</h3>
+        <h3>{editingId ? `Edit plan — ${name || "…"}` : "Create plan"}</h3>
         <p className="ax-muted" style={{ marginTop: 2 }}>
           The price is BINDING — subscribing to a plan charges exactly this (pre-tax), regardless of configuration.
+          {editingId ? " A plan can't move between services — create a new plan instead." : ""}
         </p>
         <div className="ax-row" style={{ gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-          <select className="ax-select" style={{ maxWidth: 190 }} value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+          <select
+            className="ax-select"
+            style={{ maxWidth: 190 }}
+            value={serviceId}
+            disabled={editingId != null}
+            onChange={(e) => setServiceId(e.target.value)}
+          >
             <option value="">— service —</option>
             {services.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
@@ -176,9 +210,16 @@ export default function PlansPage() {
             onChange={(e) => setBullets(e.target.value)}
           />
         </div>
-        <button className="ax-btn" style={{ marginTop: 10 }} onClick={() => void create()} disabled={busy}>
-          {busy ? "Creating…" : "Create plan"}
-        </button>
+        <div className="ax-row" style={{ gap: 8, marginTop: 10 }}>
+          <button className="ax-btn" onClick={() => void save()} disabled={busy}>
+            {busy ? "Saving…" : editingId ? "Save changes" : "Create plan"}
+          </button>
+          {editingId && (
+            <button className="ax-btn ghost" onClick={resetForm} disabled={busy}>
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
       <table className="ax-table" style={{ marginTop: 16 }}>
@@ -197,12 +238,21 @@ export default function PlansPage() {
                 ${c2d(p.price)}{" "}
                 <span className="ax-muted">{PRICE_TYPES.find((t) => t.v === p.priceType)?.label}</span>
               </td>
-              <td className="ax-muted" style={{ maxWidth: 260, fontSize: 12.5 }}>{p.bullets.join(" · ")}</td>
+              <td style={{ maxWidth: 280 }}>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.7 }} className="ax-muted">
+                  {p.bullets.map((b, i) => (
+                    <li key={i}>{b}</li>
+                  ))}
+                </ul>
+              </td>
               <td>
                 <span className={`ax-badge ${p.status === "ACTIVE" ? "ok" : "muted"}`}>{p.status}</span>
               </td>
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
+                  <button className="ax-btn ghost sm" onClick={() => startEdit(p)}>
+                    Edit
+                  </button>
                   <button className="ax-btn ghost sm" onClick={() => void patch(p.id, { featured: !p.featured }, "Plan updated.")}>
                     {p.featured ? "Unfeature" : "Feature"}
                   </button>
