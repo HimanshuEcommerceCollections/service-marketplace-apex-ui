@@ -10,6 +10,22 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
+import {
+  DURATION_UNITS,
+  EMPTY_DURATION,
+  firstError,
+  fromDurationDraft,
+  money,
+  optionalMoney,
+  percent,
+  previewDuration,
+  toDurationDraft,
+  wholeNumber,
+  type DurationDraft,
+  type DurationMode,
+  type DurationUnit,
+  type Parsed,
+} from "../../lib/fields";
 
 type PricingMode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
@@ -45,6 +61,13 @@ interface RecurringRow {
   discountPercent: number;
   isActive: boolean;
 }
+/** Editing shape for a recurring row — the percent stays a string until save. */
+interface RecDraft {
+  cadenceId: string;
+  label: string;
+  discount: string;
+  isActive: boolean;
+}
 interface EditView {
   id: string;
   slug: string;
@@ -64,7 +87,13 @@ const MODE_HELP: Record<PricingMode, string> = {
 };
 
 const c2d = (c: number) => (c / 100).toFixed(2);
-const d2c = (s: string) => Math.round(Number(s) * 100);
+
+/** Inline field error. Renders nothing when the field parses. */
+function Err({ of }: { of: Parsed<unknown> }) {
+  return of.ok ? null : <span className="ax-err">{of.error}</span>;
+}
+/** Red border on a field that failed to parse. */
+const bad = (r: Parsed<unknown>) => (r.ok ? "ax-input" : "ax-input bad");
 
 export default function EditPricingPage() {
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -75,11 +104,12 @@ export default function EditPricingPage() {
   const [mode, setMode] = useState<PricingMode>("FROM");
   const [basePrice, setBasePrice] = useState("");
   const [taxPct, setTaxPct] = useState("");
-  const [typicalDuration, setTypicalDuration] = useState("");
+  const [duration, setDuration] = useState<DurationDraft>(EMPTY_DURATION);
   const [optDeltas, setOptDeltas] = useState<Record<string, string>>({});
 
-  // recurring grid (its own PUT)
-  const [rec, setRec] = useState<RecurringRow[]>([]);
+  // recurring grid (its own PUT). Percentages are held as raw strings so a typo
+  // stays visible and blockable instead of collapsing to 0 on keystroke.
+  const [rec, setRec] = useState<RecDraft[]>([]);
 
   // new-configuration form
   const [gLabel, setGLabel] = useState("");
@@ -105,9 +135,16 @@ export default function EditPricingPage() {
     setMode(v.pricingMode);
     setBasePrice(c2d(v.basePrice));
     setTaxPct((v.taxRateBps / 100).toFixed(2));
-    setTypicalDuration(v.typicalDuration ?? "");
+    setDuration(toDurationDraft(v.typicalDuration));
     setOptDeltas(Object.fromEntries(v.groups.flatMap((g) => g.options.map((o) => [o.id, c2d(o.priceDelta)]))));
-    setRec(v.recurring);
+    setRec(
+      v.recurring.map((r) => ({
+        cadenceId: r.cadenceId,
+        label: r.label,
+        discount: String(r.discountPercent),
+        isActive: r.isActive,
+      })),
+    );
   }
 
   async function loadService(s: string) {
@@ -137,18 +174,40 @@ export default function EditPricingPage() {
 
   async function savePricing() {
     if (!view) return;
+
+    // Parse before anything else: an unparsed field would reach the API as NaN
+    // -> null -> silently coerced to 0, saving a zeroed price as a "success".
+    const base = money(basePrice);
+    const tax = percent(taxPct);
+    const dur = fromDurationDraft(duration);
+    if (!base.ok || !tax.ok || !dur.ok) {
+      setNotice(null);
+      setErr(firstError(base, tax, dur) ?? "Please fix the highlighted fields.");
+      return;
+    }
+    const options: { id: string; priceDelta: number }[] = [];
+    for (const g of view.groups) {
+      for (const o of g.options) {
+        const delta = optionalMoney(optDeltas[o.id] ?? "");
+        if (!delta.ok) {
+          setNotice(null);
+          setErr(`“${o.label}” delta: ${delta.error}`);
+          return;
+        }
+        options.push({ id: o.id, priceDelta: delta.value });
+      }
+    }
+
     setBusy(true);
     setErr(null);
     setNotice(null);
     try {
       const body = {
         pricingMode: mode,
-        basePrice: d2c(basePrice),
-        taxRateBps: Math.round(Number(taxPct) * 100),
-        typicalDuration: typicalDuration.trim() || null,
-        options: view.groups.flatMap((g) =>
-          g.options.map((o) => ({ id: o.id, priceDelta: d2c(optDeltas[o.id] ?? "0") })),
-        ),
+        basePrice: base.value,
+        taxRateBps: tax.value,
+        typicalDuration: dur.value,
+        options,
       };
       applyView(await api<EditView>(`/admin/catalog/services/${view.slug}/pricing`, { method: "PUT", body }));
       setNotice("Pricing saved — live on the site within ~5 min.");
@@ -161,16 +220,35 @@ export default function EditPricingPage() {
 
   async function saveRecurring() {
     if (!view) return;
+    const rows: { cadenceId: string; discountPercent: number; isActive: boolean }[] = [];
+    for (const r of rec) {
+      const pct = wholeNumber(r.discount, 0, 100);
+      if (!pct.ok) {
+        setNotice(null);
+        setErr(`“${r.label}” discount: ${pct.error}`);
+        return;
+      }
+      rows.push({ cadenceId: r.cadenceId, discountPercent: pct.value, isActive: r.isActive });
+    }
     await run("Recurring settings saved.", () =>
-      api<EditView>(`/admin/catalog/services/${view.slug}/recurring`, {
-        method: "PUT",
-        body: { rows: rec.map((r) => ({ cadenceId: r.cadenceId, discountPercent: r.discountPercent, isActive: r.isActive })) },
-      }),
+      api<EditView>(`/admin/catalog/services/${view.slug}/recurring`, { method: "PUT", body: { rows } }),
     );
   }
 
   async function addGroup() {
     if (!view || !gLabel.trim()) return;
+    // QUANTITY needs a real unit price — the server rejects the group otherwise.
+    const unitPrice = optionalMoney(gUnitPrice);
+    if (gType === "QUANTITY") {
+      if (!gUnitLabel.trim()) {
+        setErr("Quantity configurations need a unit label (e.g. “per hour”).");
+        return;
+      }
+      if (!unitPrice.ok) {
+        setErr(`Unit price: ${unitPrice.error}`);
+        return;
+      }
+    }
     await run("Configuration added.", () =>
       api<EditView>(`/admin/catalog/services/${view.slug}/groups`, {
         method: "POST",
@@ -180,7 +258,7 @@ export default function EditPricingPage() {
           inputType: gType,
           isRequired: gRequired,
           ...(gType === "QUANTITY"
-            ? { unitLabel: gUnitLabel.trim(), unitPrice: d2c(gUnitPrice || "0"), quantityMin: 0, quantityMax: 99 }
+            ? { unitLabel: gUnitLabel.trim(), unitPrice: unitPrice.ok ? unitPrice.value : 0, quantityMin: 0, quantityMax: 99 }
             : {}),
         },
       }),
@@ -201,14 +279,35 @@ export default function EditPricingPage() {
   async function addOption(g: EditGroup) {
     const draft = optDrafts[g.id];
     if (!draft?.label.trim()) return;
+    const delta = optionalMoney(draft.delta ?? "");
+    if (!delta.ok) {
+      setErr(`New option delta: ${delta.error}`);
+      return;
+    }
     await run("Option added.", () =>
       api<EditView>(`/admin/catalog/services/${view!.slug}/groups/${g.id}/options`, {
         method: "POST",
-        body: { label: draft.label.trim(), priceDelta: d2c(draft.delta || "0") },
+        body: { label: draft.label.trim(), priceDelta: delta.value },
       }),
     );
     setOptDrafts((d) => ({ ...d, [g.id]: { label: "", delta: "" } }));
   }
+
+  // ── Derived validation ──────────────────────────────────────────────────────
+  // One source of truth for the inline messages AND the Save buttons' disabled
+  // state, so what the admin sees and what the form allows can never disagree.
+  const baseR = money(basePrice);
+  const taxR = percent(taxPct);
+  const durR = fromDurationDraft(duration);
+  const deltaR: Record<string, Parsed<number>> = Object.fromEntries(
+    (view?.groups ?? []).flatMap((g) => g.options.map((o) => [o.id, optionalMoney(optDeltas[o.id] ?? "")])),
+  );
+  const pricingInvalid = !baseR.ok || !taxR.ok || !durR.ok || Object.values(deltaR).some((r) => !r.ok);
+
+  const discountR: Record<string, Parsed<number>> = Object.fromEntries(
+    rec.map((r) => [r.cadenceId, wholeNumber(r.discount, 0, 100)]),
+  );
+  const recurringInvalid = Object.values(discountR).some((r) => !r.ok);
 
   return (
     <>
@@ -242,19 +341,106 @@ export default function EditPricingPage() {
 
           {/* ── Base price + tax ─────────────────────────────────────── */}
           <div className="ax-card" style={{ marginTop: 12 }}>
-            <div className="ax-row" style={{ gap: 16 }}>
+            <div className="ax-row" style={{ gap: 16, alignItems: "flex-start" }}>
               <div className="ax-field" style={{ width: 160 }}>
-                <label>Base price ($)</label>
-                <input className="ax-input" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
+                <label htmlFor="base-price">Base price ($)</label>
+                <input
+                  id="base-price"
+                  className={bad(baseR)}
+                  inputMode="decimal"
+                  aria-invalid={!baseR.ok}
+                  value={basePrice}
+                  onChange={(e) => setBasePrice(e.target.value)}
+                />
+                <Err of={baseR} />
               </div>
               <div className="ax-field" style={{ width: 140 }}>
-                <label>Tax (%)</label>
-                <input className="ax-input" value={taxPct} onChange={(e) => setTaxPct(e.target.value)} />
+                <label htmlFor="tax-pct">Tax (%)</label>
+                <input
+                  id="tax-pct"
+                  className={bad(taxR)}
+                  inputMode="decimal"
+                  aria-invalid={!taxR.ok}
+                  value={taxPct}
+                  onChange={(e) => setTaxPct(e.target.value)}
+                />
+                <Err of={taxR} />
               </div>
-              <div className="ax-field" style={{ width: 200 }}>
-                <label>Typical duration</label>
-                <input className="ax-input" placeholder="e.g. 2–3 hrs" value={typicalDuration} onChange={(e) => setTypicalDuration(e.target.value)} />
+            </div>
+
+            {/* Typical duration — composed, so the site's labels stay consistent. */}
+            <div className="ax-field" style={{ marginTop: 4 }}>
+              <label>Typical duration</label>
+              <div className="ax-row" style={{ gap: 8 }}>
+                {(
+                  [
+                    ["RANGE", "Range"],
+                    ["APPROX", "Approx."],
+                    ["CUSTOM", "Custom label"],
+                  ] as const
+                ).map(([m, text]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`ax-btn sm${duration.mode === m ? "" : " ghost"}`}
+                    aria-pressed={duration.mode === m}
+                    onClick={() => setDuration((d) => ({ ...d, mode: m as DurationMode }))}
+                  >
+                    {text}
+                  </button>
+                ))}
               </div>
+
+              <div className="ax-row" style={{ gap: 8, marginTop: 8 }}>
+                {duration.mode === "CUSTOM" ? (
+                  <input
+                    className={bad(durR)}
+                    style={{ maxWidth: 260 }}
+                    placeholder="e.g. Consultation, Varies, Per block"
+                    value={duration.label}
+                    onChange={(e) => setDuration((d) => ({ ...d, label: e.target.value }))}
+                  />
+                ) : (
+                  <>
+                    {duration.mode === "APPROX" && <span className="ax-hint">~</span>}
+                    <input
+                      className={bad(durR)}
+                      style={{ width: 80 }}
+                      inputMode="numeric"
+                      placeholder={duration.mode === "RANGE" ? "min" : "approx"}
+                      value={duration.min}
+                      onChange={(e) => setDuration((d) => ({ ...d, min: e.target.value }))}
+                    />
+                    {duration.mode === "RANGE" && (
+                      <>
+                        <span className="ax-hint">to</span>
+                        <input
+                          className={bad(durR)}
+                          style={{ width: 80 }}
+                          inputMode="numeric"
+                          placeholder="max"
+                          value={duration.max}
+                          onChange={(e) => setDuration((d) => ({ ...d, max: e.target.value }))}
+                        />
+                      </>
+                    )}
+                    <select
+                      className="ax-select"
+                      style={{ width: 100 }}
+                      value={duration.unit}
+                      onChange={(e) => setDuration((d) => ({ ...d, unit: e.target.value as DurationUnit }))}
+                    >
+                      {DURATION_UNITS.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                <span className="ax-hint">
+                  Site shows: <strong>{previewDuration(duration)}</strong>
+                </span>
+              </div>
+              <Err of={durR} />
             </div>
             <p className="ax-muted" style={{ marginTop: 8 }}>
               Base price is the minimum a customer pays AND the “from $X” the site lists ($0 = no from-price shown).
@@ -304,7 +490,14 @@ export default function EditPricingPage() {
                               {(optDeltas[o.id] === "0.00" || optDeltas[o.id] === "0") && <span className="ax-badge ok" style={{ marginLeft: 8 }}>Included</span>}
                             </td>
                             <td>
-                              <input className="ax-input" style={{ width: 110 }} value={optDeltas[o.id] ?? ""} onChange={(e) => setOptDeltas((m) => ({ ...m, [o.id]: e.target.value }))} />
+                              <input
+                                className={bad(deltaR[o.id] ?? { ok: true, value: 0 })}
+                                style={{ width: 110 }}
+                                inputMode="decimal"
+                                value={optDeltas[o.id] ?? ""}
+                                onChange={(e) => setOptDeltas((m) => ({ ...m, [o.id]: e.target.value }))}
+                              />
+                              {deltaR[o.id] && <Err of={deltaR[o.id]} />}
                             </td>
                             <td>
                               <button className="ax-btn ghost sm" onClick={() => void patchOption(o, { status: o.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }, "Option updated.")}>
@@ -384,22 +577,29 @@ export default function EditPricingPage() {
                     </td>
                     <td>
                       <input
-                        className="ax-input"
+                        className={bad(discountR[r.cadenceId] ?? { ok: true, value: 0 })}
                         style={{ width: 90 }}
-                        value={String(r.discountPercent)}
-                        onChange={(e) => setRec((rows) => rows.map((x, xi) => (xi === i ? { ...x, discountPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) } : x)))}
+                        inputMode="numeric"
+                        value={r.discount}
+                        onChange={(e) => setRec((rows) => rows.map((x, xi) => (xi === i ? { ...x, discount: e.target.value } : x)))}
                       />
+                      {discountR[r.cadenceId] && <Err of={discountR[r.cadenceId]} />}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button className="ax-btn sm" style={{ marginTop: 10 }} onClick={() => void saveRecurring()}>Save recurring</button>
+            <button className="ax-btn sm" style={{ marginTop: 10 }} onClick={() => void saveRecurring()} disabled={recurringInvalid}>
+              Save recurring
+            </button>
           </div>
 
-          <button className="ax-btn" style={{ marginTop: 16 }} onClick={() => void savePricing()} disabled={busy}>
-            {busy ? "Saving…" : "Save pricing"}
-          </button>
+          <div className="ax-row" style={{ marginTop: 16, gap: 12 }}>
+            <button className="ax-btn" onClick={() => void savePricing()} disabled={busy || pricingInvalid}>
+              {busy ? "Saving…" : "Save pricing"}
+            </button>
+            {pricingInvalid && <span className="ax-err">Fix the highlighted fields to save.</span>}
+          </div>
         </>
       )}
     </>

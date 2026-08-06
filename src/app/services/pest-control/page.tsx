@@ -4,7 +4,7 @@ import '../../cta-band.css';
 import '../service.css';
 import '../../testimonials.css';
 import ServicePage from '../../../components/service/ServicePage';
-import { overlayServicePage } from '../../../lib/catalog';
+import { getRecurringOptions, overlayServicePage } from '../../../lib/catalog';
 import { content } from '../../../data/services/pest-control/content';
 
 // TODO(design): update metadata when the Pest Control design is delivered.
@@ -14,5 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  return <ServicePage config={await overlayServicePage(content, 'pest-control')} />;
+  return (
+    <ServicePage
+      config={await overlayServicePage(content, 'pest-control')}
+      recurringOptions={await getRecurringOptions('pest-control')}
+    />
+  );
 }

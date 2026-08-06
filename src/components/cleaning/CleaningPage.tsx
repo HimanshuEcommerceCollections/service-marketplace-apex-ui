@@ -10,6 +10,7 @@ import Testimonials from '../shared/Testimonials';
 import CtaBand from '../shared/CtaBand';
 import SiteFooter from '../shared/SiteFooter';
 import { mountService } from '../../lib/service/runtime';
+import type { RecurringOptionView } from '../../lib/catalog';
 import { mountChrome } from '../../lib/shared/chrome';
 import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
@@ -19,10 +20,10 @@ import { content } from '../../data/cleaning/content';
 
 // Fallback recurring plans (used only if the API is unreachable / not configured).
 const recurringPlans: ServicePlan[] = [
-  { name: 'One-time', freq: 'Single visit', amount: '$170', choose: 'Choose one-time' },
-  { name: 'Weekly', freq: 'Every week', amount: '$133', unit: '/visit', disc: 'Save 22%', best: true, choose: 'Choose weekly' },
-  { name: 'Biweekly', freq: 'Every 2 weeks', amount: '$145', unit: '/visit', disc: 'Save 15%', choose: 'Choose biweekly' },
-  { name: 'Monthly', freq: 'Every month', amount: '$156', unit: '/visit', disc: 'Save 8%', choose: 'Choose monthly' },
+  { name: 'One-time', freq: 'Single visit', amount: '$170' },
+  { name: 'Weekly', freq: 'Every week', amount: '$133', unit: '/visit', disc: 'Save 22%', best: true },
+  { name: 'Biweekly', freq: 'Every 2 weeks', amount: '$145', unit: '/visit', disc: 'Save 15%' },
+  { name: 'Monthly', freq: 'Every month', amount: '$156', unit: '/visit', disc: 'Save 8%' },
 ];
 const RECURRING_HEADING = 'Book once. Never think about it again.';
 const finalBlurb =
@@ -31,15 +32,18 @@ const finalBlurb =
 export default function CleaningPage({
   heroPrice,
   recurring,
+  recurringOptions = [],
 }: {
   heroPrice?: string;
   recurring?: RecurringSection | null;
+  /** Admin's payment-frequency grid — drives the estimator's Frequency control. */
+  recurringOptions?: RecurringOptionView[];
 }) {
   useEffect(() => {
     // mountService wires the configurator engine and testimonial carousel,
     // returning a teardown fn. 'cleaning' selects the configurator spec;
     // testimonials feed the carousel. Safe under StrictMode.
-    const disposeService = mountService('cleaning', testimonials);
+    const disposeService = mountService('cleaning', testimonials, recurringOptions);
     const disposeChrome = mountChrome();
     const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(
@@ -62,7 +66,6 @@ export default function CleaningPage({
       <Recurring
         heading={recurring?.heading || RECURRING_HEADING}
         plans={recurring?.plans ?? recurringPlans}
-        serviceSlug="cleaning"
       />
       <Testimonials />
       <CtaBand
