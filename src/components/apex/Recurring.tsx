@@ -5,28 +5,28 @@ import { ArrowThin } from './icons';
 const plans: { num: string; title: string; disc: string; body: string; open?: boolean }[] = [
   {
     num: '01',
-    title: 'Weekly — ',
+    title: 'Weekly',
     disc: '22% OFF',
     open: true,
-    body: 'Most popular plan. Perfect for busy homes that need consistent care and maximum savings — this cadence keeps your space in gallery-ready condition all year round.',
+    body: 'Most popular plan. Perfect for busy homes that need consistent care and maximum savings. This cadence keeps your space in gallery-ready condition all year round.',
   },
   {
     num: '02',
-    title: 'Biweekly — ',
+    title: 'Biweekly',
     disc: '15% OFF',
-    body: 'The sweet spot for most homes — a fresh, cared-for space every two weeks with meaningful savings and the same trusted crew on every visit.',
+    body: 'The sweet spot for most homes: a fresh, cared-for space every two weeks with meaningful savings and the same trusted crew on every visit.',
   },
   {
     num: '03',
-    title: 'Monthly — ',
+    title: 'Monthly',
     disc: '8% OFF',
     body: 'A reliable monthly reset for lighter households. Keep the essentials handled and lock in member pricing without the weekly commitment.',
   },
   {
     num: '04',
-    title: 'One-Time — ',
+    title: 'One-Time',
     disc: '0% OFF',
-    body: 'Need it just once? Book a single visit with no commitment — the same pros and the same standards, pay only for the visit you need.',
+    body: 'Need it just once? Book a single visit with no commitment, the same pros and the same standards, pay only for the visit you need.',
   },
 ];
 
@@ -39,7 +39,7 @@ export default function Recurring() {
         <p className="rp-sub rv">Save up to 22% with a plan.</p>
         <p className="rp-desc rv">
           Set it and forget it. Weekly, biweekly, or monthly visits with the same trusted crew every
-          time — premium care with flexible scheduling and exclusive member savings.
+          time, with premium care, flexible scheduling and exclusive member savings.
         </p>
 
         <div className="rp-acc rv" id="rpAcc">

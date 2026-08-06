@@ -47,7 +47,7 @@ export default function Recurring({ heading, plans }: RecurringProps) {
         ))}
       </div>
       <p className="rec-note reveal">
-        Pick your frequency in the estimate below — the discount is applied to your total.
+        Pick your frequency in the estimate below. The discount is applied to your total.
       </p>
     </section>
   );

@@ -46,7 +46,7 @@ export const chapters: Chapter[] = [
     rating: '4.9',
     reviews: '1.2k reviews',
     story:
-      'A spotless home on your schedule — configured by beds, baths and how often you want us back.',
+      'A spotless home on your schedule, configured by beds, baths and how often you want us back.',
     specs: [
       { value: 'Beds × baths', caption: 'Configuration' },
       { value: 'from $129', num: true, caption: 'Priced instantly' },
@@ -67,7 +67,7 @@ export const chapters: Chapter[] = [
     rating: '4.8',
     reviews: '860 reviews',
     story:
-      'Crisp, even stripes every visit — priced by your lot and kept on a rhythm that suits the season.',
+      'Crisp, even stripes every visit, priced by your lot and kept on a rhythm that suits the season.',
     specs: [
       { value: 'By lot size', caption: 'Configuration' },
       { value: '$59', num: true, caption: 'Per visit' },
@@ -88,7 +88,7 @@ export const chapters: Chapter[] = [
     rating: '4.9',
     reviews: '540 reviews',
     story:
-      'Balanced water and a spotless pool all season — skimmed, tested and treated on a steady cadence.',
+      'Balanced water and a spotless pool all season: skimmed, tested and treated on a steady cadence.',
     specs: [
       { value: 'By pool size', caption: 'Configuration' },
       { value: '$119', num: true, caption: 'Per visit' },
@@ -109,7 +109,7 @@ export const chapters: Chapter[] = [
     rating: '4.7',
     reviews: '430 reviews',
     story:
-      'Quarterly, licensed and thorough — a protected perimeter you never have to think about.',
+      'Quarterly, licensed and thorough. A protected perimeter you never have to think about.',
     specs: [
       { value: 'Quarterly', caption: 'Cadence' },
       { value: '$89', num: true, caption: 'Per visit' },
@@ -130,7 +130,7 @@ export const chapters: Chapter[] = [
     rating: '4.8',
     reviews: '720 reviews',
     story:
-      'Driveways, siding and decks brought back to new — the grime lifts and the surface stays.',
+      'Driveways, siding and decks brought back to new. The grime lifts and the surface stays.',
     specs: [
       { value: 'Surface & area', caption: 'Configuration' },
       { value: 'from $199', num: true, caption: 'Starting price' },
@@ -151,7 +151,7 @@ export const chapters: Chapter[] = [
     rating: '4.8',
     reviews: '610 reviews',
     story:
-      'Point at what has to go — a quarter load or a full truck — and we clear it the same visit.',
+      'Point at what has to go, a quarter load or a full truck, and we clear it the same visit.',
     specs: [
       { value: 'Visual load size', caption: 'Configuration' },
       { value: 'from $99', num: true, caption: 'Priced instantly' },
@@ -172,7 +172,7 @@ export const chapters: Chapter[] = [
     rating: '4.9',
     reviews: '390 reviews',
     story:
-      'Cameras, sensors and switches installed and linked — three devices or more and the price drops.',
+      'Cameras, sensors and switches installed and linked. Three devices or more and the price drops.',
     specs: [
       { value: 'Device checklist', caption: 'Configuration' },
       { value: 'from $199', num: true, caption: 'Priced instantly' },
@@ -193,7 +193,7 @@ export const chapters: Chapter[] = [
     rating: '4.9',
     reviews: '980 reviews',
     story:
-      'The whole to-do list handled in one visit — mounting, repairs and the odd jobs that pile up.',
+      'The whole to-do list handled in one visit: mounting, repairs and the odd jobs that pile up.',
     specs: [
       { value: 'By the hour', caption: 'Configuration' },
       { value: 'from $95/hr', num: true, caption: 'Starting price' },
@@ -214,7 +214,7 @@ export const chapters: Chapter[] = [
     rating: '5.0',
     reviews: '510 reviews',
     story:
-      'Interior or exterior, cut in clean and rolled even — a finish that looks factory-fresh.',
+      'Interior or exterior, cut in clean and rolled even, for a finish that looks factory-fresh.',
     specs: [
       { value: 'Interior · exterior', caption: 'Scope' },
       { value: 'Custom estimate', caption: 'Quoted' },
@@ -235,7 +235,7 @@ export const chapters: Chapter[] = [
     rating: '4.8',
     reviews: '280 reviews',
     story:
-      'Cameras, alarms and smart locks designed around your home — planned in a free consult first.',
+      'Cameras, alarms and smart locks designed around your home, planned in a free consult first.',
     specs: [
       { value: 'Site walkthrough', caption: 'Consult' },
       { value: 'Free consult', caption: 'No pressure' },
@@ -257,7 +257,7 @@ export const chapters: Chapter[] = [
     rating: '4.7',
     reviews: '190 reviews',
     story:
-      'Overgrown limbs cleared and stumps ground flush — heavy work done clean and hauled away.',
+      'Overgrown limbs cleared and stumps ground flush. Heavy work done clean and hauled away.',
     specs: [
       { value: 'On-site assessment', caption: 'Scope' },
       { value: 'Custom estimate', caption: 'Quoted' },

@@ -35,7 +35,7 @@ export const testimonials: Testimonial[] = [
     id: 'aisha',
     n: 'Aisha Kapoor',
     r: 'Home Cleaning · Holly Springs',
-    q: 'Spotless every time and so easy to reschedule — the most reliable service we have ever used.',
+    q: 'Spotless every time and so easy to reschedule. The most reliable service we have ever used.',
   },
   {
     id: 'neha',

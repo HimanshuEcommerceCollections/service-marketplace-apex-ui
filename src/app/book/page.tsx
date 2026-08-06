@@ -6,7 +6,7 @@ import BookingFlow from './BookingFlow';
 
 export const metadata: Metadata = {
   // Preserved from the source document (apex-booking.html).
-  title: 'Book a Service — Apex Total Home Services',
+  title: 'Book a Service | Apex Total Home Services',
   description:
     "Book any of Apex's home services in a few steps. Configure, see live pricing, and request your booking.",
 };

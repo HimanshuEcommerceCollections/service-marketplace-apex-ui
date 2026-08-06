@@ -641,7 +641,7 @@ export default function BookingFlow() {
                       <div className="custom">{isQuote ? "Custom Estimate" : pricing ? "Pricing…" : "—"}</div>
                       <p style={{ position: "relative", color: "rgba(255,255,255,.75)", marginTop: 12, maxWidth: "38ch" }}>
                         {isQuote
-                          ? "A coordinator will review your project details and send a tailored quote — usually within one business day."
+                          ? "A coordinator will review your project details and send a tailored quote, usually within one business day."
                           : "Choose your options on the previous step to see a live estimate."}
                       </p>
                     </>
@@ -809,7 +809,7 @@ export default function BookingFlow() {
             <div className="success show" style={{ maxWidth: 640 }}>
               <h2 style={{ fontSize: "clamp(26px,3.4vw,40px)" }}>Secure your booking</h2>
               <div className="bid">{result.reference}</div>
-              <p>Your booking is reserved — complete the payment to confirm it.</p>
+              <p>Your booking is reserved. Complete the payment to confirm it.</p>
               <div className="pay-pane">
                 <PayBooking reference={result.reference} onPaid={() => setPaid(true)} />
               </div>
@@ -835,7 +835,7 @@ export default function BookingFlow() {
                   <div className="bid">{result.reference}</div>
                   <p>
                     {paid
-                      ? "Your booking is paid and confirmed on our side — a coordinator will schedule your visit shortly."
+                      ? "Your booking is paid and confirmed on our side. A coordinator will schedule your visit shortly."
                       : "We've received your booking request. Our coordinator will contact you shortly to confirm the final details."}
                   </p>
                   <div className="cta-row">
@@ -851,7 +851,7 @@ export default function BookingFlow() {
                 <>
                   <h2>You&apos;re on the waitlist</h2>
                   <p>
-                    We don&apos;t serve {result.waitlist_signup.zip} yet — we&apos;ll email you as soon as we
+                    We don&apos;t serve {result.waitlist_signup.zip} yet. We&apos;ll email you as soon as we
                     expand there.
                   </p>
                   <div className="cta-row">

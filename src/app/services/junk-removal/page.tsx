@@ -9,8 +9,8 @@ import { content } from '../../../data/services/junk-removal/content';
 
 // TODO(design): update metadata when the Junk Removal design is delivered.
 export const metadata: Metadata = {
-  title: 'Junk Removal — Apex Total Home Services',
-  description: 'Furniture, appliances and debris lifted, loaded and hauled away — you point, we do the rest.',
+  title: 'Junk Removal | Apex Total Home Services',
+  description: 'Furniture, appliances and debris lifted, loaded and hauled away. You point, we do the rest.',
 };
 
 export default async function Page() {

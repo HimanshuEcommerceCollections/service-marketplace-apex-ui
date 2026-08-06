@@ -60,9 +60,9 @@ export default function MyBookingsView() {
   // Stripe redirect landings: subscription checkout + redirect-based payments.
   const banner =
     params.get('membership') === 'success'
-      ? 'Your membership is active — visits will appear here as each cycle is billed.'
+      ? 'Your membership is active. Visits will appear here as each cycle is billed.'
       : params.get('payment') === 'success'
-        ? 'Payment received — your booking is confirmed on our side.'
+        ? 'Payment received. Your booking is confirmed on our side.'
         : null;
 
   useEffect(() => {
@@ -148,7 +148,7 @@ export default function MyBookingsView() {
             {err && <p className="mb-note is-err">{err}</p>}
 
             {!user.emailVerified && (
-              <p className="mb-note">Please verify your email — check your inbox for the verification link.</p>
+              <p className="mb-note">Please verify your email. Check your inbox for the verification link.</p>
             )}
 
             {bookings === null ? (
@@ -185,10 +185,10 @@ export default function MyBookingsView() {
                           )}
                         </div>
                         {b.quoteRequest && b.quotedAmount == null && b.status === 'PENDING' && (
-                          <p className="mb-quotewait">Your coordinator is preparing a quote — you can pay here once it arrives.</p>
+                          <p className="mb-quotewait">Your coordinator is preparing a quote. You can pay here once it arrives.</p>
                         )}
                         {b.canCancel && b.paymentDueAt && (
-                          <p className="mb-quotewait">Unpaid — cancels automatically on {day(b.paymentDueAt)} unless paid.</p>
+                          <p className="mb-quotewait">Unpaid. Cancels automatically on {day(b.paymentDueAt)} unless paid.</p>
                         )}
                       </div>
                       <div className="mb-item-side">

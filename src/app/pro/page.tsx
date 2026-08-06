@@ -4,7 +4,7 @@ import './pro.css';
 import ProDashboardView from './ProDashboardView';
 
 export const metadata: Metadata = {
-  title: 'Pro Dashboard — Apex Total Home Services',
+  title: 'Pro Dashboard | Apex Total Home Services',
   description: 'Assigned jobs and schedule for verified Apex professionals.',
   robots: { index: false, follow: false },
 };

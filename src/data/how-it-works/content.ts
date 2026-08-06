@@ -13,9 +13,9 @@ export interface Cta {
 /* ---------------- HERO ---------------- */
 export const hero = {
   eyebrow: 'How it works',
-  // Trailing space is load-bearing: the <em> half of the heading is rendered
-  // immediately after this, so the spacing around the em dash lives here.
-  titleLead: 'From booking to a perfect home — ',
+  // Trailing space is load-bearing: the <em> half of the heading renders
+  // immediately after this, so the gap between the two halves lives here.
+  titleLead: 'From booking to a perfect home, ',
   titleEm: 'it’s that simple.',
   lede:
     'Whether you need a one-time service or recurring home maintenance, Apex makes every step simple, transparent, and stress-free.',
@@ -115,10 +115,10 @@ export const effortlessHead = {
 };
 
 export const effortlessCards: EffortCard[] = [
-  { icon: 'dollar', title: 'Transparent pricing', body: 'See the full breakdown before you ever book — no hidden fees.' },
+  { icon: 'dollar', title: 'Transparent pricing', body: 'See the full breakdown before you ever book. No hidden fees.' },
   { icon: 'security', title: 'Trusted local experts', body: 'Vetted, insured, background-checked pros who know Wake County.' },
   { icon: 'dollar', title: 'Recurring savings', body: 'Members save up to 15% every visit with locked-in pricing.' },
-  { icon: 'calendar', title: 'Easy scheduling', body: 'Book, reschedule, or skip in seconds — no calls, no contracts.' },
+  { icon: 'calendar', title: 'Easy scheduling', body: 'Book, reschedule, or skip in seconds. No calls, no contracts.' },
 ];
 
 export interface Stat {
@@ -146,7 +146,7 @@ export const testimonialsHead = {
   eyebrow: 'Testimonials',
   titleLead: 'Loved by Wake County ',
   titleHighlight: 'homes.',
-  blurb: 'Real homeowners, one accountable team — booked in seconds and done right the first time.',
+  blurb: 'Real homeowners, one accountable team, booked in seconds and done right the first time.',
 };
 
 /* ---------------- FAQ ---------------- */
@@ -163,11 +163,11 @@ export const faqHead = {
 export const faqs: Faq[] = [
   {
     q: 'How long does booking take?',
-    a: 'About 90 seconds. Pick a service, configure it, add your details, and submit — you’ll see transparent pricing the whole way.',
+    a: 'About 90 seconds. Pick a service, configure it, add your details, and submit. You’ll see transparent pricing the whole way.',
   },
   {
     q: 'Can I reschedule?',
-    a: 'Anytime, with no fees. Move, skip, or cancel a visit from your account — recurring plans are month-to-month with no lock-in.',
+    a: 'Anytime, with no fees. Move, skip, or cancel a visit from your account. Recurring plans are month-to-month with no lock-in.',
   },
   {
     q: 'Do I need to be home?',

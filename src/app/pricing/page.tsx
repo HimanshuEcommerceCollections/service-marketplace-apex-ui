@@ -11,7 +11,7 @@ import { getServices, formatFromPrice } from '../../lib/catalog';
 
 export const metadata: Metadata = {
   // Preserved from the source document.
-  title: 'Pricing — Apex Total Home Services',
+  title: 'Pricing | Apex Total Home Services',
   description:
     'Simple, transparent pricing for every Apex home service. Compare plans, estimate your cost, and book with no hidden fees.',
 };

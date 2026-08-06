@@ -15,13 +15,13 @@ export const models: PricingModel[] = [
   {
     icon: 'cleaning',
     title: 'Fixed pricing',
-    body: 'A set price you see upfront — same every visit.',
+    body: 'A set price you see upfront, the same every visit.',
     items: ['Home Cleaning', 'Pool Service', 'Pest Control'],
   },
   {
     icon: 'lawn',
     title: 'Variable pricing',
-    body: 'Scales with lot size, devices, or load — always shown live.',
+    body: 'Scales with lot size, devices, or load, and always shown live.',
     items: ['Lawn Care', 'Junk Removal', 'Smart Home'],
   },
   {
@@ -67,7 +67,7 @@ export const stats: Stat[] = [
 export const faqs: { q: string; a: string }[] = [
   {
     q: 'Why do some services require quotes?',
-    a: 'Bigger or highly custom projects — like whole-home painting, tree removal, or security installs — vary too much to price sight unseen. We give a fast, free on-site estimate so the number is accurate.',
+    a: 'Bigger or highly custom projects (like whole-home painting, tree removal, or security installs) vary too much to price sight unseen. We give a fast, free on-site estimate so the number is accurate.',
   },
   {
     q: 'How is recurring pricing calculated?',
@@ -75,7 +75,7 @@ export const faqs: { q: string; a: string }[] = [
   },
   {
     q: 'Can I change my booking later?',
-    a: 'Yes. Reschedule, skip, or switch services anytime from your account — there are no change fees and no lock-in contracts.',
+    a: 'Yes. Reschedule, skip, or switch services anytime from your account. There are no change fees and no lock-in contracts.',
   },
   {
     q: 'Are taxes included?',

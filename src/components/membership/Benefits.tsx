@@ -9,7 +9,7 @@ const Check = () => (
 const perks = [
   { title: 'Locked-in pricing', body: 'Your rate never changes for as long as you stay a member.' },
   { title: 'Free re-service', body: 'Not happy? We return within 24 hours at no charge.' },
-  { title: 'No contracts', body: 'Month-to-month freedom — pause or cancel anytime.' },
+  { title: 'No contracts', body: 'Month-to-month freedom. Pause or cancel anytime.' },
   { title: 'Priority slots', body: 'First pick of appointment windows, even in peak season.' },
   { title: 'Dedicated coordinator', body: 'One point of contact who knows your home.' },
   { title: 'Member add-on rates', body: 'Discounted pricing on one-off extras and seasonal jobs.' },

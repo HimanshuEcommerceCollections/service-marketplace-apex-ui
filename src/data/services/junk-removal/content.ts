@@ -13,7 +13,7 @@ export const content: ServiceConfig = {
       eyebrow: 'Junk Removal',
       titleLead: 'Clutter gone,',
       titleEm: 'often the same day.',
-      description: 'Furniture, appliances and debris lifted, loaded and hauled away — you point, we do the rest.',
+      description: 'Furniture, appliances and debris lifted, loaded and hauled away. You point, we do the rest.',
       priceLabel: 'Priced from',
       price: '$99',
       bookingSlug: 'junk-removal',
@@ -29,9 +29,9 @@ export const content: ServiceConfig = {
     },
     expect: {
       heading: 'Straightforward from start to finish.',
-      subheading: 'No surprises — here is exactly how junk removal works with Apex.',
+      subheading: 'No surprises. Here is exactly how junk removal works with Apex.',
       cards: [
-        { icon: 'clipboard', title: 'What we do', body: 'Furniture, appliances and debris lifted, loaded and hauled away — you point, we do the rest.' },
+        { icon: 'clipboard', title: 'What we do', body: 'Furniture, appliances and debris lifted, loaded and hauled away. You point, we do the rest.' },
         { icon: 'clock', title: 'How it works', body: 'Configure the details, pick a window, and the same trusted pro arrives ready to go.' },
         { icon: 'shield', title: 'Our promise', body: 'Not happy with the result? Tell us within 24 hours and we come back to make it right, free.' },
       ],
@@ -48,7 +48,7 @@ export const content: ServiceConfig = {
     ],
   },
   finalCta: {
-    blurb: 'Furniture, appliances and debris lifted, loaded and hauled away — you point, we do the rest.',
+    blurb: 'Furniture, appliances and debris lifted, loaded and hauled away. You point, we do the rest.',
   },
   testimonials: placeholderTestimonials,
 };

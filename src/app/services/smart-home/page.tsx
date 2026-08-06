@@ -9,7 +9,7 @@ import { content } from '../../../data/services/smart-home/content';
 
 // TODO(design): update metadata when the Smart Home design is delivered.
 export const metadata: Metadata = {
-  title: 'Smart Home — Apex Total Home Services',
+  title: 'Smart Home | Apex Total Home Services',
   description: 'Thermostats, lighting, locks and cameras configured, connected and explained.',
 };
 

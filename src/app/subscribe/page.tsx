@@ -5,7 +5,7 @@ import '../book/booking.css';
 import SubscribeView from './SubscribeView';
 
 export const metadata: Metadata = {
-  title: 'Subscribe — Apex Total Home Services',
+  title: 'Subscribe | Apex Total Home Services',
   description: 'Start an Apex membership plan: pick your details and subscribe with secure checkout.',
   robots: { index: false, follow: false },
 };

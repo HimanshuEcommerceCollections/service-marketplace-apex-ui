@@ -29,7 +29,7 @@ export const content: ServiceConfig = {
     },
     expect: {
       heading: 'Straightforward from start to finish.',
-      subheading: 'No surprises — here is exactly how pool service works with Apex.',
+      subheading: 'No surprises. Here is exactly how pool service works with Apex.',
       cards: [
         { icon: 'clipboard', title: 'What we do', body: 'Skimming, vacuuming, brushing and chemical balancing on a schedule that fits your pool.' },
         { icon: 'clock', title: 'How it works', body: 'Configure the details, pick a window, and the same trusted pro arrives ready to go.' },

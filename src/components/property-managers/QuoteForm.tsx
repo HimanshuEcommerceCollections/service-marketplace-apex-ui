@@ -138,7 +138,7 @@ export default function QuoteForm() {
                 </div>
                 <h3>Request received</h3>
                 <p>
-                  Thanks — a coordinator will review your property details and reach out with a
+                  Thanks. A coordinator will review your property details and reach out with a
                   customized quote.
                 </p>
                 <div className="ref">Reference: {done.slice(0, 8).toUpperCase()}</div>
@@ -325,7 +325,7 @@ export default function QuoteForm() {
                   </button>
                   <p className="form-legal">
                     This is a quote request, not a booking. A coordinator will review your details
-                    and follow up — nothing is scheduled or charged until you approve a quote.
+                    and follow up. Nothing is scheduled or charged until you approve a quote.
                   </p>
                 </div>
               </form>

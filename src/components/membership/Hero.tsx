@@ -31,7 +31,7 @@ export default function Hero() {
             <em>always handled.</em>
           </h1>
           <p className="lede">
-            One membership for cleaning, lawn, pool and power washing — the same trusted pros, on an
+            One membership for cleaning, lawn, pool and power washing, with the same trusted pros on an
             automatic schedule, at your best possible price.
           </p>
           <div className="cta-row">

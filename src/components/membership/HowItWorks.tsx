@@ -3,7 +3,7 @@
 const steps = [
   {
     title: 'Choose your plan',
-    body: 'Pick a service and frequency — or build a bundle across your home.',
+    body: 'Pick a service and frequency, or build a bundle across your home.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 11l3 3L22 4" />
@@ -23,7 +23,7 @@ const steps = [
   },
   {
     title: 'Automatic visits',
-    body: 'The same vetted crew shows up on schedule — no reminders, no rebooking.',
+    body: 'The same vetted crew shows up on schedule. No reminders, no rebooking.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 12a9 9 0 11-3-6.7L21 8" />

@@ -8,7 +8,7 @@ import { getRecurringOptions, getRecurringSection, livePrice } from '../../../li
 
 export const metadata: Metadata = {
   // Preserved from the source document.
-  title: 'Lawn Care — Apex Total Home Services',
+  title: 'Lawn Care | Apex Total Home Services',
   description:
     'Mowing, edging and full lawn care, priced by lot size, handled by the same crew on the schedule you set.',
 };

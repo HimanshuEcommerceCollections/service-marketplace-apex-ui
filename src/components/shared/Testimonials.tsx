@@ -16,7 +16,7 @@ export default function Testimonials({
   eyebrow = 'Testimonials',
   titleLead = 'Loved by Wake County ',
   titleHighlight = 'homes.',
-  blurb = 'Real homeowners, one accountable team — booked in seconds and done right the first time.',
+  blurb = 'Real homeowners, one accountable team, booked in seconds and done right the first time.',
 }: TestimonialsProps) {
   return (
     <section id="testimonials">
