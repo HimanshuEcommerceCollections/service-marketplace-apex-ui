@@ -13,7 +13,9 @@ export interface Cta {
 /* ---------------- HERO ---------------- */
 export const hero = {
   eyebrow: 'How it works',
-  titleLead: 'From booking to a perfect home—',
+  // Trailing space is load-bearing: the <em> half of the heading is rendered
+  // immediately after this, so the spacing around the em dash lives here.
+  titleLead: 'From booking to a perfect home — ',
   titleEm: 'it’s that simple.',
   lede:
     'Whether you need a one-time service or recurring home maintenance, Apex makes every step simple, transparent, and stress-free.',
