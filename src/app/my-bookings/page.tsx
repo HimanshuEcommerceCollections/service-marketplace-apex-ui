@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import '../chrome.css';
 import './my-bookings.css';
+import '../../components/payments/pay.css';
 import MyBookingsView from './MyBookingsView';
 
 export const metadata: Metadata = {
@@ -10,5 +12,10 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <MyBookingsView />;
+  // MyBookingsView reads Stripe redirect params via useSearchParams — Suspense required.
+  return (
+    <Suspense fallback={<div className="pg-mybookings" />}>
+      <MyBookingsView />
+    </Suspense>
+  );
 }

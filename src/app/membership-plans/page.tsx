@@ -37,6 +37,9 @@ export default async function Page() {
       ...p,
       price: formatFromPrice(match.fromPrice as number, match.currency),
       features: match.bullets?.length ? match.bullets : p.features,
+      // Live plan -> the real subscribe flow (Stripe Checkout); unmatched cards
+      // keep their static /book deep-link.
+      bookHref: `/subscribe?plan=${match.id}`,
     };
   });
 

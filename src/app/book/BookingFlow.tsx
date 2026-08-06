@@ -29,6 +29,7 @@ import SiteFooter from "../../components/shared/SiteFooter";
 import { mountChrome } from "../../lib/shared/chrome";
 import { useCustomerAuth } from "../lib/customer-auth";
 import { api, ApiError } from "../lib/api-client";
+import PayBooking from "../../components/payments/PayBooking";
 import { SERVICE_ICON, Check, Arrow, Info, Lock } from "./icons";
 
 type Mode = "FROM" | "QUOTE";
@@ -150,6 +151,8 @@ export default function BookingFlow() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const [result, setResult] = useState<SubmitResult | null>(null);
+  // FROM bookings pay at booking: true once the card settles in this session.
+  const [paid, setPaid] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -315,6 +318,7 @@ export default function BookingFlow() {
   function restart() {
     setDone(false);
     setResult(null);
+    setPaid(false);
     setCfg(null);
     setSelections({});
     setDescription("");
@@ -738,19 +742,39 @@ export default function BookingFlow() {
             </>
           )}
 
+          {/* ---------- PAYMENT (FROM: pay at booking) ---------- */}
+          {done && result && result.outcome === "BOOKED" && result.status === "AWAITING_PAYMENT" && !paid && (
+            <div className="success show" style={{ maxWidth: 640 }}>
+              <h2 style={{ fontSize: "clamp(26px,3.4vw,40px)" }}>Secure your booking</h2>
+              <div className="bid">{result.reference}</div>
+              <p>Your booking is reserved — complete the payment to confirm it.</p>
+              <div className="pay-pane">
+                <PayBooking reference={result.reference} onPaid={() => setPaid(true)} />
+              </div>
+              <p className="auth-muted" style={{ marginTop: 14, fontSize: 13, color: "var(--slate4)" }}>
+                Not ready? You can pay later from{" "}
+                <Link href="/my-bookings" style={{ textDecoration: "underline" }}>
+                  My Bookings
+                </Link>{" "}
+                — unpaid bookings cancel automatically after 24 hours.
+              </p>
+            </div>
+          )}
+
           {/* ---------- SUCCESS ---------- */}
-          {done && result && (
+          {done && result && !(result.outcome === "BOOKED" && result.status === "AWAITING_PAYMENT" && !paid) && (
             <div className="success show">
               <div className="ill">
                 <Check />
               </div>
               {result.outcome === "BOOKED" ? (
                 <>
-                  <h2>You&apos;re all set!</h2>
+                  <h2>{paid ? "Payment received!" : "You're all set!"}</h2>
                   <div className="bid">{result.reference}</div>
                   <p>
-                    We&apos;ve received your booking request. Our coordinator will contact you shortly to confirm
-                    the final details.
+                    {paid
+                      ? "Your booking is paid and confirmed on our side — a coordinator will schedule your visit shortly."
+                      : "We've received your booking request. Our coordinator will contact you shortly to confirm the final details."}
                   </p>
                   <div className="cta-row">
                     <Link className="btn btn-primary ripple" href="/my-bookings">

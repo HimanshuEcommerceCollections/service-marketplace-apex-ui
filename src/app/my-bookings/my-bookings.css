@@ -18,6 +18,8 @@
   margin: 22px 0 0; padding: 13px 16px; border-radius: 13px; font-size: 13.5px;
   background: var(--clay-tint, #f6ebe1); color: #8a4f22; border: 1px solid #ecd6c3;
 }
+.mb-note.is-ok { background: #eaf6ef; color: #21603f; border-color: #cde8d8; }
+.mb-note.is-err { background: #fbeeea; color: #8f3423; border-color: #f0d4cb; }
 
 .mb-list { list-style: none; padding: 0; margin: 30px 0 0; display: grid; gap: 12px; }
 .mb-item {
@@ -28,7 +30,25 @@
   transition: transform var(--dur-quick) var(--ease-settle), box-shadow var(--dur-quick);
 }
 .mb-item:hover { transform: translateY(-1px); box-shadow: 0 22px 52px -30px rgba(20, 40, 60, 0.55); }
+/* Row wrapper: the payment pane expands full-width beneath it. */
+.mb-item { display: block; }
+.mb-item-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .mb-item-main { min-width: 0; }
+.mb-quotewait { margin-top: 8px; font-size: 12.5px; color: var(--slate4); }
+.mb-actions { display: flex; gap: 8px; margin-top: 4px; }
+.mb-btn {
+  font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 100px; cursor: pointer;
+  background: var(--bblue, #1b536e); color: #fff; border: 1px solid transparent;
+  transition: transform var(--dur-quick) var(--ease-settle), box-shadow var(--dur-quick);
+  box-shadow: 0 10px 20px -12px rgba(27, 83, 110, 0.8);
+}
+.mb-btn:hover { transform: translateY(-1px); }
+.mb-btn.is-ghost { background: #fff; color: var(--slate7); border-color: var(--line); box-shadow: none; }
+.mb-btn.is-ghost:hover { background: var(--mist); }
+.mb-pay {
+  margin-top: 16px; padding: 18px; border-top: 1px solid var(--line);
+  max-width: 520px;
+}
 .mb-item h2 {
   font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.015em;
   color: var(--ink); margin-bottom: 5px;
