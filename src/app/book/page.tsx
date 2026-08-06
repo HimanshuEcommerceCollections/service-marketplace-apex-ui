@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '../chrome.css';
 import './booking.css';
+import '../../components/payments/pay.css';
 import BookingFlow from './BookingFlow';
 
 export const metadata: Metadata = {

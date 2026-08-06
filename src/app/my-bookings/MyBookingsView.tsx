@@ -1,17 +1,21 @@
 'use client';
 
 // Booking history for the signed-in customer — the destination of the navbar
-// avatar's "My Bookings" item. Replaces the old /account page: same GET
-// /me/bookings data, but on the shared site chrome instead of the bare auth
-// sheet, and with sign-out living in the navbar menu.
+// avatar's "My Bookings" item, and now the payment hub: unpaid FROM bookings
+// offer Complete payment / Cancel booking (they auto-cancel after the payment
+// window), quoted QUOTE bookings offer Pay once the coordinator sets the
+// amount, and Stripe redirects (subscription checkout, redirect-based payment
+// methods) land here with a banner.
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import SiteNav from '../../components/shared/SiteNav';
 import SiteFooter from '../../components/shared/SiteFooter';
+import PayBooking from '../../components/payments/PayBooking';
 import { mountChrome } from '../../lib/shared/chrome';
 import { useRoleGuard } from '../lib/use-role-guard';
-import { api } from '../lib/api-client';
+import { api, ApiError } from '../lib/api-client';
 
 /** Customers only — staff and professionals get routed to their own surface. */
 const ALLOWED = ['CUSTOMER'] as const;
@@ -20,8 +24,15 @@ interface MyBooking {
   reference: string;
   service: { slug: string; name: string } | null;
   status: string;
+  quoteRequest: boolean;
   priceTotal: number | null;
+  taxAmount: number | null;
+  grandTotal: number | null;
+  quotedAmount: number | null;
   currency: string;
+  canPay: boolean;
+  canCancel: boolean;
+  paymentDueAt: string | null;
   scheduledAt: string | null;
   createdAt: string;
 }
@@ -38,12 +49,37 @@ const label = (status: string) => status.replace(/_/g, ' ').toLowerCase();
 
 export default function MyBookingsView() {
   const { status, user } = useRoleGuard(ALLOWED);
+  const params = useSearchParams();
   const [bookings, setBookings] = useState<MyBooking[] | null>(null);
   const [failed, setFailed] = useState(false);
+  /** Reference of the booking whose payment pane is open. */
+  const [paying, setPaying] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Stripe redirect landings: subscription checkout + redirect-based payments.
+  const banner =
+    params.get('membership') === 'success'
+      ? 'Your membership is active — visits will appear here as each cycle is billed.'
+      : params.get('payment') === 'success'
+        ? 'Payment received — your booking is confirmed on our side.'
+        : null;
 
   useEffect(() => {
     const dispose = mountChrome();
     return dispose;
+  }, []);
+
+  const load = useCallback(() => {
+    return api<MyBooking[]>('/me/bookings')
+      .then((rows) => {
+        setBookings(rows);
+        setFailed(false);
+      })
+      .catch(() => {
+        setBookings([]);
+        setFailed(true);
+      });
   }, []);
 
   // Hold the fetch until the role checks out — a professional passing through
@@ -66,6 +102,25 @@ export default function MyBookingsView() {
     };
   }, [user]);
 
+  async function cancelBooking(reference: string) {
+    setErr(null);
+    setNotice(null);
+    try {
+      await api(`/me/bookings/${encodeURIComponent(reference)}/cancel`, { method: 'POST' });
+      setNotice(`Booking ${reference} cancelled.`);
+      if (paying === reference) setPaying(null);
+      await load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : 'Cancel failed.');
+    }
+  }
+
+  function onPaid(reference: string) {
+    setPaying(null);
+    setNotice(`Payment received for ${reference} — thank you!`);
+    void load();
+  }
+
   return (
     <div className="pg-mybookings">
       <SiteNav />
@@ -87,6 +142,10 @@ export default function MyBookingsView() {
                 </span>
               )}
             </div>
+
+            {banner && <p className="mb-note is-ok">{banner}</p>}
+            {notice && <p className="mb-note is-ok">{notice}</p>}
+            {err && <p className="mb-note is-err">{err}</p>}
 
             {!user.emailVerified && (
               <p className="mb-note">Please verify your email — check your inbox for the verification link.</p>
@@ -111,24 +170,55 @@ export default function MyBookingsView() {
               <ul className="mb-list">
                 {bookings.map((b) => (
                   <li className="mb-item" key={b.reference}>
-                    <div className="mb-item-main">
-                      <h2>{b.service?.name ?? 'Service'}</h2>
-                      <div className="mb-meta">
-                        <span className="mb-ref">{b.reference}</span>
-                        <span className="dot" />
-                        <span>Booked {day(b.createdAt)}</span>
-                        {b.scheduledAt && (
-                          <>
-                            <span className="dot" />
-                            <span>Scheduled {day(b.scheduledAt)}</span>
-                          </>
+                    <div className="mb-item-row">
+                      <div className="mb-item-main">
+                        <h2>{b.service?.name ?? 'Service'}</h2>
+                        <div className="mb-meta">
+                          <span className="mb-ref">{b.reference}</span>
+                          <span className="dot" />
+                          <span>Booked {day(b.createdAt)}</span>
+                          {b.scheduledAt && (
+                            <>
+                              <span className="dot" />
+                              <span>Scheduled {day(b.scheduledAt)}</span>
+                            </>
+                          )}
+                        </div>
+                        {b.quoteRequest && b.quotedAmount == null && b.status === 'PENDING' && (
+                          <p className="mb-quotewait">Your coordinator is preparing a quote — you can pay here once it arrives.</p>
+                        )}
+                        {b.canCancel && b.paymentDueAt && (
+                          <p className="mb-quotewait">Unpaid — cancels automatically on {day(b.paymentDueAt)} unless paid.</p>
+                        )}
+                      </div>
+                      <div className="mb-item-side">
+                        <span className={`mb-badge is-${b.status.toLowerCase()}`}>{label(b.status)}</span>
+                        <span className="mb-price">{money(b.grandTotal ?? b.priceTotal, b.currency)}</span>
+                        {(b.canPay || b.canCancel) && (
+                          <span className="mb-actions">
+                            {b.canPay && (
+                              <button
+                                type="button"
+                                className="mb-btn"
+                                onClick={() => setPaying(paying === b.reference ? null : b.reference)}
+                              >
+                                {paying === b.reference ? 'Close' : b.quoteRequest ? 'Pay quote' : 'Complete payment'}
+                              </button>
+                            )}
+                            {b.canCancel && (
+                              <button type="button" className="mb-btn is-ghost" onClick={() => void cancelBooking(b.reference)}>
+                                Cancel booking
+                              </button>
+                            )}
+                          </span>
                         )}
                       </div>
                     </div>
-                    <div className="mb-item-side">
-                      <span className={`mb-badge is-${b.status.toLowerCase()}`}>{label(b.status)}</span>
-                      <span className="mb-price">{money(b.priceTotal, b.currency)}</span>
-                    </div>
+                    {paying === b.reference && (
+                      <div className="mb-pay">
+                        <PayBooking reference={b.reference} onPaid={() => onPaid(b.reference)} />
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
