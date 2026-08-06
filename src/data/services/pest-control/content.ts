@@ -29,7 +29,7 @@ export const content: ServiceConfig = {
     },
     expect: {
       heading: 'Straightforward from start to finish.',
-      subheading: 'No surprises — here is exactly how pest control works with Apex.',
+      subheading: 'No surprises. Here is exactly how pest control works with Apex.',
       cards: [
         { icon: 'clipboard', title: 'What we do', body: 'Interior and exterior treatments and ongoing protection, safe for family and pets.' },
         { icon: 'clock', title: 'How it works', body: 'Configure the details, pick a window, and the same trusted pro arrives ready to go.' },

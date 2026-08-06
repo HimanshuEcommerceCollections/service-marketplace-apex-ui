@@ -29,7 +29,7 @@ export const content: ServiceConfig = {
     },
     expect: {
       heading: 'Straightforward from start to finish.',
-      subheading: 'No surprises — here is exactly how home security works with Apex.',
+      subheading: 'No surprises. Here is exactly how home security works with Apex.',
       cards: [
         { icon: 'clipboard', title: 'What we do', body: 'Cameras, sensors and monitoring, tailored to your home and set up by trained pros.' },
         { icon: 'clock', title: 'How it works', body: 'Configure the details, pick a window, and the same trusted pro arrives ready to go.' },

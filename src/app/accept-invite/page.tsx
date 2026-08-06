@@ -4,7 +4,7 @@ import '../auth-pro.css';
 import AcceptInviteView from './AcceptInviteView';
 
 export const metadata: Metadata = {
-  title: 'Set Up Your Account — Apex Total Home Services',
+  title: 'Set Up Your Account | Apex Total Home Services',
   description: 'Activate your Apex staff account.',
   robots: { index: false, follow: false },
 };

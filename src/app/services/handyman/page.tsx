@@ -9,7 +9,7 @@ import { content } from '../../../data/services/handyman/content';
 
 // TODO(design): update metadata when the Handyman design is delivered.
 export const metadata: Metadata = {
-  title: 'Handyman — Apex Total Home Services',
+  title: 'Handyman | Apex Total Home Services',
   description: 'Repairs, mounting, assembly and odd jobs around the house, booked by the block of time.',
 };
 

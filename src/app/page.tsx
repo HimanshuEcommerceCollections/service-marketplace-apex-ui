@@ -7,7 +7,7 @@ import { chapters as staticChapters, type Chapter } from '../data/apex/chapters'
 import { getServices, getAreas, formatFromPrice, type CatalogService, type CoverageArea } from '../lib/catalog';
 
 export const metadata: Metadata = {
-  title: 'Apex Total Home Services — One Call. Every Home Service.',
+  title: 'Apex Total Home Services | One Call. Every Home Service.',
   description:
     'From cleaning and lawn care to smart home automation, security, painting, pool maintenance, and handyman services, Apex delivers every essential home service through one trusted team.',
   // Preserved from the source document (draft/preview experience).

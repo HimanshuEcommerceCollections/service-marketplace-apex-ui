@@ -9,7 +9,7 @@ import { content } from '../../../data/services/pest-control/content';
 
 // TODO(design): update metadata when the Pest Control design is delivered.
 export const metadata: Metadata = {
-  title: 'Pest Control — Apex Total Home Services',
+  title: 'Pest Control | Apex Total Home Services',
   description: 'Interior and exterior treatments and ongoing protection, safe for family and pets.',
 };
 

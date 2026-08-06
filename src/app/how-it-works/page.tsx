@@ -7,9 +7,9 @@ import HowItWorksPage from '../../components/how-it-works/HowItWorksPage';
 
 export const metadata: Metadata = {
   // Preserved from the source document.
-  title: 'How It Works — Apex Total Home Services',
+  title: 'How It Works | Apex Total Home Services',
   description:
-    'From booking to a perfect home — see exactly how Apex works, step by step. Choose, customize, book, and relax.',
+    'From booking to a perfect home. See exactly how Apex works, step by step. Choose, customize, book, and relax.',
 };
 
 export default function Page() {

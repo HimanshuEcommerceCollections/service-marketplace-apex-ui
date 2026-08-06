@@ -9,8 +9,8 @@ import { content } from '../../../data/services/power-washing/content';
 
 // TODO(design): update metadata when the Power Washing design is delivered.
 export const metadata: Metadata = {
-  title: 'Power Washing — Apex Total Home Services',
-  description: 'Driveways, siding, decks and walkways restored to like-new — priced up front, booked in about 90 seconds.',
+  title: 'Power Washing | Apex Total Home Services',
+  description: 'Driveways, siding, decks and walkways restored to like-new, priced up front and booked in about 90 seconds.',
 };
 
 export default async function Page() {

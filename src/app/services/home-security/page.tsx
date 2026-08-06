@@ -9,7 +9,7 @@ import { content } from '../../../data/services/home-security/content';
 
 // TODO(design): update metadata when the Home Security design is delivered.
 export const metadata: Metadata = {
-  title: 'Home Security — Apex Total Home Services',
+  title: 'Home Security | Apex Total Home Services',
   description: 'Cameras, sensors and monitoring, tailored to your home and set up by trained pros.',
 };
 

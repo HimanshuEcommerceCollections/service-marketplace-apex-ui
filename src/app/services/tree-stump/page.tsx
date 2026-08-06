@@ -9,7 +9,7 @@ import { content } from '../../../data/services/tree-stump/content';
 
 // TODO(design): update metadata when the Tree & Stump design is delivered.
 export const metadata: Metadata = {
-  title: 'Tree & Stump — Apex Total Home Services',
+  title: 'Tree & Stump | Apex Total Home Services',
   description: 'Trimming, removal and stump grinding by insured crews with the right equipment.',
 };
 

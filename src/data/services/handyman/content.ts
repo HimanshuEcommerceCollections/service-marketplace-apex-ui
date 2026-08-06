@@ -29,7 +29,7 @@ export const content: ServiceConfig = {
     },
     expect: {
       heading: 'Straightforward from start to finish.',
-      subheading: 'No surprises — here is exactly how handyman works with Apex.',
+      subheading: 'No surprises. Here is exactly how handyman works with Apex.',
       cards: [
         { icon: 'clipboard', title: 'What we do', body: 'Repairs, mounting, assembly and odd jobs around the house, booked by the block of time.' },
         { icon: 'clock', title: 'How it works', body: 'Configure the details, pick a window, and the same trusted pro arrives ready to go.' },

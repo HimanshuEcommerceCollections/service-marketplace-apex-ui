@@ -26,9 +26,9 @@ export const content: ServiceContent = {
   },
   expect: {
     heading: 'Straightforward from start to finish.',
-    subheading: 'No surprises — here is exactly how cleaning works with Apex.',
+    subheading: 'No surprises. Here is exactly how cleaning works with Apex.',
     cards: [
-      { icon: 'clipboard', title: 'What we clean', body: 'Kitchens, baths, floors, dusting and surfaces top to bottom — every room on your plan.' },
+      { icon: 'clipboard', title: 'What we clean', body: 'Kitchens, baths, floors, dusting and surfaces top to bottom, every room on your plan.' },
       { icon: 'clock', title: 'How it works', body: 'Pick beds, baths and frequency, choose a window, and the same crew arrives ready to go.' },
       { icon: 'shield', title: 'Our promise', body: 'Not happy with a spot? Tell us within 24 hours and we come back to fix it, free.' },
     ],

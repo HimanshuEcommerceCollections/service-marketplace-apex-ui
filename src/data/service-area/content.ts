@@ -32,12 +32,12 @@ export type Stat = { count: number; suffix?: string; label: string };
 // availability.ts. Do not reintroduce a hardcoded copy.
 
 export const cities: City[] = [
-  { slug: 'raleigh', name: 'Raleigh', zips: 15, blurb: 'The capital city — our largest coverage zone.' },
+  { slug: 'raleigh', name: 'Raleigh', zips: 15, blurb: 'The capital city, our largest coverage zone.' },
   { slug: 'cary', name: 'Cary', zips: 4, blurb: 'Full service across all of Cary.' },
   { slug: 'apex', name: 'Apex', zips: 2, blurb: 'Peak-of-good-living, fully covered.' },
   { slug: 'wake-forest', name: 'Wake Forest', zips: 2, blurb: 'Northern Wake, same-week availability.' },
   { slug: 'morrisville', name: 'Morrisville', zips: 1, blurb: 'Tech-triangle homes, all services.' },
-  { slug: 'holly-springs', name: 'Holly Springs', zips: 1, blurb: 'Growing fast — we grew with it.' },
+  { slug: 'holly-springs', name: 'Holly Springs', zips: 1, blurb: 'Growing fast, and we grew with it.' },
   { slug: 'fuquay-varina', name: 'Fuquay-Varina', zips: 1, blurb: 'Southern Wake coverage.' },
   { slug: 'garner', name: 'Garner', zips: 1, blurb: 'Southeast Wake, fully served.' },
 ];
@@ -58,7 +58,7 @@ export const services: AreaService[] = [
 
 export const whyCards: WhyCard[] = [
   { icon: 'security', title: 'Trusted professionals', text: 'Vetted, insured, background-checked pros in your neighborhood.' },
-  { icon: 'price', title: 'Transparent pricing', text: 'See the full breakdown before you ever book — no surprises.' },
+  { icon: 'price', title: 'Transparent pricing', text: 'See the full breakdown before you ever book. No surprises.' },
   { icon: 'fast', title: 'Fast response', text: 'Same-week availability with ~90-minute average response.' },
   { icon: 'home', title: 'Complete home solutions', text: 'All 11 services under one trusted local team.' },
 ];
@@ -73,11 +73,11 @@ export const coverageStats: Stat[] = [
 export const faqs: Faq[] = [
   {
     q: 'Which areas do you currently serve?',
-    a: 'We cover all of Wake County, NC — including Raleigh, Cary, Apex, Wake Forest, Morrisville, Holly Springs, Fuquay-Varina, and Garner, across 40+ ZIP codes.',
+    a: 'We cover all of Wake County, NC, including Raleigh, Cary, Apex, Wake Forest, Morrisville, Holly Springs, Fuquay-Varina, and Garner, across 40+ ZIP codes.',
   },
   {
     q: 'How does the waitlist work?',
-    a: 'If your ZIP isn’t covered yet, add your details to the waitlist. The moment we expand into your neighborhood, you’ll be the first to know — with a welcome offer.',
+    a: 'If your ZIP isn’t covered yet, add your details to the waitlist. The moment we expand into your neighborhood, you’ll be the first to know, with a welcome offer.',
   },
   {
     q: 'When will Apex expand?',
@@ -85,6 +85,6 @@ export const faqs: Faq[] = [
   },
   {
     q: 'Can I book multiple services?',
-    a: 'Absolutely. Bundle cleaning, lawn, pool, and more into one schedule — and members save on every visit.',
+    a: 'Absolutely. Bundle cleaning, lawn, pool, and more into one schedule, and members save on every visit.',
   },
 ];

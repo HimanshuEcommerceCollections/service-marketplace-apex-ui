@@ -9,7 +9,7 @@ import { content } from '../../../data/services/pool/content';
 
 // TODO(design): update metadata when the Pool Service design is delivered.
 export const metadata: Metadata = {
-  title: 'Pool Service — Apex Total Home Services',
+  title: 'Pool Service | Apex Total Home Services',
   description: 'Skimming, vacuuming, brushing and chemical balancing on a schedule that fits your pool.',
 };
 

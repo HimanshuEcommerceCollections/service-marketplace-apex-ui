@@ -44,7 +44,7 @@ export default function SiteFooter() {
       <div className="foot-cta fv2">
         <div>
           <h3>One call. Whole house handled.</h3>
-          <p>Book a trusted pro in minutes — cleaning, lawn, repairs and more, all under one roof.</p>
+          <p>Book a trusted pro in minutes: cleaning, lawn, repairs and more, all under one roof.</p>
         </div>
         <div className="foot-cta-side">
           <Link className="foot-cta-btn magnetic" href="/book">

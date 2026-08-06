@@ -30,11 +30,11 @@ const services: Svc[] = [
   { id: 'lawn', name: 'Lawn Care', desc: 'Mowing, edging & full lawn care on your schedule.', from: 39, icon: <path d="M3 20h18M6 20V8M10 20V5M14 20v-8M18 20V9" /> },
   { id: 'power', name: 'Power Washing', desc: 'Driveways, siding & decks blasted back to new.', from: 79, icon: <path d="M12 3v6M8 7l4-4 4 4M5 21h14l-2-9H7z" /> },
   { id: 'paint', name: 'Painting', desc: 'Interior & exterior painting, done clean and sharp.', from: 349, icon: <path d="M4 20l6-6M14 6l4 4M13 5l6 6-9 3-3-3z" /> },
-  { id: 'junk', name: 'Junk Removal', desc: 'Lift, load & haul-away — priced by truck load.', from: 99, icon: <path d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M6 7l1 13h10l1-13" /> },
+  { id: 'junk', name: 'Junk Removal', desc: 'Lift, load & haul-away, priced by truck load.', from: 99, icon: <path d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M6 7l1 13h10l1-13" /> },
   { id: 'pool', name: 'Pool Service', desc: 'Skim, vacuum, brush & chemical balancing.', from: 119, icon: <path d="M2 17c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2 2 2 4 2M6 15V6a2 2 0 014 0M14 15V6a2 2 0 014 0" /> },
   { id: 'pest', name: 'Pest Control', desc: 'Interior + exterior treatment, pet & family safe.', from: 99, icon: <path d="M12 3v3M9 6h6M8 10a4 4 0 018 0v4a4 4 0 01-8 0zM4 12h4M16 12h4M5 8l3 2M19 8l-3 2M5 16l3-2M19 16l-3-2" /> },
   { id: 'security', name: 'Home Security', desc: 'Cameras, sensors & monitoring, tailored to your home.', from: null, icon: <><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" /><path d="M9 12l2 2 4-4" /></> },
-  { id: 'smart', name: 'Smart Home', desc: 'Thermostats, locks, cameras — bundle & save.', from: 90, icon: <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /><circle cx="12" cy="15" r="2" /></> },
+  { id: 'smart', name: 'Smart Home', desc: 'Thermostats, locks, cameras. Bundle & save.', from: 90, icon: <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /><circle cx="12" cy="15" r="2" /></> },
   { id: 'handyman', name: 'Handyman', desc: 'Repairs & odd jobs, booked by the block of time.', from: 150, icon: <path d="M14 7l3 3M3 21l9-9M14.7 3.3a2 2 0 013 3L9 15l-4 1 1-4z" /> },
   { id: 'tree', name: 'Tree & Stump Removal', desc: 'Trimming, removal & stump grinding by pros.', from: null, icon: <path d="M12 22v-6M8 16a4 4 0 01-1-8 5 5 0 019.5-1.5A3.5 3.5 0 0116 16z" /> },
 ];

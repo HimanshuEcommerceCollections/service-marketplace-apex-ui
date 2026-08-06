@@ -9,9 +9,9 @@ import { getMembershipPlans, formatFromPrice } from '../../lib/catalog';
 
 export const metadata: Metadata = {
   // Preserved from the source document.
-  title: 'Membership Plans — Apex Total Home Services',
+  title: 'Membership Plans | Apex Total Home Services',
   description:
-    'One membership for cleaning, lawn, pool and pest — the same trusted pros on an automatic schedule at member pricing. No contracts.',
+    'One membership for cleaning, lawn, pool and pest, with the same trusted pros on an automatic schedule at member pricing. No contracts.',
 };
 
 // Plan cards join to live Plans (ServicePlan, served on the membership wire) by

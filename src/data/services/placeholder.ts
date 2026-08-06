@@ -23,9 +23,9 @@ export const placeholderBigMedia: HeroBigMedia = {
 };
 
 export const placeholderTestimonials: ServiceTestimonial[] = [
-  { name: 'Priya Anand', role: 'North Hills', quote: 'Booked in minutes and the same trusted team every time — exactly what I hoped for.', portrait: '/assets/images/portrait-priya.webp' },
+  { name: 'Priya Anand', role: 'North Hills', quote: 'Booked in minutes and the same trusted team every time, exactly what I hoped for.', portrait: '/assets/images/portrait-priya.webp' },
   { name: 'Maya Chen', role: 'Cary', quote: 'Clean, professional and no surprises. They treated my home like their own.', portrait: '/assets/images/portrait-maya.webp' },
   { name: 'Daniel Reyes', role: 'Apex', quote: 'Fair price up front and done right the first time. I will use Apex again.', portrait: '/assets/images/portrait-daniel.webp' },
-  { name: 'Aisha Kapoor', role: 'Holly Springs', quote: 'So easy to schedule and reschedule — the most reliable service we have used.', portrait: '/assets/images/portrait-aisha.webp' },
+  { name: 'Aisha Kapoor', role: 'Holly Springs', quote: 'So easy to schedule and reschedule. The most reliable service we have used.', portrait: '/assets/images/portrait-aisha.webp' },
   { name: 'Neha Sharma', role: 'Wake Forest', quote: 'Reliable, tidy and friendly. My go-to for anything around the house.', portrait: '/assets/images/portrait-neha.webp' },
 ];

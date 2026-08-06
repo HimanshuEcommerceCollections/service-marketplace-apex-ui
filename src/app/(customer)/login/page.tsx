@@ -4,7 +4,7 @@ import '../../auth-pro.css';
 import SignInView from './SignInView';
 
 export const metadata: Metadata = {
-  title: 'Sign In — Apex Total Home Services',
+  title: 'Sign In | Apex Total Home Services',
   description: 'Sign in to your Apex account to manage bookings and service requests.',
   robots: { index: false, follow: false },
 };

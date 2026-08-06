@@ -228,7 +228,7 @@ export default function ApplyForm({
               <span className="msg">
                 {bad('zip')
                   ? RULES.zip!.msg
-                  : 'Heads up: that ZIP looks outside Wake County — you can still apply.'}
+                  : 'Heads up: that ZIP looks outside Wake County, but you can still apply.'}
               </span>
             </div>
 
@@ -417,7 +417,7 @@ export default function ApplyForm({
               </button>
               <p className="form-legal">
                 By applying, you confirm the information provided is accurate. Apex does not
-                automatically verify licenses — you&rsquo;re responsible for holding any credentials
+                automatically verify licenses. You&rsquo;re responsible for holding any credentials
                 your trade requires.
               </p>
             </div>

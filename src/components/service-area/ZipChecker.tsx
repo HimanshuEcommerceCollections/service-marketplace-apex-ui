@@ -110,7 +110,7 @@ export default function ZipChecker({ onWaitlistPrefill }: { onWaitlistPrefill?: 
                   </span>
                   Great news! Apex serves your area.
                 </div>
-                <p>Book online in about 90 seconds — same trusted local team, transparent pricing.</p>
+                <p>Book online in about 90 seconds, with the same trusted local team and transparent pricing.</p>
                 <div className="zbtns">
                   <a className="btn btn-primary ripple" href="/book">
                     Book now
@@ -155,7 +155,7 @@ export default function ZipChecker({ onWaitlistPrefill }: { onWaitlistPrefill?: 
                   We couldn’t check that just now.
                 </div>
                 <p>
-                  Something went wrong on our end — please try again in a moment, or{' '}
+                  Something went wrong on our end. Please try again in a moment, or{' '}
                   <a className="link" href="/book">
                     start a booking
                   </a>{' '}

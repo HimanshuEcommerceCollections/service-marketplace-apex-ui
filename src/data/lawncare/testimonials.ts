@@ -41,7 +41,7 @@ export const testimonials: ServiceTestimonial[] = [
     name: 'Aisha Kapoor',
     tag: 'Home Cleaning · Holly Springs',
     quote:
-      'Spotless every time and so easy to reschedule — the most reliable service we have ever used.',
+      'Spotless every time and so easy to reschedule. The most reliable service we have ever used.',
     portrait: '/assets/lawn-care/images/testimonial-aisha.jpg',
   },
   {

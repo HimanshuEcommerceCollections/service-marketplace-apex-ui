@@ -357,7 +357,8 @@
   .pg-home #recurring .rp-head{width:100%;background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:16px;padding:clamp(18px,1.7vw,24px) 4px;text-align:left;font-family:var(--font-display)}
   .pg-home #recurring .rp-num{font-family:var(--font-body);font-size:11px;font-weight:600;color:var(--slate4);letter-spacing:.1em;width:20px;flex:0 0 auto;padding-top:5px}
   .pg-home #recurring .rp-title{flex:1;font-weight:700;font-size:clamp(19px,1.7vw,25px);color:var(--ink2);letter-spacing:-.01em}
-  .pg-home #recurring .rp-title .disc{color:var(--slate4);transition:color var(--dur-quick)}
+  /* The gap used to come from the "Weekly — " title text; it lives here now. */
+  .pg-home #recurring .rp-title .disc{margin-left:10px;color:var(--slate4);transition:color var(--dur-quick)}
   .pg-home #recurring .rp-item.open .rp-title .disc{color:var(--blue)}
   .pg-home #recurring .rp-ic{position:relative;width:20px;height:20px;flex:0 0 auto}
   .pg-home #recurring .rp-ic::before, .pg-home #recurring .rp-ic::after{content:"";position:absolute;left:50%;top:50%;background:var(--ink2);border-radius:2px;transition:transform var(--dur-quick) var(--ease-settle),background var(--dur-quick)}

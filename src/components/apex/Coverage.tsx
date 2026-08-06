@@ -45,7 +45,7 @@ export default function Coverage({
               To You.
             </h2>
             <p className="cov-sub cv">
-              Serving Wake County and the greater Raleigh area — Cary, Apex, Wake Forest and beyond,
+              Serving Wake County and the greater Raleigh area, including Cary, Apex, Wake Forest and beyond,
               with new neighborhoods added regularly.
             </p>
             <div className="cov-cta cv">

@@ -19,19 +19,19 @@ export const hero = {
 export const whyHead = {
   eyebrow: 'Why join Apex',
   title: 'Built for professionals who take pride in the work',
-  lede: 'We handle the customers, the requests, and the brand — so you can focus on doing great work and growing.',
+  lede: 'We handle the customers, the requests, and the brand, so you can focus on doing great work and growing.',
 };
 
 export const whyCards: IconCard[] = [
   {
     icon: 'building',
     title: 'Consistent local work',
-    body: 'A dependable stream of jobs from homeowners in your area — not one-off leads you have to chase.',
+    body: 'A dependable stream of jobs from homeowners in your area, not one-off leads you have to chase.',
   },
   {
     icon: 'clipboard-check',
     title: 'Transparent job requests',
-    body: 'See the details up front — scope, location, and timing — before you decide to take a job.',
+    body: 'See the details up front (scope, location, and timing) before you decide to take a job.',
   },
   {
     icon: 'chart',
@@ -41,7 +41,7 @@ export const whyCards: IconCard[] = [
   {
     icon: 'shield-check',
     title: 'One trusted brand',
-    body: 'Work under the Apex name — professional, insured, and recognized across Wake County.',
+    body: 'Work under the Apex name: professional, insured, and recognized across Wake County.',
   },
 ];
 
@@ -52,7 +52,7 @@ export const processHead = {
 };
 
 export const processSteps: { title: string; body: string }[] = [
-  { title: 'Choose your trades', body: 'Select the services you offer — you can pick more than one.' },
+  { title: 'Choose your trades', body: 'Select the services you offer. You can pick more than one.' },
   { title: 'Submit application', body: 'Share your experience and availability in a few short fields.' },
   { title: 'Review & onboarding', body: 'Our team reviews your details and walks you through onboarding.' },
   { title: 'Start receiving opportunities', body: 'Get matched with local job requests that fit your trades.' },
@@ -278,11 +278,11 @@ export const faqHead = { eyebrow: 'FAQ', title: 'Questions, answered' };
 export const faqs: { q: string; a: string }[] = [
   {
     q: 'Can I apply for multiple trades?',
-    a: "Yes. Select every trade you're qualified to offer during the application — many of our professionals work across more than one. You'll be matched with requests that fit any of your selected trades.",
+    a: "Yes. Select every trade you're qualified to offer during the application. Many of our professionals work across more than one. You'll be matched with requests that fit any of your selected trades.",
   },
   {
     q: 'Do I need my own equipment?',
-    a: "For most trades, yes — you should have the tools, supplies, and reliable transportation your work requires. The Trade Requirements section above lists what's expected for each service.",
+    a: "For most trades, yes. You should have the tools, supplies, and reliable transportation your work requires. The Trade Requirements section above lists what's expected for each service.",
   },
   {
     q: 'How are jobs assigned?',
@@ -290,7 +290,7 @@ export const faqs: { q: string; a: string }[] = [
   },
   {
     q: 'Which areas do you serve?',
-    a: 'We currently serve homeowners across Wake County, North Carolina — including Raleigh, Cary, Apex, Morrisville, Wake Forest, Holly Springs, and surrounding communities.',
+    a: 'We currently serve homeowners across Wake County, North Carolina, including Raleigh, Cary, Apex, Morrisville, Wake Forest, Holly Springs, and surrounding communities.',
   },
   {
     q: 'How long does approval take?',

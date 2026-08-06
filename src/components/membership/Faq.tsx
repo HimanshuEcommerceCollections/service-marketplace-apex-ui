@@ -8,7 +8,7 @@ const Plus = () => (
 const faqs = [
   {
     q: 'Is there a contract or lock-in?',
-    a: 'No. Every Apex plan is month-to-month. Pause, skip a visit, switch services, or cancel anytime from your account — no fees.',
+    a: 'No. Every Apex plan is month-to-month. Pause, skip a visit, switch services, or cancel anytime from your account, with no fees.',
   },
   {
     q: 'How does member pricing work?',
@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: 'Will I get the same team each visit?',
-    a: 'Yes — we assign a consistent, vetted and insured crew to your home so they learn your preferences over time.',
+    a: 'Yes. We assign a consistent, vetted and insured crew to your home so they learn your preferences over time.',
   },
   {
     q: 'What if I am not happy with a visit?',

@@ -31,7 +31,7 @@ export default function Hero() {
           </h1>
           <p className="lede">
             No hidden fees. No surprises. Explore pricing across all Apex services and get an instant
-            estimate — or request a custom quote.
+            estimate, or request a custom quote.
           </p>
           <div className="cta-row">
             <a className="btn btn-primary ripple" href="/book">

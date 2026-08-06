@@ -21,19 +21,19 @@ export const hero = {
 export const whyHead = {
   eyebrow: 'Why property managers choose Apex',
   title: 'One partner. Every trade. Full accountability.',
-  lede: 'Stop juggling vendors. Apex coordinates the work, the schedule, and the quality — so your team can focus on occupancy.',
+  lede: 'Stop juggling vendors. Apex coordinates the work, the schedule, and the quality, so your team can focus on occupancy.',
 };
 
 export const whyCards: IconCard[] = [
   {
     icon: 'user',
     title: 'One Point of Contact',
-    body: 'A single coordinator manages every service request, update, and handoff — no chasing five different vendors.',
+    body: 'A single coordinator manages every service request, update, and handoff. No chasing five different vendors.',
   },
   {
     icon: 'grid',
     title: 'Multiple Home Services',
-    body: 'Cleaning, repairs, painting, lawn care, junk removal, pressure washing and more — bundled under one roof.',
+    body: 'Cleaning, repairs, painting, lawn care, junk removal, pressure washing and more, bundled under one roof.',
   },
   {
     icon: 'shield-check',
@@ -43,7 +43,7 @@ export const whyCards: IconCard[] = [
   {
     icon: 'clock',
     title: 'Faster Turnovers',
-    body: 'Trades are sequenced back-to-back — cleaning, repairs, paint — so units are rent-ready in days, not weeks.',
+    body: 'Trades are sequenced back-to-back (cleaning, repairs, paint) so units are rent-ready in days, not weeks.',
   },
   {
     icon: 'chat',
@@ -60,7 +60,7 @@ export const whyCards: IconCard[] = [
 export const bundleHead = {
   eyebrow: 'The turnover bundle',
   title: 'Every step between tenants, handled in sequence',
-  lede: 'One coordinated workflow takes a unit from move-out to move-in ready — no scheduling gaps, no vendor handoff failures.',
+  lede: 'One coordinated workflow takes a unit from move-out to move-in ready. No scheduling gaps, no vendor handoff failures.',
 };
 
 /** The 7-link turnover chain. The last entry renders as the green "done" node. */
@@ -77,7 +77,7 @@ export const bundleSteps: { icon: string; title: string; caption: string }[] = [
 export const listingHead = {
   eyebrow: 'Listing preparation',
   title: 'Make every listing photo-ready',
-  lede: 'For realtors and investors preparing a property for market, Apex bundles the finishing work into one coordinated visit — so the home shows at its absolute best.',
+  lede: 'For realtors and investors preparing a property for market, Apex bundles the finishing work into one coordinated visit, so the home shows at its absolute best.',
 };
 
 /** Icon + label tiles; `wide` spans both columns (the final-presentation row). */
@@ -99,7 +99,7 @@ export const listingChips = [
 export const processHead = {
   eyebrow: 'How it works',
   title: 'From property details to scheduled services',
-  lede: 'A simple, coordinator-led process. No online booking to configure — just a conversation and a clear quote.',
+  lede: 'A simple, coordinator-led process. No online booking to configure, just a conversation and a clear quote.',
 };
 
 export const processSteps: { title: string; body: string }[] = [
@@ -131,7 +131,7 @@ export const stats: {
 export const coverageHead = {
   eyebrow: 'Service coverage',
   title: 'Local coordination across Wake County',
-  lede: 'Our professionals live and work here — which means faster scheduling and coordinators who know the area.',
+  lede: 'Our professionals live and work here, which means faster scheduling and coordinators who know the area.',
 };
 
 // The source design's decorative map pins are gone: the coverage frame holds the
@@ -140,7 +140,7 @@ export const coverageHead = {
 export const coverageAreas: IconCard[] = [
   {
     icon: 'pin',
-    title: 'Apex — Home Base',
+    title: 'Apex Home Base',
     body: "Headquartered where we started, serving the town we're named for.",
   },
   {
@@ -233,11 +233,11 @@ export const faqs: { q: string; a: string }[] = [
   },
   {
     q: 'Can multiple services be scheduled together?',
-    a: "Yes — that's the point of the bundle. Cleaning, junk removal, repairs, painting, and pressure washing are sequenced back-to-back so the unit is never waiting on a vendor handoff.",
+    a: "Yes, that's the point of the bundle. Cleaning, junk removal, repairs, painting, and pressure washing are sequenced back-to-back so the unit is never waiting on a vendor handoff.",
   },
   {
     q: 'How quickly can projects begin?',
-    a: 'Once you approve a quote, we schedule promptly — timing depends on scope and current demand. Your coordinator will give you a realistic start date up front, not a guess.',
+    a: 'Once you approve a quote, we schedule promptly. Timing depends on scope and current demand. Your coordinator will give you a realistic start date up front, not a guess.',
   },
   {
     q: 'Do you support recurring maintenance?',

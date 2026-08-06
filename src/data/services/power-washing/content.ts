@@ -14,7 +14,7 @@ export const content: ServiceConfig = {
       eyebrow: 'Power Washing',
       titleLead: 'A cleaner exterior,',
       titleEm: 'blasted back to new.',
-      description: 'Driveways, siding, decks and walkways restored to like-new — priced up front, booked in about 90 seconds.',
+      description: 'Driveways, siding, decks and walkways restored to like-new, priced up front and booked in about 90 seconds.',
       priceLabel: 'Priced from',
       price: '$79',
       bookingSlug: 'power-washing',
@@ -30,9 +30,9 @@ export const content: ServiceConfig = {
     },
     expect: {
       heading: 'Straightforward from start to finish.',
-      subheading: 'No surprises — here is exactly how power washing works with Apex.',
+      subheading: 'No surprises. Here is exactly how power washing works with Apex.',
       cards: [
-        { icon: 'clipboard', title: 'What we do', body: 'Driveways, siding, decks and walkways restored to like-new — priced up front, booked in about 90 seconds.' },
+        { icon: 'clipboard', title: 'What we do', body: 'Driveways, siding, decks and walkways restored to like-new, priced up front and booked in about 90 seconds.' },
         { icon: 'clock', title: 'How it works', body: 'Configure the details, pick a window, and the same trusted pro arrives ready to go.' },
         { icon: 'shield', title: 'Our promise', body: 'Not happy with the result? Tell us within 24 hours and we come back to make it right, free.' },
       ],
@@ -49,7 +49,7 @@ export const content: ServiceConfig = {
     ],
   },
   finalCta: {
-    blurb: 'Driveways, siding, decks and walkways restored to like-new — priced up front, booked in about 90 seconds.',
+    blurb: 'Driveways, siding, decks and walkways restored to like-new, priced up front and booked in about 90 seconds.',
   },
   testimonials: placeholderTestimonials,
 };

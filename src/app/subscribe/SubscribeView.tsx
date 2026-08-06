@@ -269,7 +269,7 @@ export default function SubscribeView() {
                 </button>
               </div>
               <p style={{ marginTop: 12, fontSize: 12.5, color: "var(--slate4)" }}>
-                You&apos;ll confirm your card on Stripe&apos;s secure checkout. Cancel anytime — billing stops at the period end.
+                You&apos;ll confirm your card on Stripe&apos;s secure checkout. Cancel anytime. Billing stops at the period end.
               </p>
             </>
           )}

@@ -2,7 +2,7 @@
 const cards = [
   {
     title: 'Save More',
-    body: 'Members lock in up to 15% off every visit — the more often we come, the more you save.',
+    body: 'Members lock in up to 15% off every visit. The more often we come, the more you save.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
@@ -11,7 +11,7 @@ const cards = [
   },
   {
     title: 'Priority Scheduling',
-    body: 'Standing time slots and first pick on the calendar — including busy seasons.',
+    body: 'Standing time slots and first pick on the calendar, including busy seasons.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="17" rx="3" />
@@ -21,7 +21,7 @@ const cards = [
   },
   {
     title: 'Trusted Professionals',
-    body: 'The same vetted, insured crew every visit — no strangers, no surprises.',
+    body: 'The same vetted, insured crew every visit. No strangers, no surprises.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z" />
@@ -63,7 +63,7 @@ export default function WhyChoose() {
             Less to think about. More to enjoy.
           </h2>
           <p className="lede">
-            Membership turns home upkeep into something automatic — cheaper, more reliable, and
+            Membership turns home upkeep into something automatic: cheaper, more reliable, and
             handled by people you trust.
           </p>
         </div>

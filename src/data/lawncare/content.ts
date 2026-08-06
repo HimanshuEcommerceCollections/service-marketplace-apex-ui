@@ -27,10 +27,10 @@ export const content: ServiceContent = {
   },
   expect: {
     heading: 'Straightforward from first cut to last.',
-    subheading: 'No surprises — here is exactly how lawn care works with Apex.',
+    subheading: 'No surprises. Here is exactly how lawn care works with Apex.',
     cards: [
       { icon: 'clipboard', title: 'What we do', body: 'Mow at the ideal height, crisp edging, string-trimming and a full blow-down of clippings.' },
-      { icon: 'clock', title: 'How it works', body: 'Pick your lot size and frequency — the same crew shows up on schedule, week after week.' },
+      { icon: 'clock', title: 'How it works', body: 'Pick your lot size and frequency. The same crew shows up on schedule, week after week.' },
       { icon: 'shield', title: 'Our promise', body: 'Missed an edge or a patch? Tell us within 24 hours and we come back to fix it, free.' },
     ],
     included: [
