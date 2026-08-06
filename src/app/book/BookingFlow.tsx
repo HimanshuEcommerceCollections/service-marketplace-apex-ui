@@ -81,9 +81,20 @@ interface Preview {
   from_price: Money | null;
   requires_description: boolean;
 }
+/** A payment frequency the service offers (admin's Recurring grid). */
+interface RecurringOption {
+  cadenceId: string;
+  key: string;
+  label: string;
+  discountPercent: number;
+  isSubscription: boolean;
+}
 type SubmitResult =
   | { outcome: "BOOKED"; reference: string; status: string }
-  | { outcome: "WAITLISTED"; waitlist_signup: { zip: string } };
+  | { outcome: "WAITLISTED"; waitlist_signup: { zip: string } }
+  // A recurring frequency was chosen, so this is a subscription: Stripe
+  // Checkout owns the rest and the first visit arrives from the webhook.
+  | { outcome: "CHECKOUT"; checkout_url: string; membership_id: string };
 
 const STEPS = ["Service", "Configure", "Pricing", "Details", "Confirm"] as const;
 const PROP_TYPES = ["House", "Apartment", "Commercial"] as const;
@@ -133,6 +144,12 @@ export default function BookingFlow() {
 
   const [services, setServices] = useState<Svc[] | null>(null);
   const [cfg, setCfg] = useState<Cfg | null>(null);
+  // Payment frequency: what the service offers, and which one is selected.
+  // Anything other than one-time makes this booking a subscription.
+  const [recOptions, setRecOptions] = useState<RecurringOption[]>([]);
+  const [cadenceKey, setCadenceKey] = useState<string>("one-time");
+  /** The selected frequency, or undefined for plain one-time. */
+  const chosenCadence = recOptions.find((o) => o.key === cadenceKey && o.isSubscription);
   const [selections, setSelections] = useState<Record<string, SelectionValue>>({});
   const [description, setDescription] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -183,7 +200,12 @@ export default function BookingFlow() {
       // Flipped inside the timeout, not the effect body: the indicator should track
       // the actual request, not the debounce window.
       setPricing(true);
-      api<Preview>(`/services/${cfg.slug}/config/price`, { method: "POST", body: { selections } })
+      api<Preview>(`/services/${cfg.slug}/config/price`, {
+        method: "POST",
+        // The server applies the cadence discount — the estimate the customer
+        // sees is the same number the booking recomputes, so no PRICE_MISMATCH.
+        body: { selections, ...(chosenCadence ? { cadenceId: chosenCadence.cadenceId } : {}) },
+      })
         .then((p) => active && setPreview(p))
         // A partial configuration legitimately fails validation while the user is
         // still choosing; keep the last good total rather than flashing an error.
@@ -207,6 +229,10 @@ export default function BookingFlow() {
     try {
       const c = await api<Cfg>(`/services/${slug}/config`);
       setCfg(c);
+      // Frequencies are admin-controlled; a service offering none stays one-time.
+      const detail = await api<{ recurringOptions?: RecurringOption[] }>(`/services/${slug}`).catch(() => null);
+      setRecOptions(detail?.recurringOptions ?? []);
+      setCadenceKey("one-time");
       // Seed required single-selects with their first option so the first price
       // call is valid and the summary is not empty on arrival. Quantity groups
       // seed at their minimum (0 is legitimate — e.g. "Additional hours").
@@ -251,7 +277,7 @@ export default function BookingFlow() {
       else out.push([g.label, labelOf(v)]);
     }
     return out;
-  }, [cfg, selections]);
+  }, [cfg, selections, chosenCadence]);
 
   const FIELDS = ["first", "last", "email", "phone", "street", "city", "state", "zip"] as const;
   const fieldValue = (id: (typeof FIELDS)[number]) =>
@@ -298,6 +324,8 @@ export default function BookingFlow() {
             phone: contact.phone.trim() || undefined,
           },
           address,
+          // A recurring cadence turns this into a subscription server-side.
+          ...(chosenCadence ? { cadence_id: chosenCadence.cadenceId } : {}),
           request_id: crypto.randomUUID(),
           // Never echo a price for QUOTE: its preview total is indicative, and the
           // server 422s (QUOTE_PRICE_NOT_ALLOWED) if a client presents one as a price.
@@ -305,6 +333,12 @@ export default function BookingFlow() {
           notes,
         },
       });
+      // A subscription doesn't finish here — Stripe Checkout collects the card
+      // and the first visit is created by the invoice.paid webhook.
+      if (r.outcome === "CHECKOUT") {
+        window.location.assign(r.checkout_url);
+        return; // navigating away — leave the button disabled
+      }
       setResult(r);
       setDone(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -571,6 +605,34 @@ export default function BookingFlow() {
                   <h2>Your estimate</h2>
                   <p>Live pricing based on your configuration. Final price confirmed on site.</p>
                 </div>
+
+                {/* Payment frequency — the ONE place a cadence is chosen. The
+                    options and their discounts come from the admin's Recurring
+                    grid, and the server applies the discount to the total. */}
+                {recOptions.length > 1 && (
+                  <div className="fld" style={{ marginBottom: 18 }}>
+                    <label>Payment frequency</label>
+                    <div className="seg">
+                      {recOptions.map((o) => (
+                        <button
+                          key={o.cadenceId}
+                          type="button"
+                          className={cadenceKey === o.key ? "on" : ""}
+                          onClick={() => setCadenceKey(o.key)}
+                        >
+                          {o.label}
+                          {o.discountPercent > 0 && ` · −${o.discountPercent}%`}
+                        </button>
+                      ))}
+                    </div>
+                    <p style={{ marginTop: 8, fontSize: 12.5, color: "var(--slate4)" }}>
+                      {chosenCadence
+                        ? `Billed ${chosenCadence.label.toLowerCase()} — you'll confirm your card on Stripe's secure checkout, and can cancel anytime.`
+                        : "A single visit, paid once when you book."}
+                    </p>
+                  </div>
+                )}
+
                 <div className="pcard">
                   <span className="glow" />
                   {isQuote || !preview?.displayed_price ? (
@@ -785,7 +847,7 @@ export default function BookingFlow() {
                     </button>
                   </div>
                 </>
-              ) : (
+              ) : result.outcome === "WAITLISTED" ? (
                 <>
                   <h2>You&apos;re on the waitlist</h2>
                   <p>
@@ -801,7 +863,7 @@ export default function BookingFlow() {
                     </Link>
                   </div>
                 </>
-              )}
+              ) : null /* CHECKOUT redirects away before rendering */}
             </div>
           )}
         </div>

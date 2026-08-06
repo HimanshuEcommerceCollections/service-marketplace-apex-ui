@@ -11,16 +11,24 @@ const TTL_SECONDS = 300;
 
 export type PricingMode = "FROM" | "QUOTE";
 
-/** One "Recurring plans" card (service detail only; admin-controlled). */
-export interface RecurringPlanView {
-  id: string;
-  name: string;
+/**
+ * One payment frequency a service offers (from the admin's Recurring grid).
+ *
+ * Powers BOTH the display-only "Recurring plans" cards and the estimator's
+ * Frequency control, so the two can never disagree about what is on offer or
+ * what it saves. Not a purchasable package — that is a membership plan.
+ */
+export interface RecurringOptionView {
+  cadenceId: string;
+  key: string;
+  label: string;
   freq: string;
-  amount: string;
-  unit: string | null;
+  discountPercent: number;
   disc: string | null;
+  amount: string | null;
+  unit: string | null;
+  isSubscription: boolean;
   best: boolean;
-  cta: string;
 }
 
 export interface CatalogService {
@@ -37,7 +45,7 @@ export interface CatalogService {
   recurringDiscount: string | null; // e.g. "up to 15%"
   // Detail-only (GET /services/:slug): the service page's Recurring section.
   recurringHeading?: string | null;
-  recurringPlans?: RecurringPlanView[];
+  recurringOptions?: RecurringOptionView[];
 }
 
 /** Plans on the membership wire (fromPrice = the plan's BINDING per-cycle price). */
@@ -108,18 +116,30 @@ export interface RecurringSection {
   plans: ServicePlan[];
 }
 
-/** Map the API's recurring cards to the shape the <Recurring/> component renders. */
+/**
+ * Map the service's payment frequencies onto the <Recurring/> card shape.
+ *
+ * One-time is filtered out: a card advertising "Single visit, save 0%" is
+ * noise in a section about what recurring commitment buys you. It remains
+ * selectable in the estimator, which is where the actual choice happens.
+ */
 function toRecurringPlans(svc: CatalogService): ServicePlan[] | null {
-  if (!svc.recurringPlans?.length) return null;
-  return svc.recurringPlans.map((p) => ({
-    name: p.name,
-    freq: p.freq,
-    amount: p.amount,
-    unit: p.unit ?? undefined,
-    disc: p.disc ?? undefined,
-    best: p.best || undefined,
-    choose: p.cta,
+  const recurring = (svc.recurringOptions ?? []).filter((o) => o.isSubscription);
+  if (!recurring.length) return null;
+  return recurring.map((o) => ({
+    name: o.label,
+    freq: o.freq,
+    amount: o.amount ?? undefined,
+    unit: o.unit ?? undefined,
+    disc: o.disc ?? undefined,
+    best: o.best || undefined,
   }));
+}
+
+/** The frequency options the estimator offers, including one-time. */
+export async function getRecurringOptions(slug: string): Promise<RecurringOptionView[]> {
+  const svc = await getService(slug);
+  return svc?.recurringOptions ?? [];
 }
 
 /**

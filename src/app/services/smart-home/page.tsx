@@ -4,7 +4,7 @@ import '../../cta-band.css';
 import '../service.css';
 import '../../testimonials.css';
 import ServicePage from '../../../components/service/ServicePage';
-import { overlayServicePage } from '../../../lib/catalog';
+import { getRecurringOptions, overlayServicePage } from '../../../lib/catalog';
 import { content } from '../../../data/services/smart-home/content';
 
 // TODO(design): update metadata when the Smart Home design is delivered.
@@ -14,5 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  return <ServicePage config={await overlayServicePage(content, 'smart-home')} />;
+  return (
+    <ServicePage
+      config={await overlayServicePage(content, 'smart-home')}
+      recurringOptions={await getRecurringOptions('smart-home')}
+    />
+  );
 }

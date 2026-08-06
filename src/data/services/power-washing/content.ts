@@ -43,9 +43,9 @@ export const content: ServiceConfig = {
   recurring: {
     heading: 'Book once. Never think about it again.',
     plans: [
-      { name: 'One-time', freq: 'Single visit', amount: '$79', choose: 'Choose one-time' },
-      { name: 'Weekly', freq: 'Every week', amount: '$79', unit: '/visit', disc: 'Save 15%', best: true, choose: 'Choose weekly' },
-      { name: 'Biweekly', freq: 'Every 2 weeks', amount: '$79', unit: '/visit', disc: 'Save 10%', choose: 'Choose biweekly' },
+      { name: 'One-time', freq: 'Single visit', amount: '$79' },
+      { name: 'Weekly', freq: 'Every week', amount: '$79', unit: '/visit', disc: 'Save 15%', best: true },
+      { name: 'Biweekly', freq: 'Every 2 weeks', amount: '$79', unit: '/visit', disc: 'Save 10%' },
     ],
   },
   finalCta: {

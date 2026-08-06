@@ -23,8 +23,13 @@
 // The full multi-service SPEC is kept intact (it is the shared configurator engine);
 // the `slug` argument selects which spec is active on a given page.
 
-export function mountService(slug, testimonials) {
+// `recurring` is the service's payment-frequency grid (RecurringOptionView[]),
+// fetched server-side and passed in by the page. It replaces this file's
+// hardcoded frequency options and discount rates: the admin's Recurring grid is
+// the single source of both what is offered and what it saves.
+export function mountService(slug, testimonials, recurring) {
   const TDATA = testimonials || [];
+  const CADENCES = recurring || [];
   const cleanups = [];
   const on = (t, type, fn, opts) => {
     if (!t) return;
@@ -332,6 +337,21 @@ export function mountService(slug, testimonials) {
     const host = $('#cfgFields');
     const out = $('#cfgOut');
     if (!spec || !host || !out) return;
+
+    // Payment frequency is admin-controlled. When the grid is available it
+    // OVERRIDES this file's hardcoded options, so a cadence added or retired in
+    // /admin never needs a code change. Keyed by cadence key ("weekly", …),
+    // which is what the segmented control stores in state.
+    const CAD = {};
+    CADENCES.forEach((o) => {
+      CAD[o.key] = o;
+    });
+    const freqField = spec.fields.find((f) => f.k === 'freq');
+    if (freqField && CADENCES.length) {
+      freqField.opts = CADENCES.map((o) => ({ v: o.key, label: o.label }));
+      // Keep the spec's preferred default if the grid still offers it.
+      if (!CAD[freqField.def]) freqField.def = CADENCES[0].key;
+    }
     // Clear any previously injected DOM (StrictMode double-invoke / re-mount).
     cleanups.push(() => {
       host.innerHTML = '';
@@ -379,10 +399,18 @@ export function mountService(slug, testimonials) {
       out.classList.add('loading');
       clearTimeout(liveTimer);
       const go = () => {
+        // Send the chosen cadence so the SERVER applies the discount. That makes
+        // the recompute authoritative for recurring pricing too — the local
+        // compute() rates below are only the pre-first-response fallback.
+        const chosen = CAD[state.freq];
         fetch(`${API_BASE}/services/${activeSlug}/config/price`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ selections, quantity }),
+          body: JSON.stringify({
+            selections,
+            quantity,
+            ...(chosen ? { cadenceId: chosen.cadenceId } : {}),
+          }),
         })
           .then((r) => r.json())
           .then((j) => {

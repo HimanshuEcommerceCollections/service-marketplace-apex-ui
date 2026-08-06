@@ -4,7 +4,7 @@ import '../../cta-band.css';
 import '../service.css';
 import '../../testimonials.css';
 import CleaningPage from '../../../components/cleaning/CleaningPage';
-import { getRecurringSection, livePrice } from '../../../lib/catalog';
+import { getRecurringOptions, getRecurringSection, livePrice } from '../../../lib/catalog';
 
 export const metadata: Metadata = {
   // Preserved from the source document.
@@ -15,6 +15,10 @@ export const metadata: Metadata = {
 
 export default async function HouseCleaningPage() {
   return (
-    <CleaningPage heroPrice={await livePrice('cleaning')} recurring={await getRecurringSection('cleaning')} />
+    <CleaningPage
+      heroPrice={await livePrice('cleaning')}
+      recurring={await getRecurringSection('cleaning')}
+      recurringOptions={await getRecurringOptions('cleaning')}
+    />
   );
 }

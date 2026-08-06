@@ -58,14 +58,18 @@ export interface ServiceContent {
 // ---- Full page config consumed by the shared <ServicePage/> ----
 // (ServicePlan is structurally identical to the one in components/service/Recurring,
 // so config.recurring.plans passes straight through as its prop.)
+//
+// These cards describe PAYMENT FREQUENCIES, not purchasable packages: they are
+// display-only and carry no CTA. The customer picks a frequency in the
+// estimator's Frequency control, which is driven by the same data.
 export interface ServicePlan {
   name: string;
   freq: string;
-  amount: string;
+  /** Base price with this frequency's discount applied; omitted if none listed. */
+  amount?: string;
   unit?: string;
   disc?: string;
   best?: boolean;
-  choose: string;
 }
 
 export interface ServiceTestimonial {

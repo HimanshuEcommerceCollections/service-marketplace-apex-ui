@@ -19,11 +19,20 @@ import { mountChrome } from '../../lib/shared/chrome';
 import { mountCtaBand } from '../../lib/shared/cta-band';
 import { mountTestimonials } from '../../lib/shared/testimonials';
 import type { ServiceConfig } from '../../data/serviceContent';
+import type { RecurringOptionView } from '../../lib/catalog';
 
-export default function ServicePage({ config }: { config: ServiceConfig }) {
+export default function ServicePage({
+  config,
+  recurringOptions = [],
+}: {
+  config: ServiceConfig;
+  /** Admin's payment-frequency grid — drives the estimator's Frequency control. */
+  recurringOptions?: RecurringOptionView[];
+}) {
   useEffect(() => {
-    // mountService(slug) selects this service's configurator spec + live pricing.
-    const disposeService = mountService(config.slug, config.testimonials);
+    // mountService(slug) selects this service's configurator spec + live pricing;
+    // the grid overrides its hardcoded frequency options and discounts.
+    const disposeService = mountService(config.slug, config.testimonials, recurringOptions);
     const disposeChrome = mountChrome();
     const disposeCta = mountCtaBand();
     const disposeTst = mountTestimonials(config.testimonials);
@@ -33,7 +42,7 @@ export default function ServicePage({ config }: { config: ServiceConfig }) {
       disposeCta();
       disposeTst();
     };
-  }, [config]);
+  }, [config, recurringOptions]);
 
   return (
     <div className="pg-service">
@@ -41,7 +50,7 @@ export default function ServicePage({ config }: { config: ServiceConfig }) {
       <Hero content={config.content.hero} />
       <Expect content={config.content.expect} />
       <Configurator />
-      <Recurring heading={config.recurring.heading} plans={config.recurring.plans} serviceSlug={config.slug} />
+      <Recurring heading={config.recurring.heading} plans={config.recurring.plans} />
       <Testimonials />
       <CtaBand
         heading="One call. Whole house handled."
