@@ -348,9 +348,31 @@ export function mountService(slug, testimonials, recurring) {
     });
     const freqField = spec.fields.find((f) => f.k === 'freq');
     if (freqField && CADENCES.length) {
+      // The verbatim specs predate the grid and key one-time as "once", so
+      // compute()/sel() must never see a raw grid key they don't know:
+      // cleaning's fl[s.freq].toLowerCase() throws on one, which unmounts the
+      // entire page into Next's error boundary ("This page couldn't load").
+      // Bridge grid keys onto each spec's own vocabulary. A cadence the spec
+      // has never heard of (added later in /admin) falls back to the spec's
+      // original default — the offline estimate degrades gracefully while the
+      // server recompute, which receives the real cadenceId, stays authoritative.
+      const LEGACY = { 'one-time': 'once' };
+      const specKeys = new Set(freqField.opts.map((o) => o.v)); // pre-override vocabulary
+      const specDefault = freqField.def;
+      const toSpecKey = (k) => {
+        const mapped = LEGACY[k] || k;
+        return specKeys.has(mapped) ? mapped : specDefault;
+      };
       freqField.opts = CADENCES.map((o) => ({ v: o.key, label: o.label }));
-      // Keep the spec's preferred default if the grid still offers it.
-      if (!CAD[freqField.def]) freqField.def = CADENCES[0].key;
+      // Keep the spec's preferred default when the grid offers it (under either name).
+      const preferred = CADENCES.find((o) => (LEGACY[o.key] || o.key) === specDefault);
+      freqField.def = (preferred || CADENCES[0]).key;
+      const computeOrig = spec.compute;
+      spec.compute = (s) => computeOrig({ ...s, freq: toSpecKey(s.freq) });
+      if (spec.sel) {
+        const selOrig = spec.sel;
+        spec.sel = (s) => selOrig({ ...s, freq: toSpecKey(s.freq) });
+      }
     }
     // Clear any previously injected DOM (StrictMode double-invoke / re-mount).
     cleanups.push(() => {
