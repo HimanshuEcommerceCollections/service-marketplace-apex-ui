@@ -216,9 +216,11 @@ export default function BookingFlow() {
       active = false;
       clearTimeout(t);
     };
-  }, [cfg, isQuote, selections]);
+  }, [cfg, isQuote, selections, chosenCadence]);
 
-  const total = preview?.displayed_price?.total.amount ?? null;
+  // The API returns cents; the count-up animates whole dollars so the headline
+  // figure matches the money()-formatted rows below it.
+  const total = preview?.displayed_price ? Math.round(preview.displayed_price.total.amount / 100) : null;
   const counted = useCountUp(total);
 
   const chooseService = useCallback(async (slug: string) => {
@@ -277,7 +279,7 @@ export default function BookingFlow() {
       else out.push([g.label, labelOf(v)]);
     }
     return out;
-  }, [cfg, selections, chosenCadence]);
+  }, [cfg, selections]);
 
   const FIELDS = ["first", "last", "email", "phone", "street", "city", "state", "zip"] as const;
   const fieldValue = (id: (typeof FIELDS)[number]) =>
