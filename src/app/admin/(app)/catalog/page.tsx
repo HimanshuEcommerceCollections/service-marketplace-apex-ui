@@ -31,6 +31,9 @@ type PricingMode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
 type Status = "ACTIVE" | "INACTIVE";
 
+/** Server ceiling on the per-service photo requirement (catalog.validation.ts). */
+const MAX_PHOTOS = 20;
+
 interface ServiceOption { id: string; name: string; slug: string }
 interface EditOption {
   id: string;
@@ -75,6 +78,9 @@ interface EditView {
   pricingMode: PricingMode;
   basePrice: number;
   taxRateBps: number;
+  /** Photo step on the booking wizard (0/0 = no uploader). */
+  photosMin: number;
+  photosMax: number;
   currency: string;
   typicalDuration: string | null;
   groups: EditGroup[];
@@ -104,6 +110,8 @@ export default function EditPricingPage() {
   const [mode, setMode] = useState<PricingMode>("FROM");
   const [basePrice, setBasePrice] = useState("");
   const [taxPct, setTaxPct] = useState("");
+  const [photosMin, setPhotosMin] = useState("0");
+  const [photosMax, setPhotosMax] = useState("0");
   const [duration, setDuration] = useState<DurationDraft>(EMPTY_DURATION);
   const [optDeltas, setOptDeltas] = useState<Record<string, string>>({});
 
@@ -135,6 +143,8 @@ export default function EditPricingPage() {
     setMode(v.pricingMode);
     setBasePrice(c2d(v.basePrice));
     setTaxPct((v.taxRateBps / 100).toFixed(2));
+    setPhotosMin(String(v.photosMin));
+    setPhotosMax(String(v.photosMax));
     setDuration(toDurationDraft(v.typicalDuration));
     setOptDeltas(Object.fromEntries(v.groups.flatMap((g) => g.options.map((o) => [o.id, c2d(o.priceDelta)]))));
     setRec(
@@ -180,9 +190,17 @@ export default function EditPricingPage() {
     const base = money(basePrice);
     const tax = percent(taxPct);
     const dur = fromDurationDraft(duration);
-    if (!base.ok || !tax.ok || !dur.ok) {
+    const pMin = wholeNumber(photosMin, 0, MAX_PHOTOS);
+    const pMax = wholeNumber(photosMax, 0, MAX_PHOTOS);
+    if (!base.ok || !tax.ok || !dur.ok || !pMin.ok || !pMax.ok) {
       setNotice(null);
-      setErr(firstError(base, tax, dur) ?? "Please fix the highlighted fields.");
+      setErr(firstError(base, tax, dur, pMin, pMax) ?? "Please fix the highlighted fields.");
+      return;
+    }
+    // A max below the min would demand more photos than the uploader accepts.
+    if (pMax.value > 0 && pMax.value < pMin.value) {
+      setNotice(null);
+      setErr("Max photos must be at least the minimum (or 0 for no limit).");
       return;
     }
     const options: { id: string; priceDelta: number }[] = [];
@@ -206,6 +224,8 @@ export default function EditPricingPage() {
         pricingMode: mode,
         basePrice: base.value,
         taxRateBps: tax.value,
+        photosMin: pMin.value,
+        photosMax: pMax.value,
         typicalDuration: dur.value,
         options,
       };
@@ -299,10 +319,19 @@ export default function EditPricingPage() {
   const baseR = money(basePrice);
   const taxR = percent(taxPct);
   const durR = fromDurationDraft(duration);
+  const pMinR = wholeNumber(photosMin, 0, MAX_PHOTOS);
+  const pMaxR = wholeNumber(photosMax, 0, MAX_PHOTOS);
   const deltaR: Record<string, Parsed<number>> = Object.fromEntries(
     (view?.groups ?? []).flatMap((g) => g.options.map((o) => [o.id, optionalMoney(optDeltas[o.id] ?? "")])),
   );
-  const pricingInvalid = !baseR.ok || !taxR.ok || !durR.ok || Object.values(deltaR).some((r) => !r.ok);
+  const pricingInvalid =
+    !baseR.ok ||
+    !taxR.ok ||
+    !durR.ok ||
+    !pMinR.ok ||
+    !pMaxR.ok ||
+    (pMaxR.ok && pMinR.ok && pMaxR.value > 0 && pMaxR.value < pMinR.value) ||
+    Object.values(deltaR).some((r) => !r.ok);
 
   const discountR: Record<string, Parsed<number>> = Object.fromEntries(
     rec.map((r) => [r.cadenceId, wholeNumber(r.discount, 0, 100)]),
@@ -366,7 +395,36 @@ export default function EditPricingPage() {
                 />
                 <Err of={taxR} />
               </div>
+              {/* Photo step on /book. Mostly for QUOTE work a coordinator can't
+                  price sight-unseen; min 0 = optional, max 0 = no uploader. */}
+              <div className="ax-field" style={{ width: 130 }}>
+                <label htmlFor="photos-min">Min photos</label>
+                <input
+                  id="photos-min"
+                  className={bad(pMinR)}
+                  inputMode="numeric"
+                  aria-invalid={!pMinR.ok}
+                  value={photosMin}
+                  onChange={(e) => setPhotosMin(e.target.value)}
+                />
+                <Err of={pMinR} />
+              </div>
+              <div className="ax-field" style={{ width: 130 }}>
+                <label htmlFor="photos-max">Max photos</label>
+                <input
+                  id="photos-max"
+                  className={bad(pMaxR)}
+                  inputMode="numeric"
+                  aria-invalid={!pMaxR.ok}
+                  value={photosMax}
+                  onChange={(e) => setPhotosMax(e.target.value)}
+                />
+                <Err of={pMaxR} />
+              </div>
             </div>
+            <p className="ax-muted" style={{ marginTop: 6 }}>
+              Photos: max 0 hides the uploader entirely; min above 0 makes photos required to submit a booking.
+            </p>
 
             {/* Typical duration — composed, so the site's labels stay consistent. */}
             <div className="ax-field" style={{ marginTop: 4 }}>

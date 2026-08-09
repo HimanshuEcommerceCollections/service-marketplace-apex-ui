@@ -196,6 +196,11 @@ export default function MyBookingsView() {
                         {b.quoteRequest && b.quotedAmount == null && b.status === 'PENDING' && (
                           <p className="mb-quotewait">Your coordinator is preparing a quote. You can pay here once it arrives.</p>
                         )}
+                        {b.quoteRequest && b.quotedAmount != null && b.canPay && (
+                          <p className="mb-quotewait">
+                            Your quote is ready — {money(b.grandTotal ?? b.quotedAmount, b.currency)}. Pay here to confirm your booking.
+                          </p>
+                        )}
                         {b.canCancel && b.paymentDueAt && (
                           <p className="mb-quotewait">Unpaid. Cancels automatically on {day(b.paymentDueAt)} unless paid.</p>
                         )}

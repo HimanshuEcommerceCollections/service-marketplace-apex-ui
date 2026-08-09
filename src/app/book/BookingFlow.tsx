@@ -41,6 +41,7 @@ import { api, ApiError } from "../lib/api-client";
 import PayBooking from "../../components/payments/PayBooking";
 import { SERVICE_ICON, Check, Arrow, Info } from "./icons";
 import { useBookingStore, type SelectionValue } from "./booking-store";
+import PhotoUpload from "./PhotoUpload";
 
 type Mode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
@@ -78,6 +79,13 @@ interface Cfg {
   slug: string;
   name: string;
   pricingMode: Mode;
+  /**
+   * Photo step. photosMin > 0 makes photos required to submit; photosMax 0
+   * hides the uploader. Both arrive as 0 when storage isn't configured, so the
+   * wizard never shows an uploader that can't work.
+   */
+  photosMin: number;
+  photosMax: number;
   configGroups: Grp[];
 }
 interface Money {
@@ -113,6 +121,9 @@ const SLOTS = [
   { v: "Afternoon (2–5pm)", label: "Afternoon" },
   { v: "Flexible", label: "Flexible" },
 ] as const;
+
+/** Server floor for a QUOTE project description (selection.validator.ts). */
+const QUOTE_DESCRIPTION_MIN = 10;
 
 const dollars = (cents: number) => `$${Math.round(cents / 100).toLocaleString()}`;
 const money = (m: Money | null | undefined) => (m ? dollars(m.amount) : "—");
@@ -156,6 +167,7 @@ export default function BookingFlow() {
     cadenceKey,
     selections,
     description,
+    photos,
     edits,
     address,
     propType,
@@ -425,6 +437,29 @@ export default function BookingFlow() {
     return out;
   }, [cfg, selections]);
 
+  /**
+   * Step 2's own requirements, checked BEFORE the customer walks any further.
+   *
+   * Both are things the server enforces at submit — but for a guest, submit sits
+   * on the far side of a sign-in redirect, so failing there would mean signing
+   * in only to be sent back to step 2. A priced (FROM) service gets this for
+   * free from the live-pricing round trip; QUOTE never prices, so without this
+   * check nothing validated its description at all until submit.
+   */
+  const step2Error = useMemo(() => {
+    if (!cfg) return null;
+    if (isQuote && description.trim().length < QUOTE_DESCRIPTION_MIN) {
+      return `Please describe your project in at least ${QUOTE_DESCRIPTION_MIN} characters so a coordinator can quote it.`;
+    }
+    if (cfg.photosMin > 0 && photos.length < cfg.photosMin) {
+      const needed = cfg.photosMin - photos.length;
+      return `Please add ${needed} more photo${needed === 1 ? "" : "s"} of the job (${cfg.photosMin} required).`;
+    }
+    return null;
+  }, [cfg, isQuote, description, photos.length]);
+  // Errors stay hidden until Continue is pressed, then track live.
+  const [step2Touched, setStep2Touched] = useState(false);
+
   const FIELDS = ["first", "last", "email", "phone", "street", "city", "state", "zip"] as const;
   const fieldValue = (id: (typeof FIELDS)[number]) =>
     id === "first" || id === "last" || id === "email" || id === "phone"
@@ -445,6 +480,8 @@ export default function BookingFlow() {
     // The API authenticates POST /bookings — step 5 shows a sign-in CTA instead
     // of this handler's button while anonymous, and this guard backs that up.
     if (!user || !cfg || !agree) return;
+    // Never submit something step 2 already knows is invalid.
+    if (step2Error) return;
     // Don't submit a stale total: if the debounced preview hasn't caught up to
     // the current selections, the echoed price would 422 (PRICE_MISMATCH). Wait
     // for the fetch to resolve (the button is disabled meanwhile too).
@@ -486,6 +523,9 @@ export default function BookingFlow() {
             phone: contact.phone.trim() || undefined,
           },
           address,
+          // Photos uploaded during step 2 (possibly while signed out) — the
+          // server claims these rows onto the new booking.
+          ...(photos.length ? { attachment_ids: photos.map((p) => p.id) } : {}),
           // A recurring cadence turns this into a subscription server-side.
           ...(chosenCadence ? { cadence_id: chosenCadence.cadenceId } : {}),
           request_id: requestId.current,
@@ -723,12 +763,33 @@ export default function BookingFlow() {
                       </div>
                     );
                   })}
+
+                  {/* Photo step — only for services that ask for photos, and
+                      only when storage is configured (the server reports 0/0
+                      otherwise). */}
+                  {cfg && (cfg.photosMax > 0 || cfg.photosMin > 0) && (
+                    <PhotoUpload slug={cfg.slug} min={cfg.photosMin} max={cfg.photosMax} />
+                  )}
                 </div>
+                {step2Touched && step2Error && (
+                  <div className="quote-note" role="alert" style={{ marginBottom: 16 }}>
+                    <Info />
+                    <p>{step2Error}</p>
+                  </div>
+                )}
                 <div className="bk-nav">
                   <button className="btn btn-line ripple" onClick={() => go(1)}>
                     Back
                   </button>
-                  <button className="btn btn-primary ripple" onClick={() => go(3)}>
+                  <button
+                    className="btn btn-primary ripple"
+                    onClick={() => {
+                      // Surface the requirement HERE rather than at submit: for a
+                      // guest, submit is on the far side of a sign-in redirect.
+                      setStep2Touched(true);
+                      if (!step2Error) go(3);
+                    }}
+                  >
                     Continue <Arrow />
                   </button>
                 </div>
@@ -743,8 +804,12 @@ export default function BookingFlow() {
 
                 {/* Payment frequency — the ONE place a cadence is chosen. The
                     options and their discounts come from the admin's Recurring
-                    grid, and the server applies the discount to the total. */}
-                {recOptions.length > 1 && (
+                    grid, and the server applies the discount to the total.
+                    Hidden for QUOTE: a subscription needs a binding price, and
+                    the server rejects one started from an estimate
+                    (SUBSCRIPTION_REQUIRES_PRICE), so offering the choice here
+                    would only produce an error at submit. */}
+                {!isQuote && recOptions.length > 1 && (
                   <div className="fld" style={{ marginBottom: 18 }}>
                     <label>Payment frequency</label>
                     <div className="seg">
@@ -919,6 +984,9 @@ export default function BookingFlow() {
                   <Row k="Phone" v={contact.phone} />
                   <Row k="Address" v={[address.street, address.city, address.state, address.zip].filter(Boolean).join(", ")} />
                   <Row k="Property type" v={propType} />
+                  {photos.length > 0 && (
+                    <Row k="Photos" v={`${photos.length} attached`} />
+                  )}
                   <Row k="Preferred schedule" v={[date, slot].filter(Boolean).join(" · ") || "Flexible"} />
                 </div>
                 <label className={`agree${agree ? " on" : ""}`} onClick={() => setAgree((a) => !a)}>
@@ -927,7 +995,26 @@ export default function BookingFlow() {
                   </span>
                   <p>I understand final pricing may be confirmed by my assigned professional.</p>
                 </label>
-                {!loading && !user && (
+                {/* Something on step 2 is still missing. Shown here — and the
+                    confirm/sign-in button withheld — so nobody completes a sign-in
+                    round trip only to be sent back two steps. */}
+                {step2Error && (
+                  <div className="quote-note" role="alert" style={{ marginTop: 16 }}>
+                    <Info />
+                    <p>
+                      {step2Error}{" "}
+                      <button
+                        type="button"
+                        onClick={() => go(2)}
+                        style={{ textDecoration: "underline", background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit", color: "inherit" }}
+                      >
+                        Go back and fix it
+                      </button>
+                      .
+                    </p>
+                  </div>
+                )}
+                {!loading && !user && !step2Error && (
                   <div className="quote-note" style={{ marginTop: 16 }}>
                     <Info />
                     <p>
@@ -945,14 +1032,20 @@ export default function BookingFlow() {
                     Back
                   </button>
                   {!loading && !user ? (
-                    <Link className="btn btn-primary ripple" href="/login?next=%2Fbook">
-                      Sign in to confirm <Arrow />
-                    </Link>
+                    step2Error ? (
+                      <button className="btn btn-primary ripple" disabled>
+                        Sign in to confirm
+                      </button>
+                    ) : (
+                      <Link className="btn btn-primary ripple" href="/login?next=%2Fbook">
+                        Sign in to confirm <Arrow />
+                      </Link>
+                    )
                   ) : (
                     <button
                       className="btn btn-primary ripple"
                       onClick={() => void submit()}
-                      disabled={loading || !agree || busy || (!isQuote && priceStale)}
+                      disabled={loading || !agree || busy || !!step2Error || (!isQuote && priceStale)}
                     >
                       {busy ? "Submitting…" : !isQuote && priceStale ? "Updating price…" : "Submit booking request"}
                     </button>

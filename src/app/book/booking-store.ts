@@ -24,6 +24,16 @@ export interface WizardAddress {
   zip: string;
 }
 
+/**
+ * A photo already uploaded to storage. Only the server-issued id and URL are
+ * kept — a File object can't be serialized, so photos are uploaded as soon as
+ * they're picked and it's the RESULT that persists across the sign-in redirect.
+ */
+export interface UploadedPhoto {
+  id: string;
+  url: string;
+}
+
 interface WizardData {
   step: number;
   /** Chosen service slug; the component refetches its config on restore. */
@@ -31,6 +41,8 @@ interface WizardData {
   cadenceKey: string;
   selections: Record<string, SelectionValue>;
   description: string;
+  /** Photos uploaded for this booking, claimed onto it at submit. */
+  photos: UploadedPhoto[];
   edits: ContactEdits;
   address: WizardAddress;
   propType: string;
@@ -50,6 +62,8 @@ interface WizardActions {
   setCadenceKey: (key: string) => void;
   setSelections: (v: Updater<Record<string, SelectionValue>>) => void;
   setDescription: (v: string) => void;
+  addPhoto: (p: UploadedPhoto) => void;
+  removePhoto: (id: string) => void;
   setEdits: (v: Updater<ContactEdits>) => void;
   setAddress: (v: WizardAddress) => void;
   setPropType: (v: string) => void;
@@ -65,6 +79,7 @@ const initial: WizardData = {
   cadenceKey: "one-time",
   selections: {},
   description: "",
+  photos: [],
   edits: {},
   address: { street: "", city: "", state: "NC", zip: "" },
   propType: "House", // PROP_TYPES[0] in BookingFlow
@@ -82,6 +97,10 @@ export const useBookingStore = create<WizardData & WizardActions>()(
       setCadenceKey: (cadenceKey) => set({ cadenceKey }),
       setSelections: (v) => set((s) => ({ selections: resolve(v, s.selections) })),
       setDescription: (description) => set({ description }),
+      addPhoto: (p) => set((s) => ({ photos: [...s.photos, p] })),
+      // Local removal only: the object is left for the TTL sweep rather than
+      // deleted here, so a mis-click can't destroy a file another tab is using.
+      removePhoto: (id) => set((s) => ({ photos: s.photos.filter((p) => p.id !== id) })),
       setEdits: (v) => set((s) => ({ edits: resolve(v, s.edits) })),
       setAddress: (address) => set({ address }),
       setPropType: (propType) => set({ propType }),

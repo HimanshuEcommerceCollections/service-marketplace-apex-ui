@@ -17,10 +17,23 @@ interface Quote {
   currency: string;
   booking: { reference: string } | null;
   service: { slug: string; name: string } | null;
+  /** Customer-uploaded job photos — what the coordinator prices from. */
+  photos: { id: string; url: string }[];
   createdAt: string;
 }
 
 const STATUSES = ["NEW", "REVIEWING", "SENT", "WON", "LOST"];
+
+/**
+ * Cloudinary renders a thumbnail from the delivery URL, so the grid never pulls
+ * full-size originals. A non-Cloudinary URL (another provider) is returned
+ * unchanged and simply loads at its natural size.
+ */
+function thumb(url: string): string {
+  return url.includes("/image/upload/")
+    ? url.replace("/image/upload/", "/image/upload/c_fill,w_120,h_120,q_auto,f_auto/")
+    : url;
+}
 
 export default function QuotesPage() {
   const [rows, setRows] = useState<Quote[]>([]);
@@ -101,6 +114,7 @@ export default function QuotesPage() {
             <th>Booking</th>
             <th>Contact</th>
             <th>Description</th>
+            <th>Photos</th>
             <th>Indicative</th>
             <th>Quoted price</th>
             <th>Status</th>
@@ -113,6 +127,27 @@ export default function QuotesPage() {
               <td className="ax-muted">{q.booking?.reference ?? q.source}</td>
               <td className="ax-muted">{q.contactEmail}</td>
               <td style={{ maxWidth: 260 }}>{q.description.length > 80 ? q.description.slice(0, 80) + "…" : q.description}</td>
+              <td>
+                {q.photos.length === 0 ? (
+                  <span className="ax-muted">—</span>
+                ) : (
+                  <span style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 140 }}>
+                    {q.photos.map((p) => (
+                      // Opens the full-size original; the grid only loads thumbnails.
+                      <a key={p.id} href={p.url} target="_blank" rel="noreferrer noopener" title="Open full size">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={thumb(p.url)}
+                          alt="Customer photo of the job"
+                          width={40}
+                          height={40}
+                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, display: "block" }}
+                        />
+                      </a>
+                    ))}
+                  </span>
+                )}
+              </td>
               <td>
                 {q.indicativeAmount != null ? (
                   // The engine total for the customer's configuration — a starting
@@ -151,7 +186,7 @@ export default function QuotesPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={7} className="ax-muted">No quote requests found.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={8} className="ax-muted">No quote requests found.</td></tr>}
         </tbody>
       </table>
 
