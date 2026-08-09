@@ -998,7 +998,7 @@ export default function BookingFlow() {
                 <div className="tot">
                   <div className="est">
                     <span>{isQuote ? "Estimate" : preview?.mode === "FROM" ? "From" : "Estimated"}</span>
-                    <b>{isQuote ? "Custom" : total != null ? dollars(total) : pricing ? "…" : "—"}</b>
+                    <b>{isQuote ? "Custom" : preview?.displayed_price ? money(preview.displayed_price.total) : pricing ? "…" : "—"}</b>
                   </div>
                 </div>
               </>
