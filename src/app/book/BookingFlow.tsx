@@ -21,6 +21,14 @@
 // of which exist in the booking schema — `configuration` is a closed Zod object, so
 // putting them there would silently drop them. They go into the schema's top-level
 // `notes` string instead, which is what actually reaches a coordinator.
+//
+// Auth: the wizard itself is OPEN — every pre-submit endpoint is public, so an
+// anonymous visitor can configure, price, and review freely. Only the final
+// "Submit booking request" needs an account (POST /bookings authenticates), so
+// step 5 swaps the submit button for a sign-in CTA when there is no session.
+// The visitor's input lives in the persisted booking store (sessionStorage), so
+// the /login?next=/book round-trip lands them back on step 5 with everything
+// intact; server-derived state (config, price) is refetched on return.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -31,11 +39,11 @@ import { mountChrome } from "../../lib/shared/chrome";
 import { useCustomerAuth } from "../lib/customer-auth";
 import { api, ApiError } from "../lib/api-client";
 import PayBooking from "../../components/payments/PayBooking";
-import { SERVICE_ICON, Check, Arrow, Info, Lock } from "./icons";
+import { SERVICE_ICON, Check, Arrow, Info } from "./icons";
+import { useBookingStore, type SelectionValue } from "./booking-store";
 
 type Mode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
-type SelectionValue = string | number | boolean | string[];
 
 interface Svc {
   id: string;
@@ -140,32 +148,59 @@ export default function BookingFlow() {
   const { user, loading } = useCustomerAuth();
   useEffect(() => mountChrome(), []);
 
-  const [step, setStep] = useState(1);
+  // Everything the visitor types or picks lives in the persisted store so the
+  // sign-in redirect at step 5 can't lose it. Server-derived and transient
+  // state (services, cfg, preview, submit lifecycle) stays local below.
+  const {
+    step,
+    cadenceKey,
+    selections,
+    description,
+    edits,
+    address,
+    propType,
+    date,
+    slot,
+    agree,
+    setStep,
+    setSlug,
+    setCadenceKey,
+    setSelections,
+    setDescription,
+    setEdits,
+    setAddress,
+    setPropType,
+    setDate,
+    setSlot,
+    setAgree,
+    reset: resetWizard,
+  } = useBookingStore();
+
+  // The store skips automatic hydration (SSR markup must match the first client
+  // render); rehydrate once mounted, then let the restore effect below run.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    void Promise.resolve(useBookingStore.persist.rehydrate()).then(() => setHydrated(true));
+  }, []);
+
   const [done, setDone] = useState(false);
 
   const [services, setServices] = useState<Svc[] | null>(null);
   const [cfg, setCfg] = useState<Cfg | null>(null);
-  // Payment frequency: what the service offers, and which one is selected.
-  // Anything other than one-time makes this booking a subscription.
+  // Payment frequency: what the service offers (admin-controlled, fetched per
+  // service). Anything other than one-time makes this booking a subscription.
   const [recOptions, setRecOptions] = useState<RecurringOption[]>([]);
-  const [cadenceKey, setCadenceKey] = useState<string>("one-time");
   /** The selected frequency, or undefined for plain one-time. */
   const chosenCadence = recOptions.find((o) => o.key === cadenceKey && o.isSubscription);
-  const [selections, setSelections] = useState<Record<string, SelectionValue>>({});
-  const [description, setDescription] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [pricing, setPricing] = useState(false);
 
   // Contact fields are DERIVED from the session with per-field overrides rather than
   // copied into state by an effect: prefilling via setState would cascade a render
   // and need clobber-guards. `??` (not `||`) means clearing a field to "" sticks
-  // instead of snapping back to the session value.
-  const [edits, setEdits] = useState<Partial<Record<"first" | "last" | "email" | "phone", string>>>({});
-  const [address, setAddress] = useState({ street: "", city: "", state: "NC", zip: "" });
-  const [propType, setPropType] = useState<string>(PROP_TYPES[0]);
-  const [date, setDate] = useState("");
-  const [slot, setSlot] = useState("");
-  const [agree, setAgree] = useState(false);
+  // instead of snapping back to the session value. For a visitor who typed their
+  // details anonymously and then signed in, the typed values (edits) win and only
+  // untouched fields prefill from the account.
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const [result, setResult] = useState<SubmitResult | null>(null);
@@ -263,11 +298,13 @@ export default function BookingFlow() {
     setPreview(null);
     setSelections({});
     setDescription("");
+    setAgree(false);
     setSelecting(true);
     try {
       const c = await api<Cfg>(`/services/${slug}/config`);
       if (chooseEpoch.current !== epoch) return;
       setCfg(c);
+      setSlug(slug);
       // Frequencies are admin-controlled; a service offering none stays one-time.
       const detail = await api<{ recurringOptions?: RecurringOption[] }>(`/services/${slug}`).catch(() => null);
       if (chooseEpoch.current !== epoch) return;
@@ -292,28 +329,63 @@ export default function BookingFlow() {
       // for the winner to release.
       if (chooseEpoch.current === epoch) setSelecting(false);
     }
-  }, []);
+    // Store actions are referentially stable — listed only to satisfy the linter.
+  }, [setSelections, setDescription, setAgree, setSlug, setCadenceKey, setStep]);
+
+  // Rebuild the transient, server-derived half of a persisted wizard (typically
+  // returning from /login at step 5) WITHOUT reseeding selections or moving the
+  // step. Once cfg lands, the debounced pricing effect refetches the estimate,
+  // so a restored wizard can never submit a price the server didn't just quote.
+  const restoreService = useCallback(async (slug: string) => {
+    const epoch = ++chooseEpoch.current;
+    setSelecting(true);
+    try {
+      const c = await api<Cfg>(`/services/${slug}/config`);
+      if (chooseEpoch.current !== epoch) return;
+      setCfg(c);
+      const detail = await api<{ recurringOptions?: RecurringOption[] }>(`/services/${slug}`).catch(() => null);
+      if (chooseEpoch.current !== epoch) return;
+      setRecOptions(detail?.recurringOptions ?? []);
+    } catch {
+      // The saved service no longer exists (or failed to load): start over
+      // rather than stranding the visitor on a step that can't render.
+      if (chooseEpoch.current === epoch) resetWizard();
+    } finally {
+      if (chooseEpoch.current === epoch) setSelecting(false);
+    }
+  }, [resetWizard]);
 
   const go = useCallback((n: number) => {
     if (n < 1 || n > 5) return;
     setStep(n);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [setStep]);
 
-  // Deep-link preselection: CTAs across the site link to /book?service=<slug>
-  // (optionally &plan=recurring). Runs once, after the cards load. An unknown
-  // or missing ?service= leaves the wizard at the normal step 1.
+  // Runs once, after the cards load AND the persisted wizard has rehydrated.
+  // Precedence:
+  //   1. ?service= naming a DIFFERENT service than the saved wizard (or no saved
+  //      wizard) → fresh deep-linked selection, exactly as before.
+  //   2. a saved wizard (e.g. back from /login?next=/book, or a reload) → refetch
+  //      its config and resume at the saved step with the saved selections.
+  //   3. neither → the normal step 1.
   useEffect(() => {
-    if (deepLinked.current || !services) return;
+    if (deepLinked.current || !services || !hydrated) return;
     deepLinked.current = true;
+    const saved = useBookingStore.getState().slug;
     const wantSlug = params.get("service");
-    if (!wantSlug) return;
-    const match = services.find((s) => s.slug === wantSlug);
-    if (!match) return;
-    // Plan is applied once the service's recurring options arrive (below).
-    wantPlan.current = params.get("plan");
-    void chooseService(match.slug);
-  }, [services, params, chooseService]);
+    if (wantSlug && wantSlug !== saved && services.some((s) => s.slug === wantSlug)) {
+      // Plan is applied once the service's recurring options arrive (below).
+      wantPlan.current = params.get("plan");
+      void chooseService(wantSlug);
+      return;
+    }
+    if (!saved) return;
+    if (!services.some((s) => s.slug === saved)) {
+      resetWizard();
+      return;
+    }
+    void restoreService(saved);
+  }, [services, hydrated, params, chooseService, restoreService, resetWizard]);
 
   // Apply a deep-linked ?plan= once the chosen service's frequencies load.
   // "recurring" picks the first subscription option; a specific key matches by
@@ -327,7 +399,7 @@ export default function BookingFlow() {
         ? recOptions.find((o) => o.isSubscription)
         : recOptions.find((o) => o.key === want && o.isSubscription);
     if (opt) setCadenceKey(opt.key);
-  }, [recOptions]);
+  }, [recOptions, setCadenceKey]);
 
   const setValue = (key: string, v: SelectionValue) => setSelections((s) => ({ ...s, [key]: v }));
   const toggleMulti = (key: string, optKey: string) =>
@@ -370,7 +442,9 @@ export default function BookingFlow() {
   const detailsValid = FIELDS.every((f) => fieldError(f) === null);
 
   async function submit() {
-    if (!cfg || !agree) return;
+    // The API authenticates POST /bookings — step 5 shows a sign-in CTA instead
+    // of this handler's button while anonymous, and this guard backs that up.
+    if (!user || !cfg || !agree) return;
     // Don't submit a stale total: if the debounced preview hasn't caught up to
     // the current selections, the echoed price would 422 (PRICE_MISMATCH). Wait
     // for the fetch to resolve (the button is disabled meanwhile too).
@@ -421,6 +495,9 @@ export default function BookingFlow() {
           notes,
         },
       });
+      // The request is in: clear the persisted wizard so a reload (or a return
+      // from Stripe) can't resurrect a completed run and double-submit it.
+      resetWizard();
       // A subscription doesn't finish here — Stripe Checkout collects the card
       // and the first visit is created by the invoice.paid webhook.
       if (r.outcome === "CHECKOUT") {
@@ -442,14 +519,13 @@ export default function BookingFlow() {
     setResult(null);
     setPaid(false);
     setCfg(null);
-    setSelections({});
-    setDescription("");
+    setRecOptions([]);
     setPreview(null);
-    setAgree(false);
     setTouched({});
     // A brand-new booking gets a fresh idempotency key.
     requestId.current = null;
-    setStep(1);
+    // Clears selections, description, agree, contact/address edits — and step.
+    resetWizard();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -459,12 +535,9 @@ export default function BookingFlow() {
     <div className="pg-book">
       <SiteNav />
 
-      {/* Stepper and summary are gated on the session, not just hidden: a visitor
-          who cannot book yet has no steps to walk and nothing to summarise. Keyed
-          on `user` rather than `!loading` so neither flashes in and back out while
-          the session is still resolving. */}
-      {user && (
-        <div className="bk-progress">
+      {/* The wizard is open to anonymous visitors — sign-in is only required at
+          the final confirm on step 5 (POST /bookings authenticates). */}
+      <div className="bk-progress">
           <div className="steps">
             <div className="fill" style={{ width: `${((shellStep - 1) / 4) * 88}%` }} />
             {STEPS.map((label, i) => {
@@ -482,10 +555,9 @@ export default function BookingFlow() {
               );
             })}
           </div>
-        </div>
-      )}
+      </div>
 
-      <div className={`bk-wrap${user ? "" : " solo"}`}>
+      <div className="bk-wrap">
         <div className="bk-main">
           {err && (
             <div className="quote-note" role="alert" style={{ marginBottom: 20 }}>
@@ -494,35 +566,7 @@ export default function BookingFlow() {
             </div>
           )}
 
-          {/* The API rejects an anonymous booking, so ask up front rather than
-              letting someone configure a request that cannot submit. */}
-          {!loading && !user && (
-            <div className="bk-gate">
-              <span className="gi">
-                <Lock />
-              </span>
-              <h2>Sign in to book</h2>
-              <p>You need an Apex account to request a service.</p>
-              <div className="cta-row">
-                <Link className="btn btn-primary ripple" href="/login?next=%2Fbook">
-                  Sign in <Arrow />
-                </Link>
-                <Link className="btn btn-line ripple" href="/signup">
-                  Create account
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {loading && (
-            <div className="bk-gate" aria-busy="true">
-              <div className="skel" style={{ height: 64, width: 64, borderRadius: 18, margin: "0 auto 20px" }} />
-              <div className="skel" style={{ height: 30, width: 220, margin: "0 auto 12px" }} />
-              <div className="skel" style={{ height: 16, width: 280, margin: "0 auto" }} />
-            </div>
-          )}
-
-          {!loading && user && !done && (
+          {!done && (
             <>
               {/* ---------- STEP 1: service ---------- */}
               <section className={`step${step === 1 ? " active" : ""}`}>
@@ -883,17 +927,36 @@ export default function BookingFlow() {
                   </span>
                   <p>I understand final pricing may be confirmed by my assigned professional.</p>
                 </label>
+                {!loading && !user && (
+                  <div className="quote-note" style={{ marginTop: 16 }}>
+                    <Info />
+                    <p>
+                      Submitting needs an Apex account. Everything you&apos;ve entered is saved in this tab —
+                      sign in and you&apos;ll land right back here to finish. New to Apex?{" "}
+                      <Link href="/signup?next=%2Fbook" style={{ textDecoration: "underline" }}>
+                        Create an account
+                      </Link>
+                      .
+                    </p>
+                  </div>
+                )}
                 <div className="bk-nav">
                   <button className="btn btn-line ripple" onClick={() => go(4)}>
                     Back
                   </button>
-                  <button
-                    className="btn btn-primary ripple"
-                    onClick={() => void submit()}
-                    disabled={!agree || busy || (!isQuote && priceStale)}
-                  >
-                    {busy ? "Submitting…" : !isQuote && priceStale ? "Updating price…" : "Submit booking request"}
-                  </button>
+                  {!loading && !user ? (
+                    <Link className="btn btn-primary ripple" href="/login?next=%2Fbook">
+                      Sign in to confirm <Arrow />
+                    </Link>
+                  ) : (
+                    <button
+                      className="btn btn-primary ripple"
+                      onClick={() => void submit()}
+                      disabled={loading || !agree || busy || (!isQuote && priceStale)}
+                    >
+                      {busy ? "Submitting…" : !isQuote && priceStale ? "Updating price…" : "Submit booking request"}
+                    </button>
+                  )}
                 </div>
               </section>
             </>
@@ -964,7 +1027,6 @@ export default function BookingFlow() {
         </div>
 
         {/* ---------- sticky summary ---------- */}
-        {user && (
         <aside className="bk-side">
           <div className="sum">
             <h4>
@@ -1005,7 +1067,6 @@ export default function BookingFlow() {
             )}
           </div>
         </aside>
-        )}
       </div>
 
       <SiteFooter />

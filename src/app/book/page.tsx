@@ -12,7 +12,8 @@ export const metadata: Metadata = {
     "Book any of Apex's home services in a few steps. Configure, see live pricing, and request your booking.",
 };
 
-// API-driven booking flow (login-gated, live server pricing, real submit) on the
+// API-driven booking flow (open wizard, sign-in required at the final confirm,
+// live server pricing, real submit) on the
 // apex-booking.html design: booking.css is that document's <style> block scoped
 // under .pg-book, and BookingFlow renders its 5-step markup against the real
 // endpoints. Its own nav/footer are dropped for the shared <SiteNav/>/<SiteFooter/>
