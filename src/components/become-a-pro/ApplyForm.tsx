@@ -19,7 +19,9 @@ import {
   wakeZips,
 } from '../../data/become-a-pro/content';
 import { submitProApplication } from '../../lib/pro-applications';
+import { ApiError } from '../../app/lib/api-client';
 import SecHead from './SecHead';
+import EmailExistsDialog, { type EmailConflict } from './EmailExistsDialog';
 import { Arrow, Check } from './icons';
 
 interface Fields {
@@ -71,13 +73,24 @@ export default function ApplyForm({
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  // The email the server rejected as already-known, and why. Held separately
+  // from `serverError` because it is a specific field's problem with a specific
+  // remedy, not a generic failure banner. It outlives the dialog: dismissing
+  // the dialog leaves the field flagged, and only editing the email clears it.
+  const [conflict, setConflict] = useState<{ reason: EmailConflict; email: string } | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const set = (k: keyof Fields) => (v: string) => {
     setF((prev) => ({ ...prev, [k]: v }));
     setServerError(null);
+    // Editing the email clears the rejection: the new address is unjudged.
+    if (k === 'email') setConflict(null);
   };
   const blur = (k: keyof Fields) => () => setTouched((t) => ({ ...t, [k]: true }));
   const bad = (k: keyof Fields) => {
+    // A server-rejected email stays flagged even though it is well-formed, so
+    // dismissing the dialog doesn't leave a form that looks ready to submit.
+    if (k === 'email' && conflict) return true;
     const rule = RULES[k];
     return !!rule && (!!touched[k] || showErrs) && !rule.test(f[k]);
   };
@@ -98,7 +111,9 @@ export default function ApplyForm({
     setTouched(Object.fromEntries(keys.map((k) => [k, true])));
 
     const fieldsOk = keys.every((k) => RULES[k]!.test(f[k]));
-    if (!fieldsOk || selected.length === 0 || ackMissing.length || !expect || !contact) {
+    // `conflict` blocks too: the server already rejected this exact address, so
+    // re-sending it unchanged would only earn the same 409.
+    if (!fieldsOk || conflict || selected.length === 0 || ackMissing.length || !expect || !contact) {
       requestAnimationFrame(() => {
         document
           .querySelector('.pg-pro .fld.err, .pg-pro .chk.err')
@@ -130,11 +145,24 @@ export default function ApplyForm({
       });
       setDone(res.application_id);
     } catch (err) {
-      setServerError(
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong sending your application. Please try again.'
-      );
+      // An email we already know is not a failure to report in the error banner
+      // — it gets the dialog, the flagged field, and a scroll back up to it.
+      if (
+        err instanceof ApiError &&
+        (err.code === 'PRO_APPLICATION_EXISTS' || err.code === 'ALREADY_A_PRO')
+      ) {
+        setConflict({ reason: err.code, email: f.email.trim() });
+        setDialogOpen(true);
+        requestAnimationFrame(() => {
+          document.getElementById('proEmail')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      } else {
+        setServerError(
+          err instanceof Error
+            ? err.message
+            : 'Something went wrong sending your application. Please try again.'
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +217,13 @@ export default function ApplyForm({
                 onChange={(e) => set('email')(e.target.value)}
                 onBlur={blur('email')}
               />
-              <span className="msg">{RULES.email!.msg}</span>
+              <span className="msg">
+                {conflict
+                  ? conflict.reason === 'ALREADY_A_PRO'
+                    ? 'This email is already registered as an Apex pro.'
+                    : 'We already have an application for this email.'
+                  : RULES.email!.msg}
+              </span>
             </div>
 
             <div className={cls('phone')}>
@@ -424,6 +458,21 @@ export default function ApplyForm({
           </form>
         )}
       </div>
+
+      {dialogOpen && conflict && (
+        <EmailExistsDialog
+          reason={conflict.reason}
+          email={conflict.email}
+          onClose={() => {
+            // The field stays flagged (see `conflict`); this just closes the
+            // dialog and puts the cursor where the fix has to happen.
+            setDialogOpen(false);
+            const input = document.getElementById('proEmail') as HTMLInputElement | null;
+            input?.focus();
+            input?.select();
+          }}
+        />
+      )}
     </section>
   );
 }
