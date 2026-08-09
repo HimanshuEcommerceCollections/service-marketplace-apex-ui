@@ -26,6 +26,14 @@ function strength(v: string): number {
 export default function SignUpView() {
   const { signup, user, loading } = useCustomerAuth();
   const router = useRouter();
+  // Honour ?next= the way /login does, so a "Create account" link that carries a
+  // destination (e.g. from /book) lands the new customer where they were headed.
+  // Read from window rather than useSearchParams: this view's page.tsx has no
+  // Suspense boundary, and `next` never affects rendered output (no hydration
+  // risk), so a lazy read is both sufficient and safe.
+  const [next] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null,
+  );
 
   const name = useField((v) => v.trim().length >= 2);
   const email = useField(emailOK);
@@ -45,8 +53,8 @@ export default function SignUpView() {
   // Registration always mints a CUSTOMER, but an already-signed-in visitor here
   // can be any role — route them by it rather than assuming the customer sheet.
   useEffect(() => {
-    if (!loading && user) router.replace(destinationFor(user));
-  }, [loading, user, router]);
+    if (!loading && user) router.replace(destinationFor(user, next));
+  }, [loading, user, router, next]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -58,8 +66,10 @@ export default function SignUpView() {
 
     setBusy(true);
     try {
-      await signup(name.value.trim(), email.value.trim(), password.value, phone.value.trim());
-      router.replace('/my-bookings');
+      const created = await signup(name.value.trim(), email.value.trim(), password.value, phone.value.trim());
+      // Registration always mints a CUSTOMER, so destinationFor honours a safe
+      // ?next= and otherwise falls back to /my-bookings.
+      router.replace(destinationFor(created, next));
     } catch (e2) {
       setErr(e2 instanceof ApiError ? e2.message : 'Sign up failed. Please try again.');
       setBusy(false);

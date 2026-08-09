@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 
@@ -30,17 +30,23 @@ export default function BookingsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
+  // Incremented per load; a slower earlier request bails on resolve so it can't
+  // overwrite the results of a newer one (per-keystroke search race).
+  const loadRef = useRef(0);
 
   const load = useCallback(async () => {
-    setErr(null);
+    const epoch = ++loadRef.current;
     const params = new URLSearchParams({ page: String(page), limit: "20" });
     if (status) params.set("status", status);
     if (search.trim()) params.set("search", search.trim());
     try {
       const { data, meta } = await apiWithMeta<Booking[]>(`/admin/bookings?${params}`);
+      if (loadRef.current !== epoch) return;
+      setErr(null);
       setRows(data);
       setMeta(meta ?? null);
     } catch (e) {
+      if (loadRef.current !== epoch) return;
       setErr(e instanceof ApiError ? e.message : "Failed to load bookings");
     }
   }, [page, status, search]);

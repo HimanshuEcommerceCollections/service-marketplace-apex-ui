@@ -24,6 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import SiteNav from "../../components/shared/SiteNav";
 import SiteFooter from "../../components/shared/SiteFooter";
 import { mountChrome } from "../../lib/shared/chrome";
@@ -172,6 +173,24 @@ export default function BookingFlow() {
   const [paid, setPaid] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // A service load is in flight (step-1 cards disabled while it resolves).
+  const [selecting, setSelecting] = useState(false);
+  // The debounced preview is behind the current selections: submit is gated on
+  // this so the echoed total always matches what the customer is looking at.
+  const [priceStale, setPriceStale] = useState(false);
+
+  // Idempotency key: one per wizard run, reused across retries (a failed submit
+  // + retry must present the SAME id). Generated lazily on first submit to stay
+  // SSR-safe; reset in restart() so "book another" gets a fresh id.
+  const requestId = useRef<string | null>(null);
+  // Request-epoch guard for chooseService: rapid card clicks race, and the
+  // slower response must not overwrite the faster one's config/selections.
+  const chooseEpoch = useRef(0);
+
+  const params = useSearchParams();
+  // Deep-link preselection (?service=/?plan=) runs once, after services load.
+  const deepLinked = useRef(false);
+  const wantPlan = useRef<string | null>(null);
 
   useEffect(() => {
     api<Svc[]>("/services")
@@ -194,7 +213,14 @@ export default function BookingFlow() {
   // Live pricing, debounced: the design's step 3 and the sticky summary both read a
   // server total, replacing the old manual "Estimate price" button.
   useEffect(() => {
-    if (!cfg || isQuote) return;
+    // QUOTE never echoes a price, so it is never "stale" — clear the gate.
+    if (!cfg || isQuote) {
+      setPriceStale(false);
+      return;
+    }
+    // Selections just changed: the current preview no longer matches them until
+    // this run resolves. Cleared in .then when the fresh total lands.
+    setPriceStale(true);
     let active = true;
     const t = setTimeout(() => {
       // Flipped inside the timeout, not the effect body: the indicator should track
@@ -206,9 +232,15 @@ export default function BookingFlow() {
         // sees is the same number the booking recomputes, so no PRICE_MISMATCH.
         body: { selections, ...(chosenCadence ? { cadenceId: chosenCadence.cadenceId } : {}) },
       })
-        .then((p) => active && setPreview(p))
+        .then((p) => {
+          if (!active) return;
+          setPreview(p);
+          // This total now corresponds to the current selections.
+          setPriceStale(false);
+        })
         // A partial configuration legitimately fails validation while the user is
         // still choosing; keep the last good total rather than flashing an error.
+        // Leave priceStale set: without a matching preview we echo no price.
         .catch(() => active && setPreview(null))
         .finally(() => active && setPricing(false));
     }, 350);
@@ -224,15 +256,21 @@ export default function BookingFlow() {
   const counted = useCountUp(total);
 
   const chooseService = useCallback(async (slug: string) => {
+    // Capture this call's epoch; a later click bumps the ref and every awaited
+    // continuation below bails, so only the newest selection wins the state.
+    const epoch = ++chooseEpoch.current;
     setErr(null);
     setPreview(null);
     setSelections({});
     setDescription("");
+    setSelecting(true);
     try {
       const c = await api<Cfg>(`/services/${slug}/config`);
+      if (chooseEpoch.current !== epoch) return;
       setCfg(c);
       // Frequencies are admin-controlled; a service offering none stays one-time.
       const detail = await api<{ recurringOptions?: RecurringOption[] }>(`/services/${slug}`).catch(() => null);
+      if (chooseEpoch.current !== epoch) return;
       setRecOptions(detail?.recurringOptions ?? []);
       setCadenceKey("one-time");
       // Seed required single-selects with their first option so the first price
@@ -247,7 +285,12 @@ export default function BookingFlow() {
       setStep(2);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
+      if (chooseEpoch.current !== epoch) return;
       setErr(e instanceof ApiError ? e.message : "Failed to load the configurator.");
+    } finally {
+      // Only the current epoch clears the flag; a superseded call leaves it set
+      // for the winner to release.
+      if (chooseEpoch.current === epoch) setSelecting(false);
     }
   }, []);
 
@@ -256,6 +299,35 @@ export default function BookingFlow() {
     setStep(n);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  // Deep-link preselection: CTAs across the site link to /book?service=<slug>
+  // (optionally &plan=recurring). Runs once, after the cards load. An unknown
+  // or missing ?service= leaves the wizard at the normal step 1.
+  useEffect(() => {
+    if (deepLinked.current || !services) return;
+    deepLinked.current = true;
+    const wantSlug = params.get("service");
+    if (!wantSlug) return;
+    const match = services.find((s) => s.slug === wantSlug);
+    if (!match) return;
+    // Plan is applied once the service's recurring options arrive (below).
+    wantPlan.current = params.get("plan");
+    void chooseService(match.slug);
+  }, [services, params, chooseService]);
+
+  // Apply a deep-linked ?plan= once the chosen service's frequencies load.
+  // "recurring" picks the first subscription option; a specific key matches by
+  // key. Consumed once; a normal (non-deep-linked) selection is a no-op.
+  useEffect(() => {
+    const want = wantPlan.current;
+    if (!want || recOptions.length === 0) return;
+    wantPlan.current = null;
+    const opt =
+      want === "recurring"
+        ? recOptions.find((o) => o.isSubscription)
+        : recOptions.find((o) => o.key === want && o.isSubscription);
+    if (opt) setCadenceKey(opt.key);
+  }, [recOptions]);
 
   const setValue = (key: string, v: SelectionValue) => setSelections((s) => ({ ...s, [key]: v }));
   const toggleMulti = (key: string, optKey: string) =>
@@ -299,15 +371,29 @@ export default function BookingFlow() {
 
   async function submit() {
     if (!cfg || !agree) return;
+    // Don't submit a stale total: if the debounced preview hasn't caught up to
+    // the current selections, the echoed price would 422 (PRICE_MISMATCH). Wait
+    // for the fetch to resolve (the button is disabled meanwhile too).
+    if (!isQuote && priceStale) return;
     setBusy(true);
     setErr(null);
+    // One idempotency key per wizard run, generated lazily (SSR-safe) and reused
+    // so a failed submit + retry replays as the same request server-side.
+    if (!requestId.current) requestId.current = crypto.randomUUID();
     try {
+      // The server sends configuration.description only for QUOTE; a priced (FROM)
+      // service 422s DESCRIPTION_NOT_ALLOWED if it carries one. requires_description
+      // mirrors that (true only for QUOTE).
+      const sendsDescription = isQuote || !!preview?.requires_description;
       // Property type / schedule have no home in `configuration` (closed schema) —
-      // they ride in `notes`, which the coordinator actually reads.
+      // they ride in `notes`, which the coordinator actually reads. A TEXTAREA on a
+      // priced service can't ride in description, so its text goes here too rather
+      // than being dropped.
       const notes = [
         `Property type: ${propType}`,
         date ? `Preferred date: ${date}` : null,
         slot ? `Time window: ${slot}` : null,
+        !sendsDescription && description.trim() ? `Project details: ${description.trim()}` : null,
       ]
         .filter(Boolean)
         .join(" · ");
@@ -318,7 +404,7 @@ export default function BookingFlow() {
           service_type: cfg.slug,
           configuration: {
             selections,
-            ...(isQuote || preview?.requires_description ? { description } : {}),
+            ...(sendsDescription ? { description } : {}),
           },
           contact: {
             name: `${contact.first} ${contact.last}`.trim(),
@@ -328,7 +414,7 @@ export default function BookingFlow() {
           address,
           // A recurring cadence turns this into a subscription server-side.
           ...(chosenCadence ? { cadence_id: chosenCadence.cadenceId } : {}),
-          request_id: crypto.randomUUID(),
+          request_id: requestId.current,
           // Never echo a price for QUOTE: its preview total is indicative, and the
           // server 422s (QUOTE_PRICE_NOT_ALLOWED) if a client presents one as a price.
           ...(!isQuote && preview?.displayed_price ? { displayed_price: { total: preview.displayed_price.total } } : {}),
@@ -361,6 +447,8 @@ export default function BookingFlow() {
     setPreview(null);
     setAgree(false);
     setTouched({});
+    // A brand-new booking gets a fresh idempotency key.
+    requestId.current = null;
     setStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -455,6 +543,7 @@ export default function BookingFlow() {
                         key={s.id}
                         className={`svc-card${cfg?.slug === s.slug ? " sel" : ""}`}
                         onClick={() => void chooseService(s.slug)}
+                        disabled={selecting}
                       >
                         <span className="pick" />
                         <span className="svc-ic">{SERVICE_ICON(s.slug)}</span>
@@ -798,8 +887,12 @@ export default function BookingFlow() {
                   <button className="btn btn-line ripple" onClick={() => go(4)}>
                     Back
                   </button>
-                  <button className="btn btn-primary ripple" onClick={() => void submit()} disabled={!agree || busy}>
-                    {busy ? "Submitting…" : "Submit booking request"}
+                  <button
+                    className="btn btn-primary ripple"
+                    onClick={() => void submit()}
+                    disabled={!agree || busy || (!isQuote && priceStale)}
+                  >
+                    {busy ? "Submitting…" : !isQuote && priceStale ? "Updating price…" : "Submit booking request"}
                   </button>
                 </div>
               </section>

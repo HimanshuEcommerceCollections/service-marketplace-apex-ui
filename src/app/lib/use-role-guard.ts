@@ -17,6 +17,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCustomerAuth, type CustomerUser } from './customer-auth';
 import { destinationFor } from './post-login-redirect';
+import { onSessionLost } from './api-client';
 
 export type RoleGuard =
   | { status: 'loading'; user: null }
@@ -42,10 +43,23 @@ export function useRoleGuard(allowed: readonly string[]): RoleGuard {
     if (user) everSignedIn.current = true;
   }, [user]);
 
+  // A deliberate logout clears `user` directly and navigates home itself; an
+  // expired/revoked refresh instead fires onSessionLost. Tracking that lets us
+  // tell the two apart: on an involuntary loss we send the user to /login rather
+  // than stranding the page on "Redirecting…" forever, without racing logout's
+  // own navigation.
+  const sessionLost = useRef(false);
+  useEffect(() => onSessionLost(() => { sessionLost.current = true; }), []);
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      if (!everSignedIn.current) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      // Arrived signed-out, or a live session died mid-visit — either way there's
+      // nothing to render, so route to /login (never loop /login onto itself).
+      const involuntary = !everSignedIn.current || sessionLost.current;
+      if (involuntary && pathname !== '/login') {
+        router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      }
       return;
     }
     if (!allowed.includes(user.role)) router.replace(destinationFor(user));

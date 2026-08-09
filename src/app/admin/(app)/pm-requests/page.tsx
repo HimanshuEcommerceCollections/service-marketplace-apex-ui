@@ -54,18 +54,23 @@ export default function PmRequestsPage() {
   const [open, setOpen] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setErr(null);
     const params = new URLSearchParams({ page: String(page), limit: "20" });
     if (status) params.set("status", status);
     if (bundle) params.set("bundle", bundle);
     if (query) params.set("search", query);
     try {
       const { data, meta } = await apiWithMeta<PmRequest[]>(`/admin/pm-requests?${params}`);
+      setErr(null);
       setRows(data);
       setMeta(meta ?? null);
-      setAmounts(
+      // Keep any price the user has already typed for a still-present row so a
+      // reload triggered by one row's save doesn't wipe unsaved edits elsewhere.
+      setAmounts((prev) =>
         Object.fromEntries(
-          data.map((r) => [r.id, r.quotedAmount != null ? (r.quotedAmount / 100).toFixed(2) : ""]),
+          data.map((r) => [
+            r.id,
+            r.id in prev ? prev[r.id] : r.quotedAmount != null ? (r.quotedAmount / 100).toFixed(2) : "",
+          ]),
         ),
       );
     } catch (e) {

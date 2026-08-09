@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 
@@ -33,6 +33,9 @@ export default function ZipCodesPage() {
   const [nZip, setNZip] = useState("");
   const [nCity, setNCity] = useState("");
   const [nState, setNState] = useState("");
+  // Incremented per load; a slower earlier request bails on resolve so it can't
+  // overwrite the results of a newer one (per-keystroke search race).
+  const loadRef = useRef(0);
 
   useEffect(() => {
     api<AreaOption[]>("/admin/areas?status=ACTIVE&limit=100")
@@ -41,15 +44,18 @@ export default function ZipCodesPage() {
   }, []);
 
   const load = useCallback(async () => {
-    setErr(null);
+    const epoch = ++loadRef.current;
     const params = new URLSearchParams({ page: String(page), limit: "25" });
     if (areaId) params.set("areaId", areaId);
     if (search.trim()) params.set("search", search.trim());
     try {
       const { data, meta } = await apiWithMeta<ZipView[]>(`/admin/zip-codes?${params}`);
+      if (loadRef.current !== epoch) return;
+      setErr(null);
       setRows(data);
       setMeta(meta ?? null);
     } catch (e) {
+      if (loadRef.current !== epoch) return;
       setErr(e instanceof ApiError ? e.message : "Failed to load ZIP codes");
     }
   }, [page, areaId, search]);

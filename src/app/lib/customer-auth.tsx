@@ -92,12 +92,21 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
 
   const logout = async () => {
     try {
-      await api("/auth/logout", { method: "POST" });
+      // POST /auth/logout is behind `authenticate`, and api() never refreshes for
+      // /auth/* paths — so an access token that expired mid-session would 401 and
+      // the server would never revoke the refresh family. Rotate to a fresh access
+      // token first (single-flight, so no loop), THEN log out so the family is
+      // actually revoked. If the refresh fails the session is already dead
+      // server-side, so there's nothing left to revoke — just clear local state.
+      if (await refresh()) {
+        await api("/auth/logout", { method: "POST" });
+      }
     } catch {
-      /* ignore */
+      /* best-effort — local state is cleared regardless in finally */
+    } finally {
+      setAccessToken(null);
+      setUser(null);
     }
-    setAccessToken(null);
-    setUser(null);
   };
 
   return <Ctx.Provider value={{ user, loading, login, signup, logout }}>{children}</Ctx.Provider>;

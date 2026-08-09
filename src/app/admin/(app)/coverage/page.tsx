@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api, ApiError } from "../../lib/api";
+import { useEffect, useRef, useState } from "react";
+import { api, apiWithMeta, ApiError } from "../../lib/api";
 
 interface ServiceOption { id: string; name: string; slug: string }
 interface AreaOption { id: string; name: string }
@@ -20,11 +20,19 @@ export default function CoveragePage() {
   const [serviceSlug, setServiceSlug] = useState("");
   const [granted, setGranted] = useState<Set<string>>(new Set());
   const [overrides, setOverrides] = useState<Record<string, Effect>>({});
+  // The service the granted/overrides state currently belongs to. Stays "" while
+  // a load is in flight or after it failed, which is what gates the editor and
+  // guards Save from writing one service's coverage onto another.
+  const [loadedSlug, setLoadedSlug] = useState("");
   const [zipsByArea, setZipsByArea] = useState<Record<string, ZipRow[]>>({});
+  const [zipErr, setZipErr] = useState<Record<string, boolean>>({});
   const [openArea, setOpenArea] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Incremented per loadCoverage call so a slow response for a previously
+  // selected service can't land on top of a newer selection.
+  const loadRef = useRef(0);
 
   useEffect(() => {
     api<ServiceOption[]>("/services").then(setServices).catch(() => setServices([]));
@@ -32,18 +40,44 @@ export default function CoveragePage() {
   }, []);
 
   async function loadCoverage(slug: string) {
+    const epoch = ++loadRef.current;
     setErr(null);
     setNotice(null);
     setServiceSlug(slug);
     setOpenArea({});
+    // Clear the editor for the newly selected service until its own coverage
+    // loads; a failed/stale load therefore can't leave the previous service's
+    // grants and overrides on screen and saveable.
+    setGranted(new Set());
+    setOverrides({});
+    setLoadedSlug("");
     if (!slug) return;
     try {
       const c = await api<Coverage>(`/admin/coverage/${slug}`);
+      if (loadRef.current !== epoch) return; // a newer selection superseded this one
       setGranted(new Set(c.grantedAreaIds));
       setOverrides(Object.fromEntries(c.overrides.map((o) => [o.zipCodeId, o.effect])));
+      setLoadedSlug(slug);
     } catch (e) {
+      if (loadRef.current !== epoch) return;
       setErr(e instanceof ApiError ? e.message : "Failed to load coverage");
     }
+  }
+
+  // The server caps the zip-code list at limit=200, so page through results
+  // until every active ZIP for the area is collected (an area may have >200).
+  async function fetchActiveZips(areaId: string): Promise<ZipRow[]> {
+    const all: ZipRow[] = [];
+    let page = 1;
+    for (;;) {
+      const { data, meta } = await apiWithMeta<ZipRow[]>(
+        `/admin/zip-codes?areaId=${areaId}&status=ACTIVE&limit=200&page=${page}`,
+      );
+      all.push(...data);
+      if (!meta || page >= meta.totalPages) break;
+      page += 1;
+    }
+    return all;
   }
 
   async function toggleArea(areaId: string) {
@@ -54,13 +88,18 @@ export default function CoveragePage() {
   }
 
   async function expand(areaId: string) {
+    const willOpen = !openArea[areaId];
     setOpenArea((o) => ({ ...o, [areaId]: !o[areaId] }));
-    if (!zipsByArea[areaId]) {
+    // Fetch on open only when not already loaded. A prior failure is recorded in
+    // zipErr (not as an empty array in zipsByArea), so the entry stays unset and
+    // reopening retries instead of caching [] forever.
+    if (willOpen && zipsByArea[areaId] === undefined) {
+      setZipErr((m) => ({ ...m, [areaId]: false }));
       try {
-        const zips = await api<ZipRow[]>(`/admin/zip-codes?areaId=${areaId}&status=ACTIVE&limit=500`);
+        const zips = await fetchActiveZips(areaId);
         setZipsByArea((m) => ({ ...m, [areaId]: zips }));
       } catch {
-        setZipsByArea((m) => ({ ...m, [areaId]: [] }));
+        setZipErr((m) => ({ ...m, [areaId]: true }));
       }
     }
   }
@@ -75,7 +114,9 @@ export default function CoveragePage() {
   }
 
   async function save() {
-    if (!serviceSlug) return;
+    // Never PUT unless the state in hand belongs to the service currently
+    // selected (guards against saving stale/other-service coverage).
+    if (!serviceSlug || loadedSlug !== serviceSlug) return;
     setSaving(true);
     setErr(null);
     setNotice(null);
@@ -110,7 +151,11 @@ export default function CoveragePage() {
         </select>
       </div>
 
-      {serviceSlug && (
+      {serviceSlug && loadedSlug !== serviceSlug && !err && (
+        <p className="ax-muted" style={{ margin: "6px 0 16px" }}>Loading coverage…</p>
+      )}
+
+      {serviceSlug && loadedSlug === serviceSlug && (
         <>
           <p className="ax-muted" style={{ margin: "6px 0 16px" }}>
             Check an area to cover its whole territory. Expand it to override individual ZIPs
@@ -135,7 +180,9 @@ export default function CoveragePage() {
 
                 {openArea[a.id] && (
                   <div style={{ marginTop: 12 }}>
-                    {!zips ? (
+                    {zipErr[a.id] ? (
+                      <p className="ax-muted">Couldn’t load ZIPs. Hide and reopen to retry.</p>
+                    ) : !zips ? (
                       <p className="ax-muted">Loading ZIPs…</p>
                     ) : zips.length === 0 ? (
                       <p className="ax-muted">No active ZIPs in this area.</p>
