@@ -65,16 +65,20 @@ export default function ProApplicationsPage() {
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    setErr(null);
     const params = new URLSearchParams({ page: String(page), limit: "20" });
     if (status) params.set("status", status);
     if (trade) params.set("trade", trade);
     if (query) params.set("search", query);
     try {
       const { data, meta } = await apiWithMeta<ProApplication[]>(`/admin/pro-applications?${params}`);
+      setErr(null);
       setRows(data);
       setMeta(meta ?? null);
-      setNotes(Object.fromEntries(data.map((r) => [r.id, r.notes ?? ""])));
+      // Keep any note the user has already typed for a still-present row so a
+      // reload triggered by one row's save doesn't wipe unsaved edits elsewhere.
+      setNotes((prev) =>
+        Object.fromEntries(data.map((r) => [r.id, r.id in prev ? prev[r.id] : r.notes ?? ""])),
+      );
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to load applications");
     }

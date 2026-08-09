@@ -33,13 +33,31 @@ export interface RoutableUser {
 }
 
 /**
- * Reject anything that isn't a same-origin relative path so `?next=` can't be
- * turned into an open redirect — "//evil.com" is protocol-relative, not local.
+ * Reject anything that isn't a clean same-origin relative path so `?next=` can't
+ * be turned into an open redirect. "//evil.com" is protocol-relative, and
+ * "/\evil.com" is normalised to "//evil.com" by browsers — both escape the
+ * origin. We reject those, backslashes, and control characters, then resolve the
+ * remainder against a dummy origin and confirm it stayed local, returning the
+ * cleaned path (pathname + search + hash).
  */
 export function safeNext(next: string | null | undefined): string | null {
   if (!next) return null;
   if (!next.startsWith('/') || next.startsWith('//')) return null;
-  return next;
+  if (next.includes('\\')) return null;
+  // Strip-then-resolve parsers (and the URL constructor) drop control chars,
+  // which can change what the path resolves to — reject them outright.
+  for (let i = 0; i < next.length; i++) {
+    const code = next.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) return null;
+  }
+  // Belt and braces: resolve against a dummy origin and confirm it stayed local.
+  try {
+    const url = new URL(next, 'http://localhost');
+    if (url.origin !== 'http://localhost') return null;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return null;
+  }
 }
 
 export function isStaff(role: string): boolean {

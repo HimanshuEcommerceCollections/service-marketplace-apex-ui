@@ -35,14 +35,16 @@ function CheckoutForm({ intent, onPaid }: { intent: IntentResult; onPaid: () => 
   const stripe = useStripe();
   const elements = useElements();
   const [err, setErr] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function confirm() {
     if (!stripe || !elements) return;
     setBusy(true);
     setErr(null);
+    setNotice(null);
     // Card payments settle in-page; redirect-based methods bounce back to /my-bookings.
-    const { error } = await stripe.confirmPayment({
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: `${window.location.origin}/my-bookings?payment=success` },
       redirect: "if_required",
@@ -52,7 +54,20 @@ function CheckoutForm({ intent, onPaid }: { intent: IntentResult; onPaid: () => 
       setBusy(false);
       return;
     }
-    onPaid();
+    // confirmPayment resolves without an error for `processing` / `requires_action`
+    // too — only a settled intent means the booking is actually paid. Calling
+    // onPaid() on anything else would tell the customer their booking is confirmed
+    // before the money has moved.
+    if (paymentIntent?.status === "succeeded") {
+      onPaid();
+      return;
+    }
+    setNotice(
+      paymentIntent?.status === "processing"
+        ? "Your payment is processing. We'll confirm your booking as soon as it settles."
+        : "Your payment needs another step to finish. Please follow any prompts, then check back.",
+    );
+    setBusy(false);
   }
 
   return (
@@ -75,6 +90,11 @@ function CheckoutForm({ intent, onPaid }: { intent: IntentResult; onPaid: () => 
       {err && (
         <p className="pay-err" role="alert">
           {err}
+        </p>
+      )}
+      {notice && (
+        <p className="pay-loading" role="status">
+          {notice}
         </p>
       )}
       <button type="button" className="pay-btn" onClick={() => void confirm()} disabled={busy || !stripe}>

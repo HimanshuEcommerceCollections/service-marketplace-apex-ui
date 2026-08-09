@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 
@@ -25,17 +25,23 @@ export default function AreasPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDuration, setEditDuration] = useState("");
+  // Incremented per load; a slower earlier request bails on resolve so it can't
+  // overwrite the results of a newer one (per-keystroke search race).
+  const loadRef = useRef(0);
 
   const load = useCallback(async () => {
-    setErr(null);
+    const epoch = ++loadRef.current;
     const params = new URLSearchParams({ page: String(page), limit: "20" });
     if (search.trim()) params.set("search", search.trim());
     if (includeDeleted) params.set("includeDeleted", "true");
     try {
       const { data, meta } = await apiWithMeta<AreaView[]>(`/admin/areas?${params}`);
+      if (loadRef.current !== epoch) return;
+      setErr(null);
       setRows(data);
       setMeta(meta ?? null);
     } catch (e) {
+      if (loadRef.current !== epoch) return;
       setErr(e instanceof ApiError ? e.message : "Failed to load areas");
     }
   }, [page, search, includeDeleted]);
@@ -94,7 +100,7 @@ export default function AreasPage() {
           }}
         />
         <label className="ax-row" style={{ gap: 6 }}>
-          <input type="checkbox" checked={includeDeleted} onChange={(e) => setIncludeDeleted(e.target.checked)} />
+          <input type="checkbox" checked={includeDeleted} onChange={(e) => { setPage(1); setIncludeDeleted(e.target.checked); }} />
           Show deleted
         </label>
       </div>

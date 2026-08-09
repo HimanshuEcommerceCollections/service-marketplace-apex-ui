@@ -58,12 +58,20 @@ export default function MyBookingsView() {
   const [err, setErr] = useState<string | null>(null);
 
   // Stripe redirect landings: subscription checkout + redirect-based payments.
+  // On a redirect-based payment Stripe appends redirect_status; a failed attempt
+  // still lands on ?payment=success, so the success banner MUST also require the
+  // redirect not to have failed — otherwise a declined payment reads as confirmed.
+  const redirectStatus = params.get('redirect_status');
   const banner =
     params.get('membership') === 'success'
       ? 'Your membership is active. Visits will appear here as each cycle is billed.'
-      : params.get('payment') === 'success'
+      : params.get('payment') === 'success' && redirectStatus !== 'failed'
         ? 'Payment received. Your booking is confirmed on our side.'
         : null;
+  const warnBanner =
+    params.get('payment') === 'success' && redirectStatus === 'failed'
+      ? "Your payment didn't go through. This booking is still awaiting payment — please try again."
+      : null;
 
   useEffect(() => {
     const dispose = mountChrome();
@@ -144,6 +152,7 @@ export default function MyBookingsView() {
             </div>
 
             {banner && <p className="mb-note is-ok">{banner}</p>}
+            {warnBanner && <p className="mb-note is-err">{warnBanner}</p>}
             {notice && <p className="mb-note is-ok">{notice}</p>}
             {err && <p className="mb-note is-err">{err}</p>}
 

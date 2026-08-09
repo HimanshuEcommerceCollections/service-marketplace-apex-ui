@@ -18,7 +18,7 @@
 // instead of being duplicated into both apex.css and chrome.css.
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import NavAuth from './NavAuth';
 import '../../app/nav-auth.css';
 
@@ -41,9 +41,13 @@ export default function SiteNav() {
   const pathname = usePathname();
 
   // Close the mobile panel whenever the route changes (client navigation).
-  useEffect(() => {
+  // Adjusting state during render off a stored previous value is React's
+  // recommended alternative to a setState-in-effect here.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
 
   const close = () => setOpen(false);
 

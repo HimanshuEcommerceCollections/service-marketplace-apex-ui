@@ -1,21 +1,22 @@
 "use client";
 
 import "../auth.css";
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { api, ApiError } from "../lib/api-client";
 
-export default function ResetPasswordPage() {
-  const [token, setToken] = useState<string | null>(null);
+function ResetPasswordForm() {
+  // Read synchronously from the URL so a valid link never flashes the
+  // invalid-token error on first render (the old mount-effect read left `token`
+  // null for one render). useSearchParams is available on the client render;
+  // the Suspense boundary below keeps static prerendering happy.
+  const token = useSearchParams().get("token");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    setToken(new URLSearchParams(window.location.search).get("token"));
-  }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,5 +64,13 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="auth" />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

@@ -32,14 +32,24 @@ export default function QuotesPage() {
   const [amounts, setAmounts] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    setErr(null);
     const params = new URLSearchParams({ page: String(page), limit: "20" });
     if (status) params.set("status", status);
     try {
       const { data, meta } = await apiWithMeta<Quote[]>(`/admin/quotes?${params}`);
+      setErr(null);
       setRows(data);
       setMeta(meta ?? null);
-      setAmounts(Object.fromEntries(data.map((q) => [q.id, q.quotedAmount != null ? (q.quotedAmount / 100).toFixed(2) : ""])));
+      // Rebuild the price-input drafts from fresh rows, but keep any value the
+      // user has already typed for a row that's still present — a reload from
+      // one row's save must not wipe unsaved edits in other rows.
+      setAmounts((prev) =>
+        Object.fromEntries(
+          data.map((q) => [
+            q.id,
+            q.id in prev ? prev[q.id] : q.quotedAmount != null ? (q.quotedAmount / 100).toFixed(2) : "",
+          ]),
+        ),
+      );
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to load quotes");
     }

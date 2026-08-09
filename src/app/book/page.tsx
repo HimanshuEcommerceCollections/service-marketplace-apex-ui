@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import '../chrome.css';
 import './booking.css';
 import '../../components/payments/pay.css';
@@ -20,5 +21,10 @@ export const metadata: Metadata = {
 // The customer session comes from the root layout's CustomerAuthProvider — this
 // route must NOT mount its own, or it would run a second, independent session.
 export default function Page() {
-  return <BookingFlow />;
+  // BookingFlow reads ?service=/?plan= via useSearchParams — Suspense required.
+  return (
+    <Suspense fallback={<div className="pg-book" />}>
+      <BookingFlow />
+    </Suspense>
+  );
 }

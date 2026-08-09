@@ -59,6 +59,10 @@ export default function SubscribeView() {
   const [busy, setBusy] = useState(false);
   // Missing ?plan= is knowable at render time — derived, not set in an effect.
   const [missing, setMissing] = useState(false);
+  // A transient network/5xx while loading the plan is retryable — distinct from a
+  // genuinely missing plan, which is terminal. `loadKey` re-runs the fetch effect.
+  const [loadError, setLoadError] = useState(false);
+  const [loadKey, setLoadKey] = useState(0);
   const notFound = !planId || missing;
 
   useEffect(() => mountChrome(), []);
@@ -66,11 +70,13 @@ export default function SubscribeView() {
   useEffect(() => {
     if (!planId) return;
     let active = true;
+    setLoadError(false);
     api<PlanView[]>("/membership/plans")
       .then(async (plans) => {
         const p = plans.find((x) => x.id === planId) ?? null;
         if (!active) return;
         if (!p || !p.service) {
+          // The plan list loaded fine but this id isn't in it — genuinely gone.
           setMissing(true);
           return;
         }
@@ -87,11 +93,17 @@ export default function SubscribeView() {
         setSelections(seed);
         setCfg(c);
       })
-      .catch(() => active && setMissing(true));
+      .catch((e) => {
+        if (!active) return;
+        // Only a real not-found (404) is terminal "no longer available". Network
+        // failures and 5xx are transient — offer a retry instead of a dead end.
+        if (e instanceof ApiError && e.status === 404) setMissing(true);
+        else setLoadError(true);
+      });
     return () => {
       active = false;
     };
-  }, [planId]);
+  }, [planId, loadKey]);
 
   const cadenceLabel = useMemo(() => {
     if (!plan) return "";
@@ -165,6 +177,22 @@ export default function SubscribeView() {
                 <Link className="btn btn-primary ripple" href="/membership-plans">
                   See current plans
                 </Link>
+              </div>
+            </div>
+          ) : loadError ? (
+            <div className="bk-gate">
+              <h2>Couldn&apos;t load this plan</h2>
+              <p>Something went wrong reaching our servers. Please try again.</p>
+              <div className="cta-row">
+                <button
+                  className="btn btn-primary ripple"
+                  onClick={() => {
+                    setLoadError(false);
+                    setLoadKey((k) => k + 1);
+                  }}
+                >
+                  Try again <Arrow />
+                </button>
               </div>
             </div>
           ) : !plan || !cfg ? (

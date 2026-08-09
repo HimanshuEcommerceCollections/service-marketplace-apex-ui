@@ -79,7 +79,11 @@ export default function QuoteForm() {
     const keys = Object.keys(RULES) as (keyof Fields)[];
     setTouched(Object.fromEntries(keys.map((k) => [k, true])));
     if (keys.some((k) => !RULES[k]!.test(f[k]))) {
-      document.querySelector('.pg-pm .fld.err')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // setTouched above only commits the .err classes on the next render, so
+      // defer the scroll a frame or the querySelector runs before they exist.
+      requestAnimationFrame(() => {
+        document.querySelector('.pg-pm .fld.err')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
       return;
     }
 
