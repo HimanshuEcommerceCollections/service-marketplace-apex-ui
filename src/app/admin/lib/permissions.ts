@@ -21,6 +21,8 @@ export const NAV: NavItem[] = [
   { href: "/admin/areas", label: "Areas", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/zip-codes", label: "ZIP codes", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/coverage", label: "Service coverage", roles: ["COORDINATOR", "ADMIN"] },
+  // Same `geo:manage` capability as the three above — expansion is one job.
+  { href: "/admin/waitlist", label: "Waitlist", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/staff", label: "Staff", roles: ["ADMIN"] },
 ];
 

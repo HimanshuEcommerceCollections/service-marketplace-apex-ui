@@ -42,6 +42,7 @@ import PayBooking from "../../components/payments/PayBooking";
 import { SERVICE_ICON, Check, Arrow, Info } from "./icons";
 import { useBookingStore, type SelectionValue } from "./booking-store";
 import PhotoUpload from "./PhotoUpload";
+import { checkZipAvailability, joinWaitlist } from "../../lib/service-area/availability";
 
 type Mode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
@@ -106,9 +107,25 @@ interface RecurringOption {
   discountPercent: number;
   isSubscription: boolean;
 }
+/**
+ * A per-service coverage answer for one ZIP.
+ *
+ * `eligible: null` means "we couldn't find out" — a failed lookup. It is NOT the
+ * same as `false` and must never block the customer: see the fail-open note on
+ * the effect that produces it.
+ */
+interface CoverageVerdict {
+  /** `service|zip` this verdict was fetched for; guards against stale renders. */
+  key: string;
+  zip: string;
+  eligible: boolean | null;
+  reason: string | null;
+  areaName: string | null;
+}
+
 type SubmitResult =
   | { outcome: "BOOKED"; reference: string; status: string }
-  | { outcome: "WAITLISTED"; waitlist_signup: { zip: string } }
+  | { outcome: "WAITLISTED"; waitlist_signup: { zip: string }; reason?: string | null }
   // A recurring frequency was chosen, so this is a subscription: Stripe
   // Checkout owns the rest and the first visit arrives from the webhook.
   | { outcome: "CHECKOUT"; checkout_url: string; membership_id: string };
@@ -156,7 +173,7 @@ function useCountUp(target: number | null): string {
 }
 
 export default function BookingFlow() {
-  const { user, loading } = useCustomerAuth();
+  const { user, loading, refreshUser } = useCustomerAuth();
   useEffect(() => mountChrome(), []);
 
   // Everything the visitor types or picks lives in the persisted store so the
@@ -219,6 +236,8 @@ export default function BookingFlow() {
   // FROM bookings pay at booking: true once the card settles in this session.
   const [paid, setPaid] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** Submit was refused because the account's email isn't verified yet. */
+  const [needsVerify, setNeedsVerify] = useState(false);
   const [busy, setBusy] = useState(false);
   // A service load is in flight (step-1 cards disabled while it resolves).
   const [selecting, setSelecting] = useState(false);
@@ -476,12 +495,143 @@ export default function BookingFlow() {
   };
   const detailsValid = FIELDS.every((f) => fieldError(f) === null);
 
+  // ---------------------------------------------------------------------------
+  // Step-4 coverage gate
+  // ---------------------------------------------------------------------------
+  //
+  // The ZIP used to be checked for the first time at SUBMIT, which sits on the
+  // far side of a sign-in redirect: an out-of-area guest configured a whole job,
+  // created an account, agreed to the terms, and only then learned we don't serve
+  // them — with the wizard wiped on the way out. Asking here means they find out
+  // as soon as they've typed the address, with everything they entered intact.
+  //
+  // The server still runs the same check at submit (bookings.service.ts) and
+  // still owns the WAITLISTED arm. This is UX, not enforcement — it can be stale,
+  // and a client with JS off never runs it.
+  const [coverage, setCoverage] = useState<CoverageVerdict | null>(null);
+  const [coverageBusy, setCoverageBusy] = useState(false);
+  /**
+   * Verdicts already fetched this session, keyed `service|zip`. A customer who
+   * flips between two ZIPs (or steps back and forth) shouldn't re-ask.
+   * Deliberately in a ref, NOT in the persisted store: a saved wizard resuming
+   * tomorrow must re-check rather than trust yesterday's answer, since coverage
+   * is exactly the thing staff change between sessions.
+   */
+  const coverageCache = useRef(new Map<string, CoverageVerdict>());
+
+  const zipForCheck = /^\d{5}$/.test(address.zip.trim()) ? address.zip.trim() : null;
+  const coverageKey = cfg && zipForCheck ? `${cfg.slug}|${zipForCheck}` : null;
+
+  useEffect(() => {
+    if (!coverageKey || !cfg || !zipForCheck) {
+      setCoverage(null);
+      return;
+    }
+    const cached = coverageCache.current.get(coverageKey);
+    if (cached) {
+      setCoverage(cached);
+      return;
+    }
+    // Nothing known about this ZIP yet — clear the previous verdict so a stale
+    // "we serve you" can't wave the customer through while the new one loads.
+    setCoverage(null);
+    const ctrl = new AbortController();
+    let active = true;
+    // Debounced: the ZIP field fires on every keystroke and the fifth digit is
+    // not necessarily the final one (a customer correcting a typo retypes it).
+    const t = setTimeout(() => {
+      setCoverageBusy(true);
+      // Per-SERVICE, not the general zip gate: a ZIP can be inside an active area
+      // and still be excluded for this one service.
+      checkZipAvailability(zipForCheck, { service: cfg.slug, signal: ctrl.signal })
+        .then((r) => {
+          if (!active) return;
+          const verdict: CoverageVerdict = {
+            key: coverageKey,
+            zip: r.zip,
+            eligible: r.eligible,
+            reason: r.reason,
+            areaName: r.area?.name ?? null,
+          };
+          coverageCache.current.set(coverageKey, verdict);
+          setCoverage(verdict);
+        })
+        .catch((e) => {
+          if (!active || (e instanceof DOMException && e.name === "AbortError")) return;
+          // FAIL OPEN. A dropped request is not evidence of anything, and
+          // treating it as "not served" would push a serviceable customer to the
+          // waitlist because their wifi blinked. `unknown` lets them continue;
+          // the server checks again at submit and waitlists them there if it
+          // really is out of area. Not cached, so the next edit retries.
+          setCoverage({ key: coverageKey, zip: zipForCheck, eligible: null, reason: null, areaName: null });
+        })
+        .finally(() => {
+          if (active) setCoverageBusy(false);
+        });
+    }, 400);
+    return () => {
+      active = false;
+      ctrl.abort();
+      clearTimeout(t);
+      setCoverageBusy(false);
+    };
+  }, [coverageKey, cfg, zipForCheck]);
+
+  /** The verdict, but only if it belongs to the ZIP+service on screen right now. */
+  const liveCoverage = coverage && coverage.key === coverageKey ? coverage : null;
+  const zipBlocked = liveCoverage?.eligible === false;
+
+  // Continue is held while a verdict for the CURRENT ZIP is still outstanding, so
+  // the customer can't outrun the check by clicking through.
+  const coveragePending = Boolean(coverageKey) && !liveCoverage;
+
+  // --- the in-wizard waitlist branch ---
+  //
+  // The ZIP is part of the state rather than a separate ref: the panel's claim is
+  // "you're on the list for 27513", which is only true while that's still the ZIP
+  // in the field. Editing the ZIP afterwards must reset the panel, not silently
+  // reattribute the signup to the new one.
+  const [waitlist, setWaitlist] = useState<{
+    zip: string;
+    state: "sending" | "joined" | "failed";
+    err?: string;
+  } | null>(null);
+  const waitlistHere = waitlist && waitlist.zip === zipForCheck ? waitlist : null;
+  const waitlistJoined = waitlistHere?.state === "joined";
+
+  async function joinWaitlistFromWizard() {
+    if (!zipForCheck) return;
+    setWaitlist({ zip: zipForCheck, state: "sending" });
+    try {
+      await joinWaitlist({
+        email: contact.email.trim(),
+        zip: zipForCheck,
+        // Everything step 4 already collected — these are the highest-intent
+        // waitlist leads there are, so staff get the full contact details.
+        name: `${contact.first} ${contact.last}`.trim() || undefined,
+        phone: contact.phone.trim() || undefined,
+        source: "booking-flow",
+      });
+      setWaitlist({ zip: zipForCheck, state: "joined" });
+    } catch (e) {
+      setWaitlist({
+        zip: zipForCheck,
+        state: "failed",
+        err: e instanceof Error ? e.message : "Could not join the waitlist.",
+      });
+    }
+  }
+
   async function submit() {
     // The API authenticates POST /bookings — step 5 shows a sign-in CTA instead
     // of this handler's button while anonymous, and this guard backs that up.
     if (!user || !cfg || !agree) return;
     // Never submit something step 2 already knows is invalid.
     if (step2Error) return;
+    // Same for a ZIP step 4 already knows is out of area — the server would
+    // waitlist it, which is not what someone pressing "Submit booking request"
+    // is asking for.
+    if (zipBlocked) return;
     // Don't submit a stale total: if the debounced preview hasn't caught up to
     // the current selections, the echoed price would 422 (PRICE_MISMATCH). Wait
     // for the fetch to resolve (the button is disabled meanwhile too).
@@ -537,7 +687,14 @@ export default function BookingFlow() {
       });
       // The request is in: clear the persisted wizard so a reload (or a return
       // from Stripe) can't resurrect a completed run and double-submit it.
-      resetWizard();
+      //
+      // NOT on the WAITLISTED arm. Nothing was booked there — the server refused
+      // the ZIP and captured a lead instead — so wiping the wizard would throw
+      // away a fully configured job (and orphan its uploaded photos) for a
+      // customer who may simply have mistyped their ZIP. Keeping it means "fix
+      // the ZIP and continue" is one click, and the idempotency key is untouched
+      // so the retry replays as the same request.
+      if (r.outcome !== "WAITLISTED") resetWizard();
       // A subscription doesn't finish here — Stripe Checkout collects the card
       // and the first visit is created by the invoice.paid webhook.
       if (r.outcome === "CHECKOUT") {
@@ -548,7 +705,15 @@ export default function BookingFlow() {
       setDone(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Booking failed. Please try again.");
+      // POST /bookings is gated on a verified email. The generic error would be
+      // a dead end here, so name the fix — the resend button lives on
+      // /my-bookings, which is also where they'll land from the email.
+      if (e instanceof ApiError && e.code === "EMAIL_NOT_VERIFIED") {
+        setNeedsVerify(true);
+        setErr(null);
+      } else {
+        setErr(e instanceof ApiError ? e.message : "Booking failed. Please try again.");
+      }
     } finally {
       setBusy(false);
     }
@@ -912,6 +1077,80 @@ export default function BookingFlow() {
                     <Field id="zip" label="ZIP code" inputMode="numeric" autoComplete="postal-code" value={address.zip} onChange={(v) => setAddress({ ...address, zip: v })} touched={touched} setTouched={setTouched} error={fieldError("zip")} />
                   </div>
 
+                  {/* Coverage verdict for the ZIP just typed. Sits under the
+                      address block, next to the field it's about. */}
+                  {coverageBusy && !liveCoverage && (
+                    <p className="zipchk" aria-live="polite">
+                      Checking whether we serve {zipForCheck}…
+                    </p>
+                  )}
+                  {liveCoverage?.eligible === true && (
+                    <p className="zipchk is-ok" aria-live="polite">
+                      <Check />
+                      {liveCoverage.areaName
+                        ? `Good news — ${liveCoverage.areaName} is in our service area.`
+                        : "Good news — we serve this ZIP code."}
+                    </p>
+                  )}
+                  {/* A failed lookup says so plainly rather than pretending, and
+                      lets them continue: the server re-checks at submit. */}
+                  {liveCoverage?.eligible === null && (
+                    <p className="zipchk is-warn" aria-live="polite">
+                      <Info />
+                      We couldn&apos;t confirm coverage for {liveCoverage.zip} just now. You can carry on —
+                      we&apos;ll confirm before anyone is dispatched.
+                    </p>
+                  )}
+
+                  {zipBlocked && liveCoverage && (
+                    <div className="zipgate" role="alert">
+                      <h4>
+                        <Info />
+                        We don&apos;t cover {liveCoverage.zip} yet
+                      </h4>
+                      <p>
+                        {liveCoverage.reason ?? "This service isn't available at your ZIP code yet."}{" "}
+                        {cfg && `Nothing you've configured is lost — correct the ZIP if it's a typo, or join the
+                        waitlist and we'll email you the moment ${cfg.name} reaches you.`}
+                      </p>
+
+                      {waitlistJoined ? (
+                        <p className="zipgate-ok">
+                          <Check />
+                          You&apos;re on the waitlist for {liveCoverage.zip}. We&apos;ve emailed{" "}
+                          {contact.email.trim()} to confirm — we&apos;ll be in touch as soon as we expand
+                          there.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="cta-row" style={{ marginTop: 4 }}>
+                            <button
+                              type="button"
+                              className="btn btn-primary ripple"
+                              onClick={() => void joinWaitlistFromWizard()}
+                              disabled={waitlistHere?.state === "sending" || !!fieldError("email")}
+                            >
+                              {waitlistHere?.state === "sending" ? "Joining…" : "Join the waitlist"}
+                            </button>
+                            <Link className="btn btn-line ripple" href="/service-area">
+                              See where we operate
+                            </Link>
+                          </div>
+                          {/* The waitlist needs a deliverable address — it is the
+                              only way we can ever tell them we've expanded. */}
+                          {fieldError("email") && (
+                            <p className="zipgate-note">
+                              Add a valid email address above and we can put you on the list.
+                            </p>
+                          )}
+                          {waitlistHere?.state === "failed" && waitlistHere.err && (
+                            <p className="zipgate-note is-err">{waitlistHere.err}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <div style={{ marginTop: 18 }}>
                     <label style={{ display: "block", fontWeight: 700, fontSize: 14, marginBottom: 10, color: "var(--ink)" }}>
                       Property type
@@ -959,10 +1198,15 @@ export default function BookingFlow() {
                     className="btn btn-primary ripple"
                     onClick={() => {
                       setTouched(Object.fromEntries(FIELDS.map((f) => [f, true])));
-                      if (detailsValid) go(5);
+                      // An out-of-area ZIP stops here. Walking them to review and
+                      // letting the submit waitlist them is the behaviour this
+                      // gate exists to replace.
+                      if (detailsValid && !zipBlocked && !coveragePending) go(5);
                     }}
+                    disabled={zipBlocked || coveragePending}
                   >
-                    Continue <Arrow />
+                    {coveragePending ? "Checking coverage…" : "Continue"}
+                    {!coveragePending && <Arrow />}
                   </button>
                 </div>
               </section>
@@ -1027,6 +1271,36 @@ export default function BookingFlow() {
                     </p>
                   </div>
                 )}
+                {/* POST /bookings requires a verified email. Say so BEFORE the
+                    button is pressed — `needsVerify` covers the case where this
+                    tab's session predates the verification and the server refused
+                    anyway. "Check again" re-reads /me rather than making them
+                    reload: a customer who verifies in a second tab is otherwise
+                    stuck looking at a stale warning. */}
+                {!loading && user && (!user.emailVerified || needsVerify) && (
+                  <div className="quote-note" role="alert" style={{ marginTop: 16 }}>
+                    <Info />
+                    <p>
+                      Please verify your email before submitting — we sent a link to{" "}
+                      <b>{user.email}</b>. You can resend it from{" "}
+                      <Link href="/my-bookings" style={{ textDecoration: "underline" }}>
+                        My Bookings
+                      </Link>
+                      .{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNeedsVerify(false);
+                          void refreshUser();
+                        }}
+                        style={{ textDecoration: "underline", background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit", color: "inherit" }}
+                      >
+                        Already verified? Check again
+                      </button>
+                      .
+                    </p>
+                  </div>
+                )}
                 <div className="bk-nav">
                   <button className="btn btn-line ripple" onClick={() => go(4)}>
                     Back
@@ -1045,9 +1319,27 @@ export default function BookingFlow() {
                     <button
                       className="btn btn-primary ripple"
                       onClick={() => void submit()}
-                      disabled={loading || !agree || busy || !!step2Error || (!isQuote && priceStale)}
+                      disabled={
+                        loading ||
+                        !agree ||
+                        busy ||
+                        !!step2Error ||
+                        // The server refuses both of these; withholding the button
+                        // beats a submit that can only fail.
+                        zipBlocked ||
+                        !user?.emailVerified ||
+                        (!isQuote && priceStale)
+                      }
                     >
-                      {busy ? "Submitting…" : !isQuote && priceStale ? "Updating price…" : "Submit booking request"}
+                      {busy
+                        ? "Submitting…"
+                        : !user?.emailVerified
+                          ? "Verify your email to confirm"
+                          : zipBlocked
+                            ? "ZIP code not covered"
+                            : !isQuote && priceStale
+                              ? "Updating price…"
+                              : "Submit booking request"}
                     </button>
                   )}
                 </div>
@@ -1102,16 +1394,26 @@ export default function BookingFlow() {
                 <>
                   <h2>You&apos;re on the waitlist</h2>
                   <p>
-                    We don&apos;t serve {result.waitlist_signup.zip} yet. We&apos;ll email you as soon as we
-                    expand there.
+                    {result.reason ?? `We don't serve ${result.waitlist_signup.zip} yet.`} We&apos;ve emailed
+                    you to confirm, and we&apos;ll be in touch the moment we expand there.
                   </p>
+                  {/* Reachable when the step-4 check was stale or skipped, so the
+                      customer's configured job is still in the store. Offer the
+                      way back to it — "book another service" would discard it. */}
                   <div className="cta-row">
-                    <button className="btn btn-primary ripple" onClick={restart}>
-                      Book another service
+                    <button
+                      className="btn btn-primary ripple"
+                      onClick={() => {
+                        setDone(false);
+                        setResult(null);
+                        go(4);
+                      }}
+                    >
+                      Check the ZIP code <Arrow />
                     </button>
-                    <Link className="btn btn-line ripple" href="/">
-                      Return home
-                    </Link>
+                    <button className="btn btn-line ripple" onClick={restart}>
+                      Start over
+                    </button>
                   </div>
                 </>
               ) : null /* CHECKOUT redirects away before rendering */}

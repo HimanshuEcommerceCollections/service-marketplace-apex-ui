@@ -8,7 +8,7 @@
 // settles, which is what the nav uses to avoid flashing "Sign in" at a user who
 // is in fact signed in.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api, onSessionLost, refresh, setAccessToken } from "./api-client";
 import type { Role } from "./post-login-redirect";
 
@@ -29,6 +29,19 @@ interface CustomerAuthState {
   login: (email: string, password: string) => Promise<CustomerUser>;
   signup: (name: string, email: string, password: string, phone?: string) => Promise<CustomerUser>;
   logout: () => Promise<void>;
+  /**
+   * Re-read the session user from the server.
+   *
+   * Needed because `user` is fetched ONCE on mount, so any server-side change to
+   * the profile is invisible to a tab that stays open. The concrete case is email
+   * verification: /verify-email flips `emailVerifiedAt`, and without this the
+   * "please verify your email" banner would keep nagging a customer who has just
+   * verified, until they happened to reload.
+   *
+   * Silent on failure — this only ever refines what's already rendered, so a
+   * dropped request must not clear a live session or surface an error.
+   */
+  refreshUser: () => Promise<void>;
 }
 
 /** Avatar label: first + last initial ("Ada Lovelace" → "AL"), single name → first two letters. */
@@ -90,6 +103,17 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     return data.user;
   };
 
+  // Stable identity: consumers call this from effects (the /verify-email page
+  // does), and an inline function would re-fire them on every provider render.
+  const refreshUser = useCallback(async () => {
+    try {
+      const me = await api<CustomerUser>("/me");
+      setUser(me);
+    } catch {
+      /* leave the current user in place — see the doc comment */
+    }
+  }, []);
+
   const logout = async () => {
     try {
       // POST /auth/logout is behind `authenticate`, and api() never refreshes for
@@ -109,7 +133,9 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  return <Ctx.Provider value={{ user, loading, login, signup, logout }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ user, loading, login, signup, logout, refreshUser }}>{children}</Ctx.Provider>
+  );
 }
 
 export function useCustomerAuth(): CustomerAuthState {

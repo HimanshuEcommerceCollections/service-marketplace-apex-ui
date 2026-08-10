@@ -13,6 +13,17 @@ import { ApiError } from '../../lib/api-client';
 const emailOK = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 const phoneOK = (v: string) => v.replace(/[^0-9]/g, '').length >= 10;
 
+/**
+ * Tag the post-signup destination so it can announce that a verification email
+ * is on its way. Appended rather than replacing the query so a `?next=` carrying
+ * its own parameters survives intact.
+ */
+function withVerifyFlag(dest: string): string {
+  const [path, hash = ''] = dest.split('#');
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}verify=sent${hash ? `#${hash}` : ''}`;
+}
+
 const STRENGTH_LABELS = ['Password strength', 'Weak', 'Fair', 'Good', 'Strong'];
 function strength(v: string): number {
   let s = 0;
@@ -69,7 +80,12 @@ export default function SignUpView() {
       const created = await signup(name.value.trim(), email.value.trim(), password.value, phone.value.trim());
       // Registration always mints a CUSTOMER, so destinationFor honours a safe
       // ?next= and otherwise falls back to /my-bookings.
-      router.replace(destinationFor(created, next));
+      //
+      // Registering sends a verification email, and booking is gated on it — so
+      // say so at the destination. Without this the new customer is navigated
+      // away from the form with no indication that mail is on its way, and only
+      // meets the requirement later when a submit is refused.
+      router.replace(withVerifyFlag(destinationFor(created, next)));
     } catch (e2) {
       setErr(e2 instanceof ApiError ? e2.message : 'Sign up failed. Please try again.');
       setBusy(false);
