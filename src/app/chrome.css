@@ -30,6 +30,31 @@
   --font-body:var(--font-inter),"Inter","Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
 }
 
+/* Base, copied from the same apex.css "[style block 0: base]" as the tokens above.
+ *
+ * These two rules belong here rather than in each page's own stylesheet because
+ * they are what the shared chrome ASSUMES: SiteNav and SiteFooter are built
+ * almost entirely from <a> elements and inherit their type from the body, so a
+ * page that loads chrome.css without them renders the pill navbar with underlined
+ * links and any un-styled text in the browser's default serif.
+ *
+ * Only the tokens were copied when this file was split out, which left that
+ * assumption unstated. It went unnoticed because every OTHER chrome page also
+ * loads a ported design stylesheet (service.css, booking.css, pricing.css, …)
+ * that happens to declare the identical two rules — so the gap only showed on
+ * the two pages written from scratch against the shared chrome: /my-bookings
+ * and /pro.
+ *
+ * Values are byte-identical to the declarations already in apex.css, service.css
+ * and booking.css, so this is a no-op wherever one of those also loads. Note what
+ * is deliberately NOT copied from block 0: `*{box-sizing:border-box;margin:0;
+ * padding:0}`. service.css and booking.css never included it, so the service
+ * pages have always laid out on content-box; introducing it globally here would
+ * re-flow 19 working pages to fix 2. line-height is left out for the same
+ * reason — each design sets its own (1.6 on home, 1.5 on the ported pages). */
+body{font-family:var(--font-body);color:var(--ink2);background:var(--paper);overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
 /* NAV (base) */
 .nav{position:fixed;inset:0 0 auto 0;height:var(--nav-h);z-index:80;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,4vw,52px);color:#fff;border-bottom:1px solid transparent;
   transition:background var(--dur-base) var(--ease-crisp),height var(--dur-base) var(--ease-crisp),box-shadow var(--dur-base) var(--ease-crisp),border-color var(--dur-base) var(--ease-crisp),color var(--dur-base)}
