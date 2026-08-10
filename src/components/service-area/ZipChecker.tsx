@@ -55,7 +55,11 @@ export default function ZipChecker({ onWaitlistPrefill }: { onWaitlistPrefill?: 
     inflight.current = ctrl;
     setState({ kind: 'checking' });
     try {
-      const res = await checkZipAvailability(v, ctrl.signal);
+      // No `service` here on purpose: this is the marketing page's "are you in
+      // our area at all?" question. The booking wizard asks the per-service
+      // version, which can be stricter — a ZIP inside an active area may still be
+      // excluded for one service.
+      const res = await checkZipAvailability(v, { signal: ctrl.signal });
       if (ctrl.signal.aborted) return;
       setState(res.eligible ? { kind: 'served', zip: v } : { kind: 'unserved', zip: v });
     } catch (e) {

@@ -21,6 +21,14 @@
 .mb-note.is-ok { background: #eaf6ef; color: #21603f; border-color: #cde8d8; }
 .mb-note.is-err { background: #fbeeea; color: #8f3423; border-color: #f0d4cb; }
 
+/* An action inside a note (e.g. "Resend verification email"). Reads as a link,
+   but it's a real <button> — it performs a POST, it isn't navigation. */
+.mb-inline-btn {
+  background: none; border: 0; padding: 0; font: inherit; color: inherit;
+  font-weight: 700; text-decoration: underline; cursor: pointer;
+}
+.mb-inline-btn:disabled { opacity: 0.6; cursor: default; text-decoration: none; }
+
 .mb-list { list-style: none; padding: 0; margin: 30px 0 0; display: grid; gap: 12px; }
 .mb-item {
   background: linear-gradient(180deg, #fff, #fdfbf7); border: 1px solid var(--line);

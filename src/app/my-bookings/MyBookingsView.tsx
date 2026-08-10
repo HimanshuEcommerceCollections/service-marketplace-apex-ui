@@ -157,7 +157,7 @@ export default function MyBookingsView() {
             {err && <p className="mb-note is-err">{err}</p>}
 
             {!user.emailVerified && (
-              <p className="mb-note">Please verify your email. Check your inbox for the verification link.</p>
+              <VerifyEmailNote email={user.email} justSignedUp={params.get('verify') === 'sent'} />
             )}
 
             {bookings === null ? (
@@ -242,5 +242,69 @@ export default function MyBookingsView() {
       </main>
       <SiteFooter />
     </div>
+  );
+}
+
+/**
+ * The unverified-email nag, with the way out attached.
+ *
+ * A bare "check your inbox" was a dead end: the link expires after 24 hours, mail
+ * lands in spam, and delivery is best-effort server-side (a transport failure is
+ * logged, not raised) — so an unlucky customer had no route to a working link,
+ * and booking is now gated on being verified. This is that route.
+ *
+ * The endpoint answers identically whether or not it sent anything (no
+ * account-existence oracle), so the confirmation copy is deliberately hedged —
+ * it reports what we asked for, not what we know happened.
+ */
+function VerifyEmailNote({ email, justSignedUp }: { email: string; justSignedUp: boolean }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function resend() {
+    setState('sending');
+    setMsg(null);
+    try {
+      await api('/auth/resend-verification', { method: 'POST', body: { email } });
+      setState('sent');
+    } catch (e) {
+      setState('failed');
+      // Surface the 429 in particular: "try again later" is actionable, a
+      // generic failure is not.
+      setMsg(
+        e instanceof ApiError && e.status === 429
+          ? 'Too many requests just now — please try again in a few minutes.'
+          : e instanceof ApiError
+            ? e.message
+            : "We couldn't send that just now. Please try again in a moment.",
+      );
+    }
+  }
+
+  if (state === 'sent') {
+    return (
+      <p className="mb-note is-ok">
+        We&apos;ve sent a fresh verification link to <b>{email}</b>. It expires in 24 hours — check your
+        spam folder if it doesn&apos;t arrive within a few minutes.
+      </p>
+    );
+  }
+
+  return (
+    <p className="mb-note">
+      {justSignedUp
+        ? 'Almost there — confirm your email to finish setting up your account. We need a working address before you can book.'
+        : 'Please verify your email — we need a working address before you can book.'}{' '}
+      Check your inbox for the link we sent to <b>{email}</b>.{' '}
+      <button
+        type="button"
+        className="mb-inline-btn"
+        onClick={() => void resend()}
+        disabled={state === 'sending'}
+      >
+        {state === 'sending' ? 'Sending…' : 'Resend verification email'}
+      </button>
+      {state === 'failed' && msg && <> — {msg}</>}
+    </p>
   );
 }
