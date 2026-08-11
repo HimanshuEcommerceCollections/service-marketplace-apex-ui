@@ -205,6 +205,7 @@ img,svg,video{display:block}
 .pg-service .rplan .disc{margin-top:8px;font-size:12.5px;font-weight:700;color:#2E7D5B}
 .pg-service .rplan .rlink{display:inline-block;margin-top:16px;font-size:13px;font-weight:600;color:var(--blue)}
 .pg-service .rplan .rlink:hover{text-decoration:underline}
+.pg-service .rec-note{max-width:640px;margin:clamp(24px,3vw,36px) auto 0;text-align:center;font-size:14px;line-height:1.6;color:var(--slate7)}
 
 /* ---------- CLAIMS / TRUST ---------- */
 .pg-service .claims{background:linear-gradient(180deg,var(--paper),var(--mist))}

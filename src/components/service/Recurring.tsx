@@ -3,7 +3,8 @@
 // DISPLAY ONLY. These cards show the payment frequencies a service offers and
 // what each one saves; they are not purchasable packages and deliberately carry
 // no CTA. The customer chooses a frequency in the "Instant estimate"
-// configurator below, which reads the same data and applies the same discount.
+// configurator (rendered above this section), which reads the same data and
+// applies the same discount.
 // (Packages — ServicePlan/memberships — live on /membership-plans.)
 export interface ServicePlan {
   name: string;
@@ -47,7 +48,7 @@ export default function Recurring({ heading, plans }: RecurringProps) {
         ))}
       </div>
       <p className="rec-note reveal">
-        Pick your frequency in the estimate below. The discount is applied to your total.
+        Pick your frequency in the instant estimate above. The discount is applied to your total.
       </p>
     </section>
   );
