@@ -21,6 +21,12 @@ import { testimonials as TDATA, portraits as IMG } from '../../data/apex/testimo
 export async function mountApex() {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fine = matchMedia('(pointer:fine)').matches;
+  // Touch/small-screen: skip the scroll-scrubbed transforms and the particle
+  // field. Phones scroll with the native (non-Lenis) scroller, so scrubbed
+  // tweens snap 1:1 to each scroll event with no easing — combined with the
+  // full-screen video + blur compositing they made the first screens feel
+  // janky. One-shot reveals (non-scrub) stay on.
+  const mobile = !fine || matchMedia('(max-width: 900px)').matches;
 
   const [gsapMod, stMod, lenisMod] = await Promise.all([
     import('gsap'),
@@ -32,6 +38,9 @@ export async function mountApex() {
   const Lenis = lenisMod.default || lenisMod.Lenis;
   const hasGSAP = !!gsap && !!ScrollTrigger;
   gsap.registerPlugin(ScrollTrigger);
+  // Mobile URL-bar show/hide fires resize mid-gesture; without this ScrollTrigger
+  // refreshes every vh-sized section during the first swipe (visible hitch).
+  ScrollTrigger.config({ ignoreMobileResize: true });
 
   // --- teardown bookkeeping ---
   const cleanups = [];
@@ -170,26 +179,35 @@ export async function mountApex() {
           .from('.scroll-cue', { opacity: 0, duration: 0.8 }, '-=.4');
       }
 
-      /* Hero exit — no pin: hero scrolls away, Featured services appears immediately */
-      gsap
-        .timeline({ scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: 0.6 } })
-        .to('#heroMedia', { scale: 1.1, ease: 'none' }, 0)
-        .to('#ambient', { yPercent: 18, xPercent: 12, ease: 'none' }, 0)
-        .to('#heroContent', { yPercent: -8, ease: 'none' }, 0)
-        .to('.scroll-cue', { opacity: 0, ease: 'none' }, 0);
+      /* Hero exit — no pin: hero scrolls away, Featured services appears immediately.
+         Skipped on mobile: scrubbing a playing full-screen video + the blurred
+         blend-mode ambient layer drops frames on phone GPUs. */
+      if (!mobile) {
+        gsap
+          .timeline({ scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: 0.6 } })
+          .to('#heroMedia', { scale: 1.1, ease: 'none' }, 0)
+          .to('#ambient', { yPercent: 18, xPercent: 12, ease: 'none' }, 0)
+          .to('#heroContent', { yPercent: -8, ease: 'none' }, 0)
+          .to('.scroll-cue', { opacity: 0, ease: 'none' }, 0);
+      }
 
       /* Bridge */
-      gsap.to('#bridgeImg', { yPercent: 16, ease: 'none', scrollTrigger: { trigger: '#bridge', start: 'top bottom', end: 'bottom top', scrub: true } });
+      if (!mobile) {
+        gsap.to('#bridgeImg', { yPercent: 16, ease: 'none', scrollTrigger: { trigger: '#bridge', start: 'top bottom', end: 'bottom top', scrub: true } });
+      }
       gsap.from('[data-bridge]', { y: 34, opacity: 0, duration: 0.9, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '#bridge', start: 'top 62%' } });
 
-      /* Chapters: media parallax + content reveal */
+      /* Chapters: media parallax (desktop only — the CSS Ken Burns zoom keeps
+         the imagery alive on mobile without per-scroll-event work) + content reveal */
       gsap.utils.toArray('.chapter').forEach((ch) => {
-        const media = ch.querySelector('.ch-media');
-        gsap.fromTo(
-          media,
-          { scale: 1.16, yPercent: -4 },
-          { scale: 1.02, yPercent: 4, ease: 'none', scrollTrigger: { trigger: ch, start: 'top bottom', end: 'bottom top', scrub: 0.4 } }
-        );
+        if (!mobile) {
+          const media = ch.querySelector('.ch-media');
+          gsap.fromTo(
+            media,
+            { scale: 1.16, yPercent: -4 },
+            { scale: 1.02, yPercent: 4, ease: 'none', scrollTrigger: { trigger: ch, start: 'top bottom', end: 'bottom top', scrub: 0.4 } }
+          );
+        }
         gsap.to(ch.querySelectorAll('.ch-reveal'), { opacity: 1, y: 0, duration: 0.9, stagger: 0.09, ease: 'power3.out', scrollTrigger: { trigger: ch, start: 'top 55%' } });
       });
 
@@ -273,8 +291,9 @@ export async function mountApex() {
       });
     }
 
-    /* Particles */
-    if (!reduce) {
+    /* Particles — desktop only: a full-screen DPR-2 canvas redrawn every frame
+       with shadowBlur competes with video decode + scroll on phone GPUs. */
+    if (!reduce && !mobile) {
       const c = document.getElementById('particles'),
         pctx = c.getContext('2d');
       let w,

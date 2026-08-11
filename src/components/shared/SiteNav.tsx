@@ -10,7 +10,12 @@
 // Mobile menu: <900px the desktop .navlinks are hidden (chrome.css/apex.css) and
 // the .navtoggle hamburger opens a slide-down panel by adding `.open` to #nav
 // (panel styling lives in the chrome sheets). The panel closes on route change
-// (usePathname) and on any link tap.
+// (usePathname) and on any link tap. Inside the open panel the Services trigger
+// toggles an inline accordion (`.dd-open` on .svc-dd) instead of navigating —
+// the hover/focus CSS that opens the desktop dropdown has no touch equivalent.
+//
+// The link matching the current route carries aria-current="page"; the chrome
+// sheets style it as the active nav item.
 //
 // The trailing <NavAuth/> is the session control: "Sign in" when signed out, an
 // initials avatar with a My Bookings / Logout menu when signed in. Its styles
@@ -38,6 +43,7 @@ const services = [
 
 export default function SiteNav() {
   const [open, setOpen] = useState(false);
+  const [svcOpen, setSvcOpen] = useState(false);
   const pathname = usePathname();
 
   // Close the mobile panel whenever the route changes (client navigation).
@@ -47,14 +53,30 @@ export default function SiteNav() {
   if (pathname !== lastPath) {
     setLastPath(pathname);
     setOpen(false);
+    setSvcOpen(false);
   }
 
-  const close = () => setOpen(false);
+  const close = () => {
+    setOpen(false);
+    setSvcOpen(false);
+  };
+
+  const current = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`) ? 'page' : undefined;
+
+  // Mobile (panel open): toggle the inline services accordion instead of
+  // navigating. Desktop (panel never open): fall through to the /#showcase link.
+  const onServices = (e: React.MouseEvent) => {
+    if (open) {
+      e.preventDefault();
+      setSvcOpen((v) => !v);
+    }
+  };
 
   // Home logo: when already on home, scroll back to the top and drop any #hash
   // (e.g. #showcase left over from the Services link) instead of staying put.
   const goHome = (e: React.MouseEvent) => {
-    setOpen(false);
+    close();
     if (pathname === '/') {
       e.preventDefault();
       window.history.replaceState(null, '', '/');
@@ -74,8 +96,14 @@ export default function SiteNav() {
           </span>
         </Link>
         <div className="navlinks">
-          <span className="svc-dd">
-            <Link href="/#showcase" className="has-dd" onClick={close}>
+          <span className={`svc-dd${svcOpen ? ' dd-open' : ''}`}>
+            <Link
+              href="/#showcase"
+              className="has-dd"
+              aria-expanded={svcOpen}
+              aria-current={pathname.startsWith('/services/') ? 'page' : undefined}
+              onClick={onServices}
+            >
               Services{' '}
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 9l6 6 6-6" />
@@ -83,18 +111,18 @@ export default function SiteNav() {
             </Link>
             <div className="dd">
               {services.map((s, i) => (
-                <Link key={i} href={s.href} onClick={close}>
+                <Link key={i} href={s.href} aria-current={current(s.href)} onClick={close}>
                   {s.label}
                 </Link>
               ))}
             </div>
           </span>
-          <Link href="/how-it-works" onClick={close}>How it works</Link>
-          <Link href="/membership-plans" onClick={close}>Plans</Link>
-          <Link href="/pricing" onClick={close}>Pricing</Link>
-          <Link href="/service-area" onClick={close}>Service area</Link>
-          <Link href="/property-managers" onClick={close}>For property managers</Link>
-          <Link href="/become-a-pro" className="becomepro" onClick={close}>
+          <Link href="/how-it-works" aria-current={current('/how-it-works')} onClick={close}>How it works</Link>
+          <Link href="/membership-plans" aria-current={current('/membership-plans')} onClick={close}>Plans</Link>
+          <Link href="/pricing" aria-current={current('/pricing')} onClick={close}>Pricing</Link>
+          <Link href="/service-area" aria-current={current('/service-area')} onClick={close}>Service area</Link>
+          <Link href="/property-managers" aria-current={current('/property-managers')} onClick={close}>For property managers</Link>
+          <Link href="/become-a-pro" className="becomepro" aria-current={current('/become-a-pro')} onClick={close}>
             Become a pro
           </Link>
           <Link className="nav-cta magnetic" href="/book" onClick={close}>
@@ -106,7 +134,10 @@ export default function SiteNav() {
           className="navtoggle"
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            setOpen((v) => !v);
+            setSvcOpen(false);
+          }}
         >
           {open ? (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
