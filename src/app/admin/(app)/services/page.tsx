@@ -230,7 +230,7 @@ export default function ServicesPage() {
             <div className="ax-card" style={{ marginTop: 16 }}>
               {preview.mode === "QUOTE" && preview.displayed_price && (
                 <p className="ax-muted" style={{ marginBottom: 8 }}>
-                  Indicative only — the coordinator sets the final amount on the Quotes page.
+                  Indicative only — the coordinator sets the final amount on the booking (Bookings → Details).
                 </p>
               )}
               {!preview.displayed_price ? (
