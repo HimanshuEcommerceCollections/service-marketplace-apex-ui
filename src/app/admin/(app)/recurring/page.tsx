@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 type Interval = "NONE" | "WEEK" | "MONTH";
 type Status = "ACTIVE" | "INACTIVE";
@@ -32,7 +33,8 @@ const cycleLabel = (c: Cadence) =>
   c.interval === "NONE" ? "—" : `every ${c.intervalCount > 1 ? `${c.intervalCount} ` : ""}${c.interval.toLowerCase()}${c.intervalCount > 1 ? "s" : ""}`;
 
 export default function RecurringCadencesPage() {
-  const [rows, setRows] = useState<Cadence[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<Cadence[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -131,13 +133,15 @@ export default function RecurringCadencesPage() {
         </div>
       </div>
 
-      <table className="ax-table" style={{ marginTop: 16 }}>
-        <thead><tr><th>Cadence</th><th>Key</th><th>Billing cycle</th><th>Status</th><th></th></tr></thead>
+      <div className="ax-table-wrap" style={{ marginTop: 16 }}>
+      <table className="ax-table">
+        <thead><tr><th>Cadence</th><th className="ax-hide-md">Key</th><th>Billing cycle</th><th>Status</th><th></th></tr></thead>
         <tbody>
-          {rows.map((c) => (
+          {rows === null && !err && <TableSkeleton cols={5} />}
+          {(rows ?? []).map((c) => (
             <tr key={c.id} style={c.status === "INACTIVE" ? { opacity: 0.55 } : undefined}>
               <td>{c.label}</td>
-              <td className="ax-muted">{c.key}</td>
+              <td className="ax-muted ax-hide-md">{c.key}</td>
               <td className="ax-muted">{cycleLabel(c)}</td>
               <td><span className={`ax-badge ${c.status === "ACTIVE" ? "ok" : "muted"}`}>{c.status}</span></td>
               <td>
@@ -147,9 +151,10 @@ export default function RecurringCadencesPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={5} className="ax-muted">No cadences.</td></tr>}
+          {rows !== null && rows.length === 0 && <tr><td colSpan={5} className="ax-muted">No cadences.</td></tr>}
         </tbody>
       </table>
+      </div>
 
       <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>

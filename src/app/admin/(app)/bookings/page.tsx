@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 import { ConfirmModal, Lightbox, Modal, thumbUrl, type ConfirmRequest } from "../../components/modal";
+import { Skel, TableSkeleton } from "../../components/skeleton";
 
 interface Booking {
   reference: string;
@@ -60,7 +61,8 @@ const payLabel = (s: string) => (s ? s.replace(/_/g, " ") : "—");
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
 
 export default function BookingsPage() {
-  const [rows, setRows] = useState<Booking[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<Booking[] | null>(null);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [status, setStatus] = useState("");
   const [payStatus, setPayStatus] = useState("");
@@ -221,7 +223,7 @@ export default function BookingsPage() {
     });
   }
 
-  const detail = detailRef ? rows.find((b) => b.reference === detailRef) ?? null : null;
+  const detail = detailRef ? (rows ?? []).find((b) => b.reference === detailRef) ?? null : null;
 
   return (
     <>
@@ -248,27 +250,29 @@ export default function BookingsPage() {
         </label>
       </div>
 
+      <div className="ax-table-wrap">
       <table className="ax-table">
         <thead>
           <tr>
             <th>Reference</th>
-            <th>Service</th>
+            <th className="ax-hide-md">Service</th>
             <th>Customer</th>
             <th>Price</th>
             <th>Payment</th>
             <th>Status</th>
-            <th>Set status</th>
+            <th className="ax-hide-md">Set status</th>
             <th />
           </tr>
         </thead>
         <tbody>
-          {rows.map((b) => (
+          {rows === null && !err && <TableSkeleton cols={8} />}
+          {(rows ?? []).map((b) => (
             <tr key={b.reference}>
               <td>
                 {b.reference}
                 {b.quoteRequest && <span className="ax-badge muted" style={{ marginLeft: 6 }}>QUOTE</span>}
               </td>
-              <td>{b.service?.name ?? "—"}</td>
+              <td className="ax-hide-md">{b.service?.name ?? "—"}</td>
               <td className="ax-muted">{b.customer?.email ?? b.contactEmail}</td>
               <td>
                 {b.quoteRequest ? (
@@ -283,7 +287,7 @@ export default function BookingsPage() {
               </td>
               <td><span className={`ax-badge ${payBadge(b.paymentStatus)}`}>{payLabel(b.paymentStatus)}</span></td>
               <td><span className={`ax-badge ${badge(b.status)}`}>{b.status}</span></td>
-              <td>
+              <td className="ax-hide-md">
                 <select className="ax-select" style={{ maxWidth: 150 }} value={b.status} onChange={(e) => askTransition(b, e.target.value)}>
                   <option value={b.status} disabled>{b.status}</option>
                   {TRANSITIONS.filter((t) => t !== b.status).map((t) => (
@@ -296,9 +300,10 @@ export default function BookingsPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={8} className="ax-muted">No bookings found.</td></tr>}
+          {rows !== null && rows.length === 0 && <tr><td colSpan={8} className="ax-muted">No bookings found.</td></tr>}
         </tbody>
       </table>
+      </div>
 
       <Pager meta={meta} page={page} setPage={setPage} />
 
@@ -356,7 +361,11 @@ export default function BookingsPage() {
                 )}
               </div>
               {extra === null ? (
-                <p className="ax-muted" style={{ margin: 0 }}>Loading quote…</p>
+                <div aria-label="Loading quote">
+                  <Skel w="90%" />
+                  <Skel w="60%" style={{ marginTop: 6 }} />
+                  <Skel w={220} h={34} style={{ marginTop: 12, borderRadius: 8 }} />
+                </div>
               ) : !extra.quote ? (
                 <p className="ax-muted" style={{ margin: 0 }}>No quote attached to this booking.</p>
               ) : (
@@ -416,10 +425,14 @@ export default function BookingsPage() {
 
           <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Payments</div>
           {extra === null ? (
-            <p className="ax-muted" style={{ margin: 0 }}>Loading payments…</p>
+            <div aria-label="Loading payments">
+              <Skel w="100%" h={38} style={{ borderRadius: 8 }} />
+              <Skel w="100%" h={38} style={{ marginTop: 6, borderRadius: 8 }} />
+            </div>
           ) : extra.payments.length === 0 ? (
             <p className="ax-muted" style={{ margin: 0 }}>No payments recorded for this booking.</p>
           ) : (
+            <div className="ax-table-wrap">
             <table className="ax-table">
               <thead>
                 <tr>
@@ -460,6 +473,7 @@ export default function BookingsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
           {extra !== null && extra.payments.some((p) => p.refundable) && (
             <p className="ax-muted" style={{ fontSize: 12, margin: "6px 0 0" }}>

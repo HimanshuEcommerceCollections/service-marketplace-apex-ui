@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth-context";
+import { Skel } from "../components/skeleton";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function DashboardPage() {
       <div className="ax-grid">
         <div className="ax-card">
           <h3>Services</h3>
-          <div className="ax-stat">{serviceCount ?? "—"}</div>
+          <div className="ax-stat">{serviceCount ?? <Skel w={48} h={30} />}</div>
           <p>In the live catalog</p>
           <p>
             <Link href="/admin/services">Browse catalog →</Link>
@@ -44,7 +45,7 @@ export default function DashboardPage() {
         {user?.role === "ADMIN" && (
           <div className="ax-card">
             <h3>Staff</h3>
-            <div className="ax-stat">{staffCount ?? "—"}</div>
+            <div className="ax-stat">{staffCount ?? <Skel w={48} h={30} />}</div>
             <p>Coordinators &amp; admins</p>
             <p>
               <Link href="/admin/staff">Manage staff →</Link>

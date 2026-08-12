@@ -19,6 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { Skel, TableSkeleton } from "../../components/skeleton";
 
 interface WaitlistSignup {
   id: string;
@@ -55,7 +56,8 @@ const badge = (s: string) => (s === "CONVERTED" ? "ok" : s === "ACTIVE" ? "warn"
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "—");
 
 export default function WaitlistPage() {
-  const [rows, setRows] = useState<WaitlistSignup[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<WaitlistSignup[] | null>(null);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [demand, setDemand] = useState<Demand[] | null>(null);
   const [status, setStatus] = useState("ACTIVE");
@@ -194,7 +196,11 @@ export default function WaitlistPage() {
         </p>
 
         {demand === null ? (
-          <p className="ax-muted">Loading…</p>
+          <div className="ax-row" style={{ gap: 6, flexWrap: "wrap" }} aria-label="Loading demand">
+            {[70, 84, 66, 90, 74].map((w, i) => (
+              <Skel key={i} w={w} h={30} style={{ borderRadius: 8 }} />
+            ))}
+          </div>
         ) : demand.length === 0 ? (
           <p className="ax-muted">Nobody is currently waiting.</p>
         ) : (
@@ -297,19 +303,21 @@ export default function WaitlistPage() {
         )}
       </form>
 
+      <div className="ax-table-wrap">
       <table className="ax-table">
         <thead>
           <tr>
             <th>Contact</th>
             <th>ZIP</th>
-            <th>Source</th>
-            <th>Joined</th>
-            <th>Notified</th>
+            <th className="ax-hide-md">Source</th>
+            <th className="ax-hide-md">Joined</th>
+            <th className="ax-hide-md">Notified</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {rows === null && !err && <TableSkeleton cols={6} />}
+          {(rows ?? []).map((r) => (
               <tr key={r.id}>
                 <td>
                   <b>{r.name ?? r.email}</b>
@@ -329,9 +337,9 @@ export default function WaitlistPage() {
                 <td>
                   <b>{r.zip}</b>
                 </td>
-                <td className="ax-muted">{sourceLabel(r.source)}</td>
-                <td className="ax-muted">{when(r.createdAt)}</td>
-                <td className="ax-muted">{when(r.notifiedAt)}</td>
+                <td className="ax-muted ax-hide-md">{sourceLabel(r.source)}</td>
+                <td className="ax-muted ax-hide-md">{when(r.createdAt)}</td>
+                <td className="ax-muted ax-hide-md">{when(r.notifiedAt)}</td>
                 <td>
                   <div className="ax-row" style={{ gap: 6 }}>
                     <span className={`ax-badge ${badge(r.status)}`}>{r.status}</span>
@@ -351,7 +359,7 @@ export default function WaitlistPage() {
                 </td>
               </tr>
           ))}
-          {rows.length === 0 && (
+          {rows !== null && rows.length === 0 && (
             <tr>
               <td colSpan={6} className="ax-muted">
                 No waitlist signups match these filters.
@@ -360,6 +368,7 @@ export default function WaitlistPage() {
           )}
         </tbody>
       </table>
+      </div>
 
       <Pager meta={meta} page={page} setPage={setPage} />
 

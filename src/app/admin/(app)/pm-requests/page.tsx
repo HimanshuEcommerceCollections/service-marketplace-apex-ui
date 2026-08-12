@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 import { ConfirmModal, Modal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 interface PmRequest {
   id: string;
@@ -42,7 +43,8 @@ const bundleLabel = (b: string) => BUNDLES.find((x) => x.value === b)?.label ?? 
 const when = (iso: string) => new Date(iso).toLocaleDateString();
 
 export default function PmRequestsPage() {
-  const [rows, setRows] = useState<PmRequest[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<PmRequest[] | null>(null);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [status, setStatus] = useState("");
   const [bundle, setBundle] = useState("");
@@ -70,7 +72,7 @@ export default function PmRequestsPage() {
       // reload triggered by one row's save doesn't wipe unsaved edits elsewhere.
       setAmounts((prev) =>
         Object.fromEntries(
-          data.map((r) => [
+          data.map((r: PmRequest) => [
             r.id,
             r.id in prev ? prev[r.id] : r.quotedAmount != null ? (r.quotedAmount / 100).toFixed(2) : "",
           ]),
@@ -136,7 +138,7 @@ export default function PmRequestsPage() {
     setQuery(search.trim());
   }
 
-  const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
+  const detail = detailId ? (rows ?? []).find((r) => r.id === detailId) ?? null : null;
 
   return (
     <>
@@ -203,31 +205,33 @@ export default function PmRequestsPage() {
         )}
       </form>
 
+      <div className="ax-table-wrap">
       <table className="ax-table">
         <thead>
           <tr>
             <th>Company</th>
             <th>Contact</th>
-            <th>Units</th>
-            <th>Bundle</th>
-            <th>Received</th>
+            <th className="ax-hide-md">Units</th>
+            <th className="ax-hide-md">Bundle</th>
+            <th className="ax-hide-md">Received</th>
             <th>Quoted</th>
             <th>Status</th>
             <th />
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {rows === null && !err && <TableSkeleton cols={8} />}
+          {(rows ?? []).map((r) => (
             <tr key={r.id}>
               <td>
                 <b>{r.company ?? "—"}</b>
               </td>
               <td className="ax-muted">{r.contactEmail}</td>
-              <td>{r.unitsEst}+</td>
-              <td>
+              <td className="ax-hide-md">{r.unitsEst}+</td>
+              <td className="ax-hide-md">
                 <span className="ax-badge muted">{bundleLabel(r.bundle)}</span>
               </td>
-              <td className="ax-muted">{when(r.createdAt)}</td>
+              <td className="ax-muted ax-hide-md">{when(r.createdAt)}</td>
               <td>{r.quotedAmount != null ? `$${(r.quotedAmount / 100).toFixed(2)}` : <span className="ax-muted">not set</span>}</td>
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
@@ -253,7 +257,7 @@ export default function PmRequestsPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && (
+          {rows !== null && rows.length === 0 && (
             <tr>
               <td colSpan={8} className="ax-muted">
                 No property manager requests found.
@@ -262,6 +266,7 @@ export default function PmRequestsPage() {
           )}
         </tbody>
       </table>
+      </div>
 
       <Pager meta={meta} page={page} setPage={setPage} />
 

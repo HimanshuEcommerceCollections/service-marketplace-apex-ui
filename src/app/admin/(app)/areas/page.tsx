@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 interface AreaView {
   id: string;
@@ -15,7 +16,8 @@ interface AreaView {
 }
 
 export default function AreasPage() {
-  const [rows, setRows] = useState<AreaView[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<AreaView[] | null>(null);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [search, setSearch] = useState("");
   const [includeDeleted, setIncludeDeleted] = useState(false);
@@ -161,18 +163,20 @@ export default function AreasPage() {
         </label>
       </div>
 
+      <div className="ax-table-wrap">
       <table className="ax-table">
         <thead>
           <tr>
             <th>Name</th>
-            <th>Slug</th>
-            <th>Response time</th>
+            <th className="ax-hide-md">Slug</th>
+            <th className="ax-hide-md">Response time</th>
             <th>Status</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((a) => (
+          {rows === null && !err && <TableSkeleton cols={5} />}
+          {(rows ?? []).map((a) => (
             <tr key={a.id}>
               <td>
                 {editId === a.id ? (
@@ -181,8 +185,8 @@ export default function AreasPage() {
                   a.name
                 )}
               </td>
-              <td className="ax-muted">{a.slug}</td>
-              <td>
+              <td className="ax-muted ax-hide-md">{a.slug}</td>
+              <td className="ax-hide-md">
                 {editId === a.id ? (
                   <input className="ax-input" style={{ maxWidth: 140 }} placeholder="e.g. 15 MIN" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} />
                 ) : (
@@ -218,11 +222,12 @@ export default function AreasPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && (
+          {rows !== null && rows.length === 0 && (
             <tr><td colSpan={5} className="ax-muted">No areas found.</td></tr>
           )}
         </tbody>
       </table>
+      </div>
 
       <Pager meta={meta} page={page} setPage={setPage} />
 

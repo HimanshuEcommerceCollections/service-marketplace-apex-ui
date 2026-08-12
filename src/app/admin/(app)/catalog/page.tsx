@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { CardSkeleton } from "../../components/skeleton";
 import {
   DURATION_UNITS,
   EMPTY_DURATION,
@@ -450,6 +451,13 @@ export default function EditPricingPage() {
         </select>
       </div>
 
+      {slug && !view && !err && (
+        <>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={4} />
+        </>
+      )}
+
       {view && (
         <>
           {/* ── Pricing mode ─────────────────────────────────────────── */}
@@ -681,7 +689,8 @@ export default function EditPricingPage() {
 
                 {(g.inputType === "SELECT" || g.inputType === "MULTISELECT") && (
                   <>
-                    <table className="ax-table" style={{ marginTop: 8 }}>
+                    <div className="ax-table-wrap" style={{ marginTop: 8 }}>
+                    <table className="ax-table">
                       <thead><tr><th>Option</th><th>Delta ($)</th><th></th></tr></thead>
                       <tbody>
                         {g.options.map((o) => (
@@ -719,6 +728,7 @@ export default function EditPricingPage() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                     <div className="ax-row" style={{ gap: 8, marginTop: 8 }}>
                       <input
                         className="ax-input"
@@ -773,7 +783,8 @@ export default function EditPricingPage() {
               Which cadences this service offers, and the % off the configured total when a customer picks one — this is
               the discount mechanism. Manage the global cadence list under “Recurring cadences”.
             </p>
-            <table className="ax-table" style={{ marginTop: 8 }}>
+            <div className="ax-table-wrap" style={{ marginTop: 8 }}>
+            <table className="ax-table">
               <thead><tr><th>Cadence</th><th>Offered</th><th>Discount (%)</th></tr></thead>
               <tbody>
                 {rec.map((r, i) => (
@@ -800,6 +811,7 @@ export default function EditPricingPage() {
                 ))}
               </tbody>
             </table>
+            </div>
             <button className="ax-btn sm" style={{ marginTop: 10 }} onClick={saveRecurring} disabled={recurringInvalid}>
               Save recurring
             </button>
