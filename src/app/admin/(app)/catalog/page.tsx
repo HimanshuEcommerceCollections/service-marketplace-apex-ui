@@ -31,6 +31,11 @@ import {
 type PricingMode = "FROM" | "QUOTE";
 type InputType = "SELECT" | "MULTISELECT" | "QUANTITY" | "TOGGLE" | "TEXTAREA";
 type Status = "ACTIVE" | "INACTIVE";
+/**
+ * Photo-upload setting for /book's Configure step — UI sugar over the stored
+ * photosMin/photosMax: OFF = 0/0, OPTIONAL = 0/max, REQUIRED = min/max.
+ */
+type PhotoMode = "OFF" | "OPTIONAL" | "REQUIRED";
 
 /** Server ceiling on the per-service photo requirement (catalog.validation.ts). */
 const MAX_PHOTOS = 20;
@@ -111,6 +116,7 @@ export default function EditPricingPage() {
   const [mode, setMode] = useState<PricingMode>("FROM");
   const [basePrice, setBasePrice] = useState("");
   const [taxPct, setTaxPct] = useState("");
+  const [photoMode, setPhotoMode] = useState<PhotoMode>("OFF");
   const [photosMin, setPhotosMin] = useState("0");
   const [photosMax, setPhotosMax] = useState("0");
   const [duration, setDuration] = useState<DurationDraft>(EMPTY_DURATION);
@@ -144,6 +150,7 @@ export default function EditPricingPage() {
     setMode(v.pricingMode);
     setBasePrice(c2d(v.basePrice));
     setTaxPct((v.taxRateBps / 100).toFixed(2));
+    setPhotoMode(v.photosMin > 0 ? "REQUIRED" : v.photosMax > 0 ? "OPTIONAL" : "OFF");
     setPhotosMin(String(v.photosMin));
     setPhotosMax(String(v.photosMax));
     setDuration(toDurationDraft(v.typicalDuration));
@@ -169,6 +176,13 @@ export default function EditPricingPage() {
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to load service");
     }
+  }
+
+  /** Mode switch seeds sensible counts so a blank/zero field never blocks the save. */
+  function switchPhotoMode(m: PhotoMode) {
+    setPhotoMode(m);
+    if (m === "REQUIRED" && !(Number(photosMin) >= 1)) setPhotosMin("1");
+    if (m !== "OFF" && !(Number(photosMax) >= 1)) setPhotosMax("10");
   }
 
   /** Additive entity ops (add group/option) commit immediately and return the fresh view. */
@@ -197,17 +211,21 @@ export default function EditPricingPage() {
     const base = money(basePrice);
     const tax = percent(taxPct);
     const dur = fromDurationDraft(duration);
-    const pMin = wholeNumber(photosMin, 0, MAX_PHOTOS);
-    const pMax = wholeNumber(photosMax, 0, MAX_PHOTOS);
+    // Photo counts only matter for the modes that show them; hidden fields
+    // parse as 0 so a stale value can never block or leak into the save.
+    const pMin: Parsed<number> =
+      photoMode === "REQUIRED" ? wholeNumber(photosMin, 1, MAX_PHOTOS) : { ok: true, value: 0 };
+    const pMax: Parsed<number> =
+      photoMode === "OFF" ? { ok: true, value: 0 } : wholeNumber(photosMax, 1, MAX_PHOTOS);
     if (!base.ok || !tax.ok || !dur.ok || !pMin.ok || !pMax.ok) {
       setNotice(null);
       setErr(firstError(base, tax, dur, pMin, pMax) ?? "Please fix the highlighted fields.");
       return;
     }
     // A max below the min would demand more photos than the uploader accepts.
-    if (pMax.value > 0 && pMax.value < pMin.value) {
+    if (photoMode === "REQUIRED" && pMax.value < pMin.value) {
       setNotice(null);
-      setErr("Max photos must be at least the minimum (or 0 for no limit).");
+      setErr("Max photos must be at least the required minimum.");
       return;
     }
     const options: { id: string; priceDelta: number }[] = [];
@@ -242,8 +260,15 @@ export default function EditPricingPage() {
           Save the pricing for <b>{view.name}</b>? Mode <b>{mode}</b>, base price{" "}
           <b>${c2d(base.value)}</b>
           {base.value !== view.basePrice && <> (was ${c2d(view.basePrice)})</>}, tax{" "}
-          <b>{(tax.value / 100).toFixed(2)}%</b>, plus {options.length} option delta(s). This goes live on the site
-          within ~5 minutes.
+          <b>{(tax.value / 100).toFixed(2)}%</b>, photo uploads{" "}
+          <b>
+            {photoMode === "OFF"
+              ? "off"
+              : photoMode === "REQUIRED"
+                ? `required (${pMin.value}–${pMax.value})`
+                : `optional (up to ${pMax.value})`}
+          </b>
+          , plus {options.length} option delta(s). This goes live on the site within ~5 minutes.
         </>
       ),
       confirmLabel: "Save pricing",
@@ -389,8 +414,10 @@ export default function EditPricingPage() {
   const baseR = money(basePrice);
   const taxR = percent(taxPct);
   const durR = fromDurationDraft(duration);
-  const pMinR = wholeNumber(photosMin, 0, MAX_PHOTOS);
-  const pMaxR = wholeNumber(photosMax, 0, MAX_PHOTOS);
+  const pMinR: Parsed<number> =
+    photoMode === "REQUIRED" ? wholeNumber(photosMin, 1, MAX_PHOTOS) : { ok: true, value: 0 };
+  const pMaxR: Parsed<number> =
+    photoMode === "OFF" ? { ok: true, value: 0 } : wholeNumber(photosMax, 1, MAX_PHOTOS);
   const deltaR: Record<string, Parsed<number>> = Object.fromEntries(
     (view?.groups ?? []).flatMap((g) => g.options.map((o) => [o.id, optionalMoney(optDeltas[o.id] ?? "")])),
   );
@@ -400,7 +427,7 @@ export default function EditPricingPage() {
     !durR.ok ||
     !pMinR.ok ||
     !pMaxR.ok ||
-    (pMaxR.ok && pMinR.ok && pMaxR.value > 0 && pMaxR.value < pMinR.value) ||
+    (photoMode === "REQUIRED" && pMaxR.ok && pMinR.ok && pMaxR.value < pMinR.value) ||
     Object.values(deltaR).some((r) => !r.ok);
 
   const discountR: Record<string, Parsed<number>> = Object.fromEntries(
@@ -465,36 +492,72 @@ export default function EditPricingPage() {
                 />
                 <Err of={taxR} />
               </div>
-              {/* Photo step on /book. Mostly for QUOTE work a coordinator can't
-                  price sight-unseen; min 0 = optional, max 0 = no uploader. */}
-              <div className="ax-field" style={{ width: 130 }}>
-                <label htmlFor="photos-min">Min photos</label>
-                <input
-                  id="photos-min"
-                  className={bad(pMinR)}
-                  inputMode="numeric"
-                  aria-invalid={!pMinR.ok}
-                  value={photosMin}
-                  onChange={(e) => setPhotosMin(e.target.value)}
-                />
-                <Err of={pMinR} />
-              </div>
-              <div className="ax-field" style={{ width: 130 }}>
-                <label htmlFor="photos-max">Max photos</label>
-                <input
-                  id="photos-max"
-                  className={bad(pMaxR)}
-                  inputMode="numeric"
-                  aria-invalid={!pMaxR.ok}
-                  value={photosMax}
-                  onChange={(e) => setPhotosMax(e.target.value)}
-                />
-                <Err of={pMaxR} />
-              </div>
             </div>
-            <p className="ax-muted" style={{ marginTop: 6 }}>
-              Photos: max 0 hides the uploader entirely; min above 0 makes photos required to submit a booking.
-            </p>
+
+            {/* Photo uploads on /book's Configure step — works for every service,
+                not only QUOTE. Useful anywhere a coordinator or crew benefits from
+                seeing the job before arrival. */}
+            <div className="ax-field" style={{ marginTop: 4 }}>
+              <label>Photo uploads (Configure step on /book)</label>
+              <div className="ax-row" style={{ gap: 8 }}>
+                {(
+                  [
+                    ["OFF", "Off"],
+                    ["OPTIONAL", "Optional"],
+                    ["REQUIRED", "Required"],
+                  ] as const
+                ).map(([m, text]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`ax-btn sm${photoMode === m ? "" : " ghost"}`}
+                    aria-pressed={photoMode === m}
+                    onClick={() => switchPhotoMode(m)}
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+              {photoMode !== "OFF" && (
+                <div className="ax-row" style={{ gap: 8, marginTop: 8 }}>
+                  {photoMode === "REQUIRED" && (
+                    <>
+                      <span className="ax-hint">at least</span>
+                      <input
+                        id="photos-min"
+                        className={bad(pMinR)}
+                        style={{ width: 80 }}
+                        inputMode="numeric"
+                        aria-invalid={!pMinR.ok}
+                        value={photosMin}
+                        onChange={(e) => setPhotosMin(e.target.value)}
+                      />
+                    </>
+                  )}
+                  <span className="ax-hint">up to</span>
+                  <input
+                    id="photos-max"
+                    className={bad(pMaxR)}
+                    style={{ width: 80 }}
+                    inputMode="numeric"
+                    aria-invalid={!pMaxR.ok}
+                    value={photosMax}
+                    onChange={(e) => setPhotosMax(e.target.value)}
+                  />
+                  <span className="ax-hint">photos (limit {MAX_PHOTOS})</span>
+                </div>
+              )}
+              <Err of={pMinR} />
+              <Err of={pMaxR} />
+              <p className="ax-muted" style={{ marginTop: 6 }}>
+                {photoMode === "OFF" &&
+                  "No photo step on the booking wizard for this service."}
+                {photoMode === "OPTIONAL" &&
+                  "Customers may add photos while configuring, but can submit without any."}
+                {photoMode === "REQUIRED" &&
+                  "Customers must attach at least the minimum before they can submit — use this where pricing sight-unseen isn't possible."}
+              </p>
+            </div>
 
             {/* Typical duration — composed, so the site's labels stay consistent. */}
             <div className="ax-field" style={{ marginTop: 4 }}>
