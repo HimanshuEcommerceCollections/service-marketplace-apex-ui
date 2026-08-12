@@ -22,6 +22,7 @@ export function Modal({
   children,
   footer,
   width = 560,
+  center = false,
 }: {
   title: string;
   /** Called on Esc, overlay click, or the × button. Pass a no-op to hold the modal open (e.g. while busy). */
@@ -29,6 +30,11 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
   width?: number;
+  /**
+   * Stay a centered card on small screens instead of becoming a bottom sheet —
+   * for short dialogs (confirms) where a full-width sheet is overkill.
+   */
+  center?: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +92,7 @@ export function Modal({
       role="presentation"
     >
       <div
-        className="ax-modal"
+        className={`ax-modal${center ? " center" : ""}`}
         style={{ maxWidth: width }}
         role="dialog"
         aria-modal="true"
@@ -156,6 +162,7 @@ export function ConfirmModal({ req, onClose }: { req: ConfirmRequest | null; onC
       title={req.title}
       onClose={close}
       width={460}
+      center
       footer={
         <>
           <button
@@ -267,9 +274,19 @@ export function Lightbox({
         </button>
       )}
       <div className="ax-lightbox-bar">
+        {photos.length > 1 && (
+          <button type="button" className="ax-lightbox-barnav" aria-label="Previous photo" onClick={prev}>
+            ‹
+          </button>
+        )}
         <span>
           {index + 1} / {photos.length}
         </span>
+        {photos.length > 1 && (
+          <button type="button" className="ax-lightbox-barnav" aria-label="Next photo" onClick={next}>
+            ›
+          </button>
+        )}
         <a href={photo.url} target="_blank" rel="noreferrer noopener">
           Open original ↗
         </a>

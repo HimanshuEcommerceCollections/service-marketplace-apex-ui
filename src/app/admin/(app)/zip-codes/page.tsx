@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 interface AreaOption {
   id: string;
@@ -22,7 +23,8 @@ interface ZipView {
 
 export default function ZipCodesPage() {
   const [areas, setAreas] = useState<AreaOption[]>([]);
-  const [rows, setRows] = useState<ZipView[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<ZipView[] | null>(null);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [areaId, setAreaId] = useState("");
   const [search, setSearch] = useState("");
@@ -175,24 +177,26 @@ export default function ZipCodesPage() {
         <input className="ax-input" style={{ maxWidth: 220 }} placeholder="Search ZIP or city…" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
       </div>
 
+      <div className="ax-table-wrap">
       <table className="ax-table">
         <thead>
           <tr>
             <th>ZIP</th>
             <th>Area</th>
-            <th>City</th>
-            <th>State</th>
+            <th className="ax-hide-md">City</th>
+            <th className="ax-hide-md">State</th>
             <th>Status</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((z) => (
+          {rows === null && !err && <TableSkeleton cols={6} />}
+          {(rows ?? []).map((z) => (
             <tr key={z.id}>
               <td>{z.zipCode}</td>
               <td className="ax-muted">{z.area?.name ?? "—"}</td>
-              <td>{z.city ?? "—"}</td>
-              <td>{z.state ?? "—"}</td>
+              <td className="ax-hide-md">{z.city ?? "—"}</td>
+              <td className="ax-hide-md">{z.state ?? "—"}</td>
               <td>
                 <span className={`ax-badge ${z.status === "ACTIVE" ? "ok" : "muted"}`}>{z.status}</span>
               </td>
@@ -206,11 +210,12 @@ export default function ZipCodesPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && (
+          {rows !== null && rows.length === 0 && (
             <tr><td colSpan={6} className="ax-muted">No ZIP codes found.</td></tr>
           )}
         </tbody>
       </table>
+      </div>
 
       <Pager meta={meta} page={page} setPage={setPage} />
 

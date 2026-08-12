@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError } from "../../lib/api";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { CardSkeleton } from "../../components/skeleton";
 
 interface ServiceOption { id: string; name: string; slug: string }
 interface AreaOption { id: string; name: string }
@@ -160,7 +161,10 @@ export default function CoveragePage() {
       </div>
 
       {serviceSlug && loadedSlug !== serviceSlug && !err && (
-        <p className="ax-muted" style={{ margin: "6px 0 16px" }}>Loading coverage…</p>
+        <>
+          <CardSkeleton lines={2} />
+          <CardSkeleton lines={2} />
+        </>
       )}
 
       {serviceSlug && loadedSlug === serviceSlug && (
@@ -195,9 +199,10 @@ export default function CoveragePage() {
                     ) : zips.length === 0 ? (
                       <p className="ax-muted">No active ZIPs in this area.</p>
                     ) : (
+                      <div className="ax-table-wrap">
                       <table className="ax-table">
                         <thead>
-                          <tr><th>ZIP</th><th>City</th><th>Coverage</th></tr>
+                          <tr><th>ZIP</th><th className="ax-hide-md">City</th><th>Coverage</th></tr>
                         </thead>
                         <tbody>
                           {zips.map((z) => {
@@ -205,9 +210,9 @@ export default function CoveragePage() {
                             return (
                               <tr key={z.id}>
                                 <td>{z.zipCode}</td>
-                                <td className="ax-muted">{z.city ?? "—"}</td>
+                                <td className="ax-muted ax-hide-md">{z.city ?? "—"}</td>
                                 <td>
-                                  <select className="ax-select" style={{ maxWidth: 200 }} value={choice} onChange={(e) => setZipChoice(z.id, e.target.value as ZipChoice)}>
+                                  <select className="ax-select" style={{ maxWidth: 200, minWidth: 150 }} value={choice} onChange={(e) => setZipChoice(z.id, e.target.value as ZipChoice)}>
                                     <option value="DEFAULT">Default ({isGranted ? "covered" : "not covered"})</option>
                                     <option value="INCLUDE">Include</option>
                                     <option value="EXCLUDE">Exclude</option>
@@ -218,6 +223,7 @@ export default function CoveragePage() {
                           })}
                         </tbody>
                       </table>
+                      </div>
                     )}
                   </div>
                 )}

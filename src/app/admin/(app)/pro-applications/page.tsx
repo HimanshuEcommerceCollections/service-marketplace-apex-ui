@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
 import { ConfirmModal, Modal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 interface ProApplication {
   id: string;
@@ -53,7 +54,8 @@ const badge = (s: string) => (s === "CONTACTED" ? "ok" : s === "RECEIVED" ? "war
 const when = (iso: string) => new Date(iso).toLocaleDateString();
 
 export default function ProApplicationsPage() {
-  const [rows, setRows] = useState<ProApplication[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [rows, setRows] = useState<ProApplication[] | null>(null);
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [status, setStatus] = useState("");
   const [trade, setTrade] = useState("");
@@ -81,7 +83,7 @@ export default function ProApplicationsPage() {
       // Keep any note the user has already typed for a still-present row so a
       // reload triggered by one row's save doesn't wipe unsaved edits elsewhere.
       setNotes((prev) =>
-        Object.fromEntries(data.map((r) => [r.id, r.id in prev ? prev[r.id] : r.notes ?? ""])),
+        Object.fromEntries(data.map((r: ProApplication) => [r.id, r.id in prev ? prev[r.id] : r.notes ?? ""])),
       );
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Failed to load applications");
@@ -132,7 +134,7 @@ export default function ProApplicationsPage() {
     setQuery(search.trim());
   }
 
-  const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
+  const detail = detailId ? (rows ?? []).find((r) => r.id === detailId) ?? null : null;
 
   return (
     <>
@@ -199,19 +201,21 @@ export default function ProApplicationsPage() {
         )}
       </form>
 
+      <div className="ax-table-wrap">
       <table className="ax-table">
         <thead>
           <tr>
             <th>Applicant</th>
             <th>ZIP</th>
-            <th>Trades</th>
-            <th>Applied</th>
+            <th className="ax-hide-md">Trades</th>
+            <th className="ax-hide-md">Applied</th>
             <th>Status</th>
             <th />
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {rows === null && !err && <TableSkeleton cols={6} />}
+          {(rows ?? []).map((r) => (
             <tr key={r.id}>
               <td>
                 <b>{r.name}</b>
@@ -219,7 +223,7 @@ export default function ProApplicationsPage() {
                 <span className="ax-muted">{r.email}</span>
               </td>
               <td className="ax-muted">{r.zip}</td>
-              <td style={{ maxWidth: 240 }}>
+              <td style={{ maxWidth: 240 }} className="ax-hide-md">
                 <div className="ax-row" style={{ gap: 4, flexWrap: "wrap" }}>
                   {r.trades.map((t) => (
                     <span className="ax-badge muted" key={t}>
@@ -228,7 +232,7 @@ export default function ProApplicationsPage() {
                   ))}
                 </div>
               </td>
-              <td className="ax-muted">{when(r.createdAt)}</td>
+              <td className="ax-muted ax-hide-md">{when(r.createdAt)}</td>
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
                   <span className={`ax-badge ${badge(r.status)}`}>{r.status}</span>
@@ -253,7 +257,7 @@ export default function ProApplicationsPage() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && (
+          {rows !== null && rows.length === 0 && (
             <tr>
               <td colSpan={6} className="ax-muted">
                 No pro applications found.
@@ -262,6 +266,7 @@ export default function ProApplicationsPage() {
           )}
         </tbody>
       </table>
+      </div>
 
       <Pager meta={meta} page={page} setPage={setPage} />
 

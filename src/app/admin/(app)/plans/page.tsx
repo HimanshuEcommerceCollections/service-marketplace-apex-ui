@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 type PriceType = "PER_VISIT" | "PER_MONTH" | "FLAT";
 type Status = "ACTIVE" | "INACTIVE";
@@ -36,7 +37,8 @@ const PRICE_TYPES: { v: PriceType; label: string }[] = [
 const c2d = (c: number) => (c / 100).toFixed(2);
 
 export default function PlansPage() {
-  const [plans, setPlans] = useState<Plan[]>([]);
+  // null = first load in flight (skeleton); [] = genuinely empty.
+  const [plans, setPlans] = useState<Plan[] | null>(null);
   const [services, setServices] = useState<ServiceOption[]>([]);
   const [cadences, setCadences] = useState<Cadence[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -242,23 +244,25 @@ export default function PlansPage() {
         </div>
       </div>
 
-      <table className="ax-table" style={{ marginTop: 16 }}>
+      <div className="ax-table-wrap" style={{ marginTop: 16 }}>
+      <table className="ax-table">
         <thead>
-          <tr><th>Plan</th><th>Service</th><th>Cadence</th><th>Price</th><th>Bullets</th><th>Status</th><th></th></tr>
+          <tr><th>Plan</th><th>Service</th><th className="ax-hide-md">Cadence</th><th>Price</th><th className="ax-hide-md">Bullets</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>
-          {plans.map((p) => (
+          {plans === null && !err && <TableSkeleton cols={7} />}
+          {(plans ?? []).map((p) => (
             <tr key={p.id} style={p.status === "INACTIVE" ? { opacity: 0.55 } : undefined}>
               <td>
                 {p.name} {p.featured && <span className="ax-badge ok">most popular</span>}
               </td>
               <td className="ax-muted">{p.serviceName}</td>
-              <td className="ax-muted">{p.cadenceLabel}</td>
+              <td className="ax-muted ax-hide-md">{p.cadenceLabel}</td>
               <td>
                 ${c2d(p.price)}{" "}
                 <span className="ax-muted">{PRICE_TYPES.find((t) => t.v === p.priceType)?.label}</span>
               </td>
-              <td style={{ maxWidth: 280 }}>
+              <td style={{ maxWidth: 280 }} className="ax-hide-md">
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.7 }} className="ax-muted">
                   {p.bullets.map((b, i) => (
                     <li key={i}>{b}</li>
@@ -293,9 +297,10 @@ export default function PlansPage() {
               </td>
             </tr>
           ))}
-          {plans.length === 0 && <tr><td colSpan={7} className="ax-muted">No plans yet — create the first one above.</td></tr>}
+          {plans !== null && plans.length === 0 && <tr><td colSpan={7} className="ax-muted">No plans yet — create the first one above.</td></tr>}
         </tbody>
       </table>
+      </div>
 
       <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>

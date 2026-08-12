@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
 import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
+import { TableSkeleton } from "../../components/skeleton";
 
 type StaffRole = "COORDINATOR" | "ADMIN";
 type StaffStatus = "INVITED" | "ACTIVE" | "SUSPENDED";
@@ -159,25 +160,24 @@ export default function StaffPage() {
         </form>
       </div>
 
-      {staff === null ? (
-        <p className="ax-muted">Loading staff…</p>
-      ) : (
+      <div className="ax-table-wrap">
         <table className="ax-table">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
+              <th className="ax-hide-md">Email</th>
+              <th className="ax-hide-md">Role</th>
               <th>Status</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {staff.map((u) => (
+            {staff === null && <TableSkeleton cols={5} />}
+            {(staff ?? []).map((u) => (
               <tr key={u.id}>
                 <td>{u.name}</td>
-                <td className="ax-muted">{u.email}</td>
-                <td>
+                <td className="ax-muted ax-hide-md">{u.email}</td>
+                <td className="ax-hide-md">
                   <span className="ax-badge muted">{u.role}</span>
                 </td>
                 <td>
@@ -204,7 +204,7 @@ export default function StaffPage() {
             ))}
           </tbody>
         </table>
-      )}
+      </div>
 
       <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>

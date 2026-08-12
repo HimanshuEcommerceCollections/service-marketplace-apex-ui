@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
+import { TableSkeleton } from "../../components/skeleton";
 
 type Mode = "FROM" | "QUOTE";
 
@@ -122,29 +123,29 @@ export default function ServicesPage() {
   return (
     <>
       {err && <div className="ax-alert err">{err}</div>}
-      {services === null ? (
-        <p className="ax-muted">Loading catalog…</p>
-      ) : services.length === 0 ? (
+      {services !== null && services.length === 0 ? (
         <div className="ax-card">
           <h3>No services yet</h3>
           <p>The catalog is empty — run <code>npm run prisma:seed</code> in the server to load the 11 services.</p>
         </div>
       ) : (
+        <div className="ax-table-wrap">
         <table className="ax-table">
           <thead>
             <tr>
               <th>Service</th>
-              <th>Slug</th>
+              <th className="ax-hide-md">Slug</th>
               <th>Mode</th>
               <th>From / base</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {services.map((s) => (
+            {services === null && !err && <TableSkeleton cols={5} />}
+            {(services ?? []).map((s) => (
               <tr key={s.id}>
                 <td>{s.name}</td>
-                <td className="ax-muted">{s.slug}</td>
+                <td className="ax-muted ax-hide-md">{s.slug}</td>
                 <td>
                   <span className={`ax-badge ${s.pricingMode === "QUOTE" ? "muted" : "ok"}`}>
                     {s.pricingMode === "QUOTE" ? "QUOTE — coordinator priced" : "FROM — pay at booking"}
@@ -160,6 +161,7 @@ export default function ServicesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {selected && (
