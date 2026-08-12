@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, Lightbox, Modal, thumbUrl, type ConfirmRequest } from "../../components/modal";
 
 interface Quote {
   id: string;
@@ -23,17 +24,7 @@ interface Quote {
 }
 
 const STATUSES = ["NEW", "REVIEWING", "SENT", "WON", "LOST"];
-
-/**
- * Cloudinary renders a thumbnail from the delivery URL, so the grid never pulls
- * full-size originals. A non-Cloudinary URL (another provider) is returned
- * unchanged and simply loads at its natural size.
- */
-function thumb(url: string): string {
-  return url.includes("/image/upload/")
-    ? url.replace("/image/upload/", "/image/upload/c_fill,w_120,h_120,q_auto,f_auto/")
-    : url;
-}
+const badge = (s: string) => (s === "LOST" ? "danger" : s === "WON" ? "ok" : s === "NEW" ? "warn" : "muted");
 
 export default function QuotesPage() {
   const [rows, setRows] = useState<Quote[]>([]);
@@ -43,6 +34,11 @@ export default function QuotesPage() {
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  /** Id of the quote open in the detail modal (row data stays fresh across reloads). */
+  const [detailId, setDetailId] = useState<string | null>(null);
+  /** Index into the open quote's photos, when the lightbox is up. */
+  const [photoIdx, setPhotoIdx] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: "20" });
@@ -72,26 +68,53 @@ export default function QuotesPage() {
     void load();
   }, [load]);
 
+  /** Throws on failure — the ConfirmModal shows the error and stays open. */
   async function patch(id: string, body: Record<string, unknown>, msg: string) {
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/quotes/${id}`, { method: "PATCH", body });
-      setNotice(msg);
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+    await api(`/admin/quotes/${id}`, { method: "PATCH", body });
+    setNotice(msg);
+    await load();
   }
 
-  function savePrice(id: string) {
-    const dollars = Number(amounts[id]);
+  function askPrice(q: Quote) {
+    const dollars = Number(amounts[q.id]);
     if (!Number.isFinite(dollars) || dollars <= 0) {
       setErr("Enter a positive amount.");
       return;
     }
-    void patch(id, { quotedAmount: Math.round(dollars * 100) }, "Quote price set.");
+    setErr(null);
+    setConfirm({
+      title: "Set quote price",
+      body: (
+        <>
+          Set the quote for <b>{q.contactEmail}</b> ({q.service?.name ?? "no service"}) to{" "}
+          <b>${dollars.toFixed(2)}</b>?
+          {q.quotedAmount != null && (
+            <> Currently <b>${(q.quotedAmount / 100).toFixed(2)}</b>.</>
+          )}{" "}
+          This is the amount the customer can pay.
+        </>
+      ),
+      confirmLabel: `Set $${dollars.toFixed(2)}`,
+      action: () => patch(q.id, { quotedAmount: Math.round(dollars * 100) }, "Quote price set."),
+    });
   }
+
+  function askStatus(q: Quote, next: string) {
+    setConfirm({
+      title: "Change quote status",
+      body: (
+        <>
+          Change the quote for <b>{q.contactEmail}</b> ({q.service?.name ?? "no service"}) from <b>{q.status}</b> to{" "}
+          <b>{next}</b>?
+        </>
+      ),
+      confirmLabel: `Set ${next}`,
+      danger: next === "LOST",
+      action: () => patch(q.id, { status: next }, "Status updated."),
+    });
+  }
+
+  const detail = detailId ? rows.find((q) => q.id === detailId) ?? null : null;
 
   return (
     <>
@@ -111,86 +134,143 @@ export default function QuotesPage() {
         <thead>
           <tr>
             <th>Service</th>
-            <th>Booking</th>
             <th>Contact</th>
-            <th>Description</th>
+            <th>Received</th>
             <th>Photos</th>
-            <th>Indicative</th>
-            <th>Quoted price</th>
+            <th>Quoted</th>
             <th>Status</th>
+            <th />
           </tr>
         </thead>
         <tbody>
           {rows.map((q) => (
             <tr key={q.id}>
               <td>{q.service?.name ?? "—"}</td>
-              <td className="ax-muted">{q.booking?.reference ?? q.source}</td>
               <td className="ax-muted">{q.contactEmail}</td>
-              <td style={{ maxWidth: 260 }}>{q.description.length > 80 ? q.description.slice(0, 80) + "…" : q.description}</td>
-              <td>
-                {q.photos.length === 0 ? (
-                  <span className="ax-muted">—</span>
-                ) : (
-                  <span style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 140 }}>
-                    {q.photos.map((p) => (
-                      // Opens the full-size original; the grid only loads thumbnails.
-                      <a key={p.id} href={p.url} target="_blank" rel="noreferrer noopener" title="Open full size">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={thumb(p.url)}
-                          alt="Customer photo of the job"
-                          width={40}
-                          height={40}
-                          style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4, display: "block" }}
-                        />
-                      </a>
-                    ))}
-                  </span>
-                )}
-              </td>
-              <td>
-                {q.indicativeAmount != null ? (
-                  // The engine total for the customer's configuration — a starting
-                  // point, not a price. "Use" copies it into the quote input.
-                  <button
-                    type="button"
-                    className="ax-btn ghost sm"
-                    title="Copy the configured-total into the quoted price"
-                    onClick={() => setAmounts((a) => ({ ...a, [q.id]: (q.indicativeAmount! / 100).toFixed(2) }))}
-                  >
-                    ~${(q.indicativeAmount / 100).toFixed(2)} · use
-                  </button>
-                ) : (
-                  <span className="ax-muted">—</span>
-                )}
-              </td>
+              <td className="ax-muted">{new Date(q.createdAt).toLocaleDateString()}</td>
+              <td className="ax-muted">{q.photos.length === 0 ? "—" : `${q.photos.length} photo${q.photos.length > 1 ? "s" : ""}`}</td>
+              <td>{q.quotedAmount != null ? `$${(q.quotedAmount / 100).toFixed(2)}` : <span className="ax-muted">not set</span>}</td>
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
-                  <span className="ax-muted">$</span>
-                  <input
-                    className="ax-input"
-                    style={{ width: 90 }}
-                    value={amounts[q.id] ?? ""}
-                    onChange={(e) => setAmounts((a) => ({ ...a, [q.id]: e.target.value }))}
-                    placeholder="0.00"
-                  />
-                  <button className="ax-btn sm" onClick={() => savePrice(q.id)}>Set</button>
+                  <span className={`ax-badge ${badge(q.status)}`}>{q.status}</span>
+                  <select className="ax-select" style={{ maxWidth: 120 }} value={q.status} onChange={(e) => askStatus(q, e.target.value)}>
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
               </td>
               <td>
-                <select className="ax-select" style={{ maxWidth: 130 }} value={q.status} onChange={(e) => void patch(q.id, { status: e.target.value }, "Status updated.")}>
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <button className="ax-btn ghost sm" onClick={() => { setErr(null); setNotice(null); setPhotoIdx(null); setDetailId(q.id); }}>Details</button>
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={8} className="ax-muted">No quote requests found.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={7} className="ax-muted">No quote requests found.</td></tr>}
         </tbody>
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      {detail && (
+        <Modal title={`Quote — ${detail.service?.name ?? "no service"}`} onClose={() => setDetailId(null)} width={640}>
+          {/* The page-level alerts sit behind the overlay — mirror them here so
+              feedback for in-modal actions (price validation, saves) stays visible. */}
+          {err && <div className="ax-alert err">{err}</div>}
+          {notice && <div className="ax-alert ok">{notice}</div>}
+          <dl className="ax-kv">
+            <dt>Status</dt>
+            <dd><span className={`ax-badge ${badge(detail.status)}`}>{detail.status}</span></dd>
+            <dt>Contact</dt>
+            <dd>
+              {detail.contactName}
+              <br />
+              <span className="ax-muted">{detail.contactEmail}</span>
+            </dd>
+            <dt>Booking</dt>
+            <dd>{detail.booking?.reference ?? <span className="ax-muted">{detail.source}</span>}</dd>
+            <dt>Received</dt>
+            <dd>{new Date(detail.createdAt).toLocaleString()}</dd>
+            <dt>Indicative</dt>
+            <dd>
+              {detail.indicativeAmount != null ? (
+                <>~${(detail.indicativeAmount / 100).toFixed(2)} <span className="ax-muted">— engine total for the customer&apos;s configuration, never binding</span></>
+              ) : (
+                "—"
+              )}
+            </dd>
+          </dl>
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Description</div>
+          <p style={{ whiteSpace: "pre-wrap", fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>
+            {detail.description || <span className="ax-muted">No description provided.</span>}
+          </p>
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>
+            Photos {detail.photos.length > 0 && <span className="ax-muted">({detail.photos.length})</span>}
+          </div>
+          {detail.photos.length === 0 ? (
+            <p className="ax-muted" style={{ margin: 0 }}>No photos uploaded.</p>
+          ) : (
+            <div className="ax-row" style={{ gap: 8, flexWrap: "wrap" }}>
+              {detail.photos.map((p, i) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPhotoIdx(i)}
+                  style={{ border: "none", background: "none", padding: 0, cursor: "zoom-in" }}
+                  aria-label={`View photo ${i + 1} full size`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="ax-thumb" src={thumbUrl(p.url, 144)} alt={`Customer photo ${i + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Quoted price</div>
+          <div className="ax-row" style={{ gap: 6 }}>
+            <span className="ax-muted">$</span>
+            <input
+              className="ax-input"
+              style={{ width: 110 }}
+              value={amounts[detail.id] ?? ""}
+              onChange={(e) => setAmounts((a) => ({ ...a, [detail.id]: e.target.value }))}
+              placeholder="0.00"
+            />
+            <button className="ax-btn sm" onClick={() => askPrice(detail)}>Set price</button>
+            {detail.indicativeAmount != null && (
+              <button
+                type="button"
+                className="ax-btn ghost sm"
+                title="Copy the configured-total into the quoted price"
+                onClick={() => setAmounts((a) => ({ ...a, [detail.id]: (detail.indicativeAmount! / 100).toFixed(2) }))}
+              >
+                Use indicative (~${(detail.indicativeAmount / 100).toFixed(2)})
+              </button>
+            )}
+          </div>
+
+          <div className="ax-row" style={{ marginTop: 16, gap: 8 }}>
+            <span className="ax-muted" style={{ fontSize: 13 }}>Status:</span>
+            <select className="ax-select" style={{ maxWidth: 150 }} value={detail.status} onChange={(e) => askStatus(detail, e.target.value)}>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </Modal>
+      )}
+
+      {detail && photoIdx != null && (
+        <Lightbox
+          photos={detail.photos}
+          index={photoIdx}
+          onClose={() => setPhotoIdx(null)}
+          onNavigate={setPhotoIdx}
+        />
+      )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 interface AreaView {
   id: string;
@@ -25,6 +26,7 @@ export default function AreasPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDuration, setEditDuration] = useState("");
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   // Incremented per load; a slower earlier request bails on resolve so it can't
   // overwrite the results of a newer one (per-keystroke search race).
   const loadRef = useRef(0);
@@ -58,6 +60,60 @@ export default function AreasPage() {
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Action failed");
     }
+  }
+
+  function askToggle(a: AreaView) {
+    const next = a.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    setConfirm({
+      title: `${next === "INACTIVE" ? "Deactivate" : "Activate"} ${a.name}`,
+      body: (
+        <>
+          Set area <b>{a.name}</b> to <b>{next}</b>?{" "}
+          {next === "INACTIVE"
+            ? "Its ZIPs stop being bookable through the area grant."
+            : "Its ZIPs become bookable again wherever this area is covered."}
+        </>
+      ),
+      confirmLabel: next === "INACTIVE" ? "Deactivate" : "Activate",
+      action: async () => {
+        await api(`/admin/areas/${a.id}`, { method: "PATCH", body: { status: next } });
+        await load();
+      },
+    });
+  }
+
+  function askDelete(a: AreaView) {
+    setConfirm({
+      title: `Delete ${a.name}`,
+      danger: true,
+      body: (
+        <>
+          Delete area <b>{a.name}</b>? Its ZIP codes and coverage stop applying immediately. Deleted areas can be
+          restored from this list with “Show deleted”.
+        </>
+      ),
+      confirmLabel: `Delete ${a.name}`,
+      action: async () => {
+        await api(`/admin/areas/${a.id}`, { method: "DELETE" });
+        await load();
+      },
+    });
+  }
+
+  function askRestore(a: AreaView) {
+    setConfirm({
+      title: `Restore ${a.name}`,
+      body: (
+        <>
+          Restore area <b>{a.name}</b>? It returns to the active list and its grants apply again.
+        </>
+      ),
+      confirmLabel: "Restore",
+      action: async () => {
+        await api(`/admin/areas/${a.id}/restore`, { method: "POST" });
+        await load();
+      },
+    });
   }
 
   return (
@@ -143,7 +199,7 @@ export default function AreasPage() {
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
                   {a.deletedAt ? (
-                    <button className="ax-btn ghost sm" onClick={() => void run(() => api(`/admin/areas/${a.id}/restore`, { method: "POST" }))}>Restore</button>
+                    <button className="ax-btn ghost sm" onClick={() => askRestore(a)}>Restore</button>
                   ) : editId === a.id ? (
                     <>
                       <button className="ax-btn sm" onClick={() => void run(async () => { await api(`/admin/areas/${a.id}`, { method: "PATCH", body: { name: editName.trim(), duration: editDuration.trim() } }); setEditId(null); })}>Save</button>
@@ -152,10 +208,10 @@ export default function AreasPage() {
                   ) : (
                     <>
                       <button className="ax-btn ghost sm" onClick={() => { setEditId(a.id); setEditName(a.name); setEditDuration(a.duration ?? ""); }}>Edit</button>
-                      <button className="ax-btn ghost sm" onClick={() => void run(() => api(`/admin/areas/${a.id}`, { method: "PATCH", body: { status: a.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" } }))}>
+                      <button className="ax-btn ghost sm" onClick={() => askToggle(a)}>
                         {a.status === "ACTIVE" ? "Deactivate" : "Activate"}
                       </button>
-                      <button className="ax-btn danger sm" onClick={() => void run(() => api(`/admin/areas/${a.id}`, { method: "DELETE" }))}>Delete</button>
+                      <button className="ax-btn danger sm" onClick={() => askDelete(a)}>Delete</button>
                     </>
                   )}
                 </div>
@@ -169,6 +225,8 @@ export default function AreasPage() {
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

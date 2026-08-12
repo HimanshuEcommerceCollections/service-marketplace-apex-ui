@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, Modal, type ConfirmRequest } from "../../components/modal";
 
 interface Booking {
   reference: string;
@@ -22,6 +23,7 @@ const TRANSITIONS = ["PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCEL
 const money = (c: number | null) => (c == null ? "—" : `$${(c / 100).toFixed(2)}`);
 const badge = (s: string) =>
   s === "CANCELLED" ? "danger" : s === "COMPLETED" || s === "PAID" ? "ok" : s === "PENDING" || s === "AWAITING_PAYMENT" ? "warn" : "muted";
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : "—");
 
 export default function BookingsPage() {
   const [rows, setRows] = useState<Booking[]>([]);
@@ -30,6 +32,9 @@ export default function BookingsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  /** Reference of the booking open in the detail modal (row data stays fresh across reloads). */
+  const [detailRef, setDetailRef] = useState<string | null>(null);
   // Incremented per load; a slower earlier request bails on resolve so it can't
   // overwrite the results of a newer one (per-keystroke search race).
   const loadRef = useRef(0);
@@ -55,15 +60,27 @@ export default function BookingsPage() {
     void load();
   }, [load]);
 
-  async function transition(reference: string, next: string) {
-    setErr(null);
-    try {
-      await api(`/admin/bookings/${reference}`, { method: "PATCH", body: { status: next } });
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+  /** Asks before writing; the ConfirmModal owns the busy/error state. */
+  function askTransition(b: Booking, next: string) {
+    setConfirm({
+      title: "Change booking status",
+      body: (
+        <>
+          Change <b>{b.reference}</b> ({b.service?.name ?? "no service"}, {b.customer?.email ?? b.contactEmail}) from{" "}
+          <b>{b.status}</b> to <b>{next}</b>?
+          {next === "CANCELLED" && <> The customer sees this booking as cancelled.</>}
+        </>
+      ),
+      confirmLabel: `Set ${next}`,
+      danger: next === "CANCELLED",
+      action: async () => {
+        await api(`/admin/bookings/${b.reference}`, { method: "PATCH", body: { status: next } });
+        await load();
+      },
+    });
   }
+
+  const detail = detailRef ? rows.find((b) => b.reference === detailRef) ?? null : null;
 
   return (
     <>
@@ -86,6 +103,7 @@ export default function BookingsPage() {
             <th>Price</th>
             <th>Status</th>
             <th>Set status</th>
+            <th />
           </tr>
         </thead>
         <tbody>
@@ -100,20 +118,70 @@ export default function BookingsPage() {
               <td>{b.quoteRequest ? "—" : money(b.priceTotal)}</td>
               <td><span className={`ax-badge ${badge(b.status)}`}>{b.status}</span></td>
               <td>
-                <select className="ax-select" style={{ maxWidth: 150 }} value={b.status} onChange={(e) => void transition(b.reference, e.target.value)}>
+                <select className="ax-select" style={{ maxWidth: 150 }} value={b.status} onChange={(e) => askTransition(b, e.target.value)}>
                   <option value={b.status} disabled>{b.status}</option>
                   {TRANSITIONS.filter((t) => t !== b.status).map((t) => (
                     <option key={t} value={t}>→ {t}</option>
                   ))}
                 </select>
               </td>
+              <td>
+                <button className="ax-btn ghost sm" onClick={() => setDetailRef(b.reference)}>Details</button>
+              </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={6} className="ax-muted">No bookings found.</td></tr>}
+          {rows.length === 0 && <tr><td colSpan={7} className="ax-muted">No bookings found.</td></tr>}
         </tbody>
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      {detail && (
+        <Modal title={`Booking ${detail.reference}`} onClose={() => setDetailRef(null)}>
+          <dl className="ax-kv">
+            <dt>Status</dt>
+            <dd><span className={`ax-badge ${badge(detail.status)}`}>{detail.status}</span></dd>
+            <dt>Type</dt>
+            <dd>{detail.quoteRequest ? "Quote request — priced by a coordinator" : "Standard booking"}</dd>
+            <dt>Service</dt>
+            <dd>{detail.service ? `${detail.service.name} (${detail.service.slug})` : "—"}</dd>
+            <dt>Customer</dt>
+            <dd>
+              {detail.customer ? (
+                <>
+                  {detail.customer.name}
+                  <br />
+                  <span className="ax-muted">{detail.customer.email}</span>
+                </>
+              ) : (
+                <>Guest — <span className="ax-muted">{detail.contactEmail}</span></>
+              )}
+            </dd>
+            <dt>Price</dt>
+            <dd>{detail.quoteRequest ? "Set on the Quotes page" : `${money(detail.priceTotal)} ${detail.currency}`}</dd>
+            <dt>Scheduled</dt>
+            <dd>{when(detail.scheduledAt)}</dd>
+            <dt>Created</dt>
+            <dd>{when(detail.createdAt)}</dd>
+          </dl>
+          <div className="ax-row" style={{ marginTop: 18, gap: 8 }}>
+            <span className="ax-muted" style={{ fontSize: 13 }}>Set status:</span>
+            <select
+              className="ax-select"
+              style={{ maxWidth: 170 }}
+              value={detail.status}
+              onChange={(e) => askTransition(detail, e.target.value)}
+            >
+              <option value={detail.status} disabled>{detail.status}</option>
+              {TRANSITIONS.filter((t) => t !== detail.status).map((t) => (
+                <option key={t} value={t}>→ {t}</option>
+              ))}
+            </select>
+          </div>
+        </Modal>
+      )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

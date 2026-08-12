@@ -4,13 +4,14 @@
 // /become-a-pro. Gated on `pro:manage`, which COORDINATOR and ADMIN both hold.
 //
 // Trades are stored as service slugs; this screen renders their catalog labels.
-// Acknowledgements are collected but NEVER verified (PRD) — the detail panel
+// Acknowledgements are collected but NEVER verified (PRD) — the detail modal
 // shows exactly what the applicant confirmed, and nothing more should be read
 // into it.
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, Modal, type ConfirmRequest } from "../../components/modal";
 
 interface ProApplication {
   id: string;
@@ -61,8 +62,11 @@ export default function ProApplicationsPage() {
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  /** Id of the application open in the detail modal (row data stays fresh across reloads). */
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: "20" });
@@ -88,15 +92,37 @@ export default function ProApplicationsPage() {
     void load();
   }, [load]);
 
+  /** Throws on failure — the ConfirmModal shows the error and stays open. */
   async function patch(id: string, body: Record<string, unknown>, msg: string) {
+    await api(`/admin/pro-applications/${id}`, { method: "PATCH", body });
+    setNotice(msg);
+    await load();
+  }
+
+  function askStatus(r: ProApplication, next: string) {
+    setConfirm({
+      title: "Change application status",
+      body: (
+        <>
+          Change <b>{r.name}</b>&apos;s application ({r.email}) from <b>{r.status}</b> to <b>{next}</b>?
+        </>
+      ),
+      confirmLabel: `Set ${next}`,
+      action: () => patch(r.id, { status: next }, "Status updated."),
+    });
+  }
+
+  /** Notes are additive and low-risk — saved directly, no confirmation step. */
+  async function saveNotes(id: string) {
     setErr(null);
     setNotice(null);
+    setSavingNotes(true);
     try {
-      await api(`/admin/pro-applications/${id}`, { method: "PATCH", body });
-      setNotice(msg);
-      await load();
+      await patch(id, { notes: notes[id] ?? "" }, "Notes saved.");
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
+      setErr(e instanceof ApiError ? e.message : "Could not save the notes");
+    } finally {
+      setSavingNotes(false);
     }
   }
 
@@ -105,6 +131,8 @@ export default function ProApplicationsPage() {
     setPage(1);
     setQuery(search.trim());
   }
+
+  const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
 
   return (
     <>
@@ -177,8 +205,6 @@ export default function ProApplicationsPage() {
             <th>Applicant</th>
             <th>ZIP</th>
             <th>Trades</th>
-            <th>Experience</th>
-            <th>Availability</th>
             <th>Applied</th>
             <th>Status</th>
             <th />
@@ -186,125 +212,50 @@ export default function ProApplicationsPage() {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <Fragment key={r.id}>
-              <tr>
-                <td>
-                  <b>{r.name}</b>
-                  <br />
-                  <span className="ax-muted">{r.email}</span>
-                  {r.company && (
-                    <>
-                      <br />
-                      <span className="ax-muted">{r.company}</span>
-                    </>
-                  )}
-                </td>
-                <td className="ax-muted">{r.zip}</td>
-                <td style={{ maxWidth: 220 }}>
-                  <div className="ax-row" style={{ gap: 4, flexWrap: "wrap" }}>
-                    {r.trades.map((t) => (
-                      <span className="ax-badge muted" key={t}>
-                        {tradeLabel(t)}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="ax-muted">{r.experience ?? "—"}</td>
-                <td className="ax-muted">{r.availability ?? "—"}</td>
-                <td className="ax-muted">{when(r.createdAt)}</td>
-                <td>
-                  <div className="ax-row" style={{ gap: 6 }}>
-                    <span className={`ax-badge ${badge(r.status)}`}>{r.status}</span>
-                    <select
-                      className="ax-select"
-                      style={{ maxWidth: 130 }}
-                      value={r.status}
-                      onChange={(e) => void patch(r.id, { status: e.target.value }, "Status updated.")}
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </td>
-                <td>
-                  <button
-                    className="ax-btn ghost sm"
-                    onClick={() => setOpen(open === r.id ? null : r.id)}
+            <tr key={r.id}>
+              <td>
+                <b>{r.name}</b>
+                <br />
+                <span className="ax-muted">{r.email}</span>
+              </td>
+              <td className="ax-muted">{r.zip}</td>
+              <td style={{ maxWidth: 240 }}>
+                <div className="ax-row" style={{ gap: 4, flexWrap: "wrap" }}>
+                  {r.trades.map((t) => (
+                    <span className="ax-badge muted" key={t}>
+                      {tradeLabel(t)}
+                    </span>
+                  ))}
+                </div>
+              </td>
+              <td className="ax-muted">{when(r.createdAt)}</td>
+              <td>
+                <div className="ax-row" style={{ gap: 6 }}>
+                  <span className={`ax-badge ${badge(r.status)}`}>{r.status}</span>
+                  <select
+                    className="ax-select"
+                    style={{ maxWidth: 130 }}
+                    value={r.status}
+                    onChange={(e) => askStatus(r, e.target.value)}
                   >
-                    {open === r.id ? "Hide" : "Details"}
-                  </button>
-                </td>
-              </tr>
-              {open === r.id && (
-                <tr>
-                  <td colSpan={8}>
-                    <div className="ax-card" style={{ margin: "6px 0" }}>
-                      <h3>Applicant detail</h3>
-                      <p className="ax-muted" style={{ fontSize: 12.5 }}>
-                        Phone: {r.phone ?? "—"} · Preferred start: {r.preferredStart ?? "—"}
-                        {r.promotedUserId && " · promoted to a professional account"}
-                      </p>
-
-                      {r.intro && (
-                        <>
-                          <div className="ax-section-title" style={{ margin: "16px 0 6px" }}>
-                            Introduction
-                          </div>
-                          <p style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>{r.intro}</p>
-                        </>
-                      )}
-
-                      <div className="ax-section-title" style={{ margin: "16px 0 6px" }}>
-                        Acknowledgements
-                      </div>
-                      <p className="ax-muted" style={{ fontSize: 12, margin: "0 0 8px" }}>
-                        Self-declared by the applicant. Apex does not verify licenses — confirm
-                        during onboarding.
-                      </p>
-                      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
-                        {Object.entries(r.acknowledgements).map(([key, vals]) => (
-                          <li key={key}>
-                            <b>{key === "general" ? "General consent" : tradeLabel(key)}</b>:{" "}
-                            {Object.entries(vals)
-                              .map(([k, v]) => `${k} = ${v ? "yes" : "no"}`)
-                              .join(", ")}
-                          </li>
-                        ))}
-                        {Object.keys(r.acknowledgements).length === 0 && (
-                          <li className="ax-muted">None recorded</li>
-                        )}
-                      </ul>
-
-                      <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>
-                        Coordinator notes
-                      </div>
-                      <div className="ax-row" style={{ gap: 8, alignItems: "flex-start" }}>
-                        <textarea
-                          className="ax-textarea"
-                          style={{ flex: 1, minHeight: 70 }}
-                          placeholder="Screening notes, onboarding follow-ups…"
-                          value={notes[r.id] ?? ""}
-                          onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                        />
-                        <button
-                          className="ax-btn sm"
-                          onClick={() => void patch(r.id, { notes: notes[r.id] ?? "" }, "Notes saved.")}
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </Fragment>
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </td>
+              <td>
+                <button className="ax-btn ghost sm" onClick={() => { setErr(null); setNotice(null); setDetailId(r.id); }}>
+                  Details
+                </button>
+              </td>
+            </tr>
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={8} className="ax-muted">
+              <td colSpan={6} className="ax-muted">
                 No pro applications found.
               </td>
             </tr>
@@ -313,6 +264,107 @@ export default function ProApplicationsPage() {
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      {detail && (
+        <Modal title={detail.name} onClose={() => setDetailId(null)} width={640}>
+          {/* The page-level alerts sit behind the overlay — mirror them here so
+              feedback for in-modal actions (notes save, status) stays visible. */}
+          {err && <div className="ax-alert err">{err}</div>}
+          {notice && <div className="ax-alert ok">{notice}</div>}
+          <dl className="ax-kv">
+            <dt>Status</dt>
+            <dd>
+              <span className={`ax-badge ${badge(detail.status)}`}>{detail.status}</span>
+              {detail.promotedUserId && (
+                <span className="ax-badge ok" style={{ marginLeft: 6 }}>promoted to pro</span>
+              )}
+            </dd>
+            <dt>Email</dt>
+            <dd>{detail.email}</dd>
+            <dt>Phone</dt>
+            <dd>{detail.phone ?? "—"}</dd>
+            <dt>Company</dt>
+            <dd>{detail.company ?? "—"}</dd>
+            <dt>ZIP</dt>
+            <dd>{detail.zip}</dd>
+            <dt>Trades</dt>
+            <dd>
+              <span className="ax-row" style={{ gap: 4, flexWrap: "wrap" }}>
+                {detail.trades.map((t) => (
+                  <span className="ax-badge muted" key={t}>
+                    {tradeLabel(t)}
+                  </span>
+                ))}
+              </span>
+            </dd>
+            <dt>Experience</dt>
+            <dd>{detail.experience ?? "—"}</dd>
+            <dt>Availability</dt>
+            <dd>{detail.availability ?? "—"}</dd>
+            <dt>Preferred start</dt>
+            <dd>{detail.preferredStart ?? "—"}</dd>
+            <dt>Applied</dt>
+            <dd>{new Date(detail.createdAt).toLocaleString()}</dd>
+          </dl>
+
+          {detail.intro && (
+            <>
+              <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Introduction</div>
+              <p style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{detail.intro}</p>
+            </>
+          )}
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Acknowledgements</div>
+          <p className="ax-muted" style={{ fontSize: 12, margin: "0 0 8px" }}>
+            Self-declared by the applicant. Apex does not verify licenses — confirm during onboarding.
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7 }}>
+            {Object.entries(detail.acknowledgements).map(([key, vals]) => (
+              <li key={key}>
+                <b>{key === "general" ? "General consent" : tradeLabel(key)}</b>:{" "}
+                {Object.entries(vals)
+                  .map(([k, v]) => `${k} = ${v ? "yes" : "no"}`)
+                  .join(", ")}
+              </li>
+            ))}
+            {Object.keys(detail.acknowledgements).length === 0 && (
+              <li className="ax-muted">None recorded</li>
+            )}
+          </ul>
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Coordinator notes</div>
+          <div className="ax-row" style={{ gap: 8, alignItems: "flex-start" }}>
+            <textarea
+              className="ax-textarea"
+              style={{ flex: 1, minHeight: 70 }}
+              placeholder="Screening notes, onboarding follow-ups…"
+              value={notes[detail.id] ?? ""}
+              onChange={(e) => setNotes((n) => ({ ...n, [detail.id]: e.target.value }))}
+            />
+            <button className="ax-btn sm" disabled={savingNotes} onClick={() => void saveNotes(detail.id)}>
+              {savingNotes ? "Saving…" : "Save"}
+            </button>
+          </div>
+
+          <div className="ax-row" style={{ marginTop: 16, gap: 8 }}>
+            <span className="ax-muted" style={{ fontSize: 13 }}>Status:</span>
+            <select
+              className="ax-select"
+              style={{ maxWidth: 150 }}
+              value={detail.status}
+              onChange={(e) => askStatus(detail, e.target.value)}
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </Modal>
+      )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

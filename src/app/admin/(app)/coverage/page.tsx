@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError } from "../../lib/api";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 interface ServiceOption { id: string; name: string; slug: string }
 interface AreaOption { id: string; name: string }
@@ -29,7 +30,7 @@ export default function CoveragePage() {
   const [openArea, setOpenArea] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   // Incremented per loadCoverage call so a slow response for a previously
   // selected service can't land on top of a newer selection.
   const loadRef = useRef(0);
@@ -113,27 +114,34 @@ export default function CoveragePage() {
     });
   }
 
-  async function save() {
+  function askSave() {
     // Never PUT unless the state in hand belongs to the service currently
     // selected (guards against saving stale/other-service coverage).
     if (!serviceSlug || loadedSlug !== serviceSlug) return;
-    setSaving(true);
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/coverage/${serviceSlug}`, {
-        method: "PUT",
-        body: {
-          areaIds: [...granted],
-          zipOverrides: Object.entries(overrides).map(([zipCodeId, effect]) => ({ zipCodeId, effect })),
-        },
-      });
-      setNotice("Coverage saved.");
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Save failed");
-    } finally {
-      setSaving(false);
-    }
+    const serviceName = services.find((s) => s.slug === serviceSlug)?.name ?? serviceSlug;
+    const includes = Object.values(overrides).filter((e) => e === "INCLUDE").length;
+    const excludes = Object.values(overrides).filter((e) => e === "EXCLUDE").length;
+    setConfirm({
+      title: `Save coverage — ${serviceName}`,
+      body: (
+        <>
+          Save the coverage for <b>{serviceName}</b>: <b>{granted.size}</b> whole area(s), <b>{includes}</b> ZIP
+          include(s), <b>{excludes}</b> ZIP exclude(s)? This replaces the previous coverage and changes which ZIPs can
+          book this service immediately.
+        </>
+      ),
+      confirmLabel: "Save coverage",
+      action: async () => {
+        await api(`/admin/coverage/${serviceSlug}`, {
+          method: "PUT",
+          body: {
+            areaIds: [...granted],
+            zipOverrides: Object.entries(overrides).map(([zipCodeId, effect]) => ({ zipCodeId, effect })),
+          },
+        });
+        setNotice("Coverage saved.");
+      },
+    });
   }
 
   return (
@@ -217,11 +225,13 @@ export default function CoveragePage() {
             );
           })}
 
-          <button className="ax-btn" onClick={() => void save()} disabled={saving} style={{ marginTop: 8 }}>
-            {saving ? "Saving…" : "Save coverage"}
+          <button className="ax-btn" onClick={askSave} style={{ marginTop: 8 }}>
+            Save coverage
           </button>
         </>
       )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

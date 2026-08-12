@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 type StaffRole = "COORDINATOR" | "ADMIN";
 type StaffStatus = "INVITED" | "ACTIVE" | "SUSPENDED";
@@ -26,6 +27,7 @@ export default function StaffPage() {
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   // invite form
   const [email, setEmail] = useState("");
@@ -68,16 +70,28 @@ export default function StaffPage() {
     }
   }
 
-  async function setStatus(id: string, status: "ACTIVE" | "SUSPENDED") {
-    setErr(null);
-    setNotice(null);
-    try {
-      await api<StaffUser>(`/admin/users/${id}`, { method: "PATCH", body: { status } });
-      setNotice(status === "SUSPENDED" ? "Account suspended — their sessions were signed out." : "Account reactivated.");
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+  function askSetStatus(u: StaffUser, status: "ACTIVE" | "SUSPENDED") {
+    const suspending = status === "SUSPENDED";
+    setConfirm({
+      title: suspending ? `Suspend ${u.name}` : `Reactivate ${u.name}`,
+      danger: suspending,
+      body: suspending ? (
+        <>
+          Suspend <b>{u.name}</b> ({u.email})? They are signed out everywhere immediately and can&apos;t sign back in
+          until reactivated.
+        </>
+      ) : (
+        <>
+          Reactivate <b>{u.name}</b> ({u.email})? They can sign in again with their existing password.
+        </>
+      ),
+      confirmLabel: suspending ? "Suspend" : "Reactivate",
+      action: async () => {
+        await api<StaffUser>(`/admin/users/${u.id}`, { method: "PATCH", body: { status } });
+        setNotice(suspending ? "Account suspended — their sessions were signed out." : "Account reactivated.");
+        await load();
+      },
+    });
   }
 
   /**
@@ -85,22 +99,28 @@ export default function StaffPage() {
    * it) but can no longer sign in, hold a session, or redeem an outstanding
    * invite link, and it drops off this list.
    */
-  async function remove(u: StaffUser) {
+  function askRemove(u: StaffUser) {
     const pending = u.status === "INVITED";
-    const question = pending
-      ? `Revoke the invite for ${u.email}? Their invite link stops working immediately.`
-      : `Delete ${u.name} (${u.email})? They are signed out everywhere and can no longer sign in. Their booking and assignment history is kept.`;
-    if (!window.confirm(question)) return;
-
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/users/${u.id}`, { method: "DELETE" });
-      setNotice(pending ? `Invite for ${u.email} revoked.` : `${u.email} deleted.`);
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : pending ? "Could not revoke the invite" : "Could not delete the account");
-    }
+    setConfirm({
+      title: pending ? `Revoke invite — ${u.email}` : `Delete ${u.name}`,
+      danger: true,
+      body: pending ? (
+        <>
+          Revoke the invite for <b>{u.email}</b>? Their invite link stops working immediately.
+        </>
+      ) : (
+        <>
+          Delete <b>{u.name}</b> ({u.email})? They are signed out everywhere and can no longer sign in. Their booking
+          and assignment history is kept.
+        </>
+      ),
+      confirmLabel: pending ? "Revoke invite" : `Delete ${u.name}`,
+      action: async () => {
+        await api(`/admin/users/${u.id}`, { method: "DELETE" });
+        setNotice(pending ? `Invite for ${u.email} revoked.` : `${u.email} deleted.`);
+        await load();
+      },
+    });
   }
 
   if (forbidden) {
@@ -166,16 +186,16 @@ export default function StaffPage() {
                 <td>
                   <div className="ax-row" style={{ gap: 8, justifyContent: "flex-end" }}>
                     {u.status === "SUSPENDED" && (
-                      <button className="ax-btn ghost sm" onClick={() => void setStatus(u.id, "ACTIVE")}>
+                      <button className="ax-btn ghost sm" onClick={() => askSetStatus(u, "ACTIVE")}>
                         Reactivate
                       </button>
                     )}
                     {u.status === "ACTIVE" && (
-                      <button className="ax-btn ghost sm" onClick={() => void setStatus(u.id, "SUSPENDED")}>
+                      <button className="ax-btn ghost sm" onClick={() => askSetStatus(u, "SUSPENDED")}>
                         Suspend
                       </button>
                     )}
-                    <button className="ax-btn danger sm" onClick={() => void remove(u)}>
+                    <button className="ax-btn danger sm" onClick={() => askRemove(u)}>
                       {u.status === "INVITED" ? "Revoke invite" : "Delete"}
                     </button>
                   </div>
@@ -185,6 +205,8 @@ export default function StaffPage() {
           </tbody>
         </table>
       )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

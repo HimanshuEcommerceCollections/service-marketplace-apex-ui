@@ -7,11 +7,12 @@
 //
 // The public form collects a property address, a preferred timeline and a unit
 // RANGE, none of which have columns on PMRequest; the form appends them to the
-// scope notes, which is why the expanded row renders those notes verbatim.
+// scope notes, which is why the detail modal renders those notes verbatim.
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, Modal, type ConfirmRequest } from "../../components/modal";
 
 interface PmRequest {
   id: string;
@@ -51,7 +52,9 @@ export default function PmRequestsPage() {
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
-  const [open, setOpen] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  /** Id of the request open in the detail modal (row data stays fresh across reloads). */
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: "20" });
@@ -82,25 +85,49 @@ export default function PmRequestsPage() {
     void load();
   }, [load]);
 
+  /** Throws on failure — the ConfirmModal shows the error and stays open. */
   async function patch(id: string, body: Record<string, unknown>, msg: string) {
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/pm-requests/${id}`, { method: "PATCH", body });
-      setNotice(msg);
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+    await api(`/admin/pm-requests/${id}`, { method: "PATCH", body });
+    setNotice(msg);
+    await load();
   }
 
-  function savePrice(id: string) {
-    const dollars = Number(amounts[id]);
+  function askPrice(r: PmRequest) {
+    const dollars = Number(amounts[r.id]);
     if (!Number.isFinite(dollars) || dollars <= 0) {
       setErr("Enter a positive amount.");
       return;
     }
-    void patch(id, { quotedAmount: Math.round(dollars * 100) }, "Quote price set.");
+    setErr(null);
+    setConfirm({
+      title: "Set quote price",
+      body: (
+        <>
+          Set the quote for <b>{r.company ?? r.contactName}</b> ({r.contactEmail}) to <b>${dollars.toFixed(2)}</b>?
+          {r.quotedAmount != null && (
+            <> Currently <b>${(r.quotedAmount / 100).toFixed(2)}</b>.</>
+          )}{" "}
+          This is the same audited write the Quotes screen performs.
+        </>
+      ),
+      confirmLabel: `Set $${dollars.toFixed(2)}`,
+      action: () => patch(r.id, { quotedAmount: Math.round(dollars * 100) }, "Quote price set."),
+    });
+  }
+
+  function askStatus(r: PmRequest, next: string) {
+    setConfirm({
+      title: "Change request status",
+      body: (
+        <>
+          Change the request from <b>{r.company ?? r.contactName}</b> ({r.contactEmail}) from <b>{r.status}</b> to{" "}
+          <b>{next}</b>?
+        </>
+      ),
+      confirmLabel: `Set ${next}`,
+      danger: next === "LOST",
+      action: () => patch(r.id, { status: next }, "Status updated."),
+    });
   }
 
   function applySearch(e: React.FormEvent) {
@@ -108,6 +135,8 @@ export default function PmRequestsPage() {
     setPage(1);
     setQuery(search.trim());
   }
+
+  const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
 
   return (
     <>
@@ -182,95 +211,47 @@ export default function PmRequestsPage() {
             <th>Units</th>
             <th>Bundle</th>
             <th>Received</th>
-            <th>Quoted price</th>
+            <th>Quoted</th>
             <th>Status</th>
             <th />
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <Fragment key={r.id}>
-              <tr>
-                <td>
-                  <b>{r.company ?? "—"}</b>
-                </td>
-                <td className="ax-muted">
-                  {r.contactName}
-                  <br />
-                  {r.contactEmail}
-                </td>
-                <td>{r.unitsEst}+</td>
-                <td>
-                  <span className="ax-badge muted">{bundleLabel(r.bundle)}</span>
-                </td>
-                <td className="ax-muted">{when(r.createdAt)}</td>
-                <td>
-                  <div className="ax-row" style={{ gap: 6 }}>
-                    <span className="ax-muted">$</span>
-                    <input
-                      className="ax-input"
-                      style={{ width: 90 }}
-                      value={amounts[r.id] ?? ""}
-                      onChange={(e) => setAmounts((a) => ({ ...a, [r.id]: e.target.value }))}
-                      placeholder="0.00"
-                    />
-                    <button className="ax-btn sm" onClick={() => savePrice(r.id)}>
-                      Set
-                    </button>
-                  </div>
-                </td>
-                <td>
-                  <div className="ax-row" style={{ gap: 6 }}>
-                    <span className={`ax-badge ${badge(r.status)}`}>{r.status}</span>
-                    <select
-                      className="ax-select"
-                      style={{ maxWidth: 130 }}
-                      value={r.status}
-                      onChange={(e) => void patch(r.id, { status: e.target.value }, "Status updated.")}
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </td>
-                <td>
-                  <button
-                    className="ax-btn ghost sm"
-                    onClick={() => setOpen(open === r.id ? null : r.id)}
+            <tr key={r.id}>
+              <td>
+                <b>{r.company ?? "—"}</b>
+              </td>
+              <td className="ax-muted">{r.contactEmail}</td>
+              <td>{r.unitsEst}+</td>
+              <td>
+                <span className="ax-badge muted">{bundleLabel(r.bundle)}</span>
+              </td>
+              <td className="ax-muted">{when(r.createdAt)}</td>
+              <td>{r.quotedAmount != null ? `$${(r.quotedAmount / 100).toFixed(2)}` : <span className="ax-muted">not set</span>}</td>
+              <td>
+                <div className="ax-row" style={{ gap: 6 }}>
+                  <span className={`ax-badge ${badge(r.status)}`}>{r.status}</span>
+                  <select
+                    className="ax-select"
+                    style={{ maxWidth: 120 }}
+                    value={r.status}
+                    onChange={(e) => askStatus(r, e.target.value)}
                   >
-                    {open === r.id ? "Hide" : "Details"}
-                  </button>
-                </td>
-              </tr>
-              {open === r.id && (
-                <tr>
-                  <td colSpan={8}>
-                    <div className="ax-card" style={{ margin: "6px 0" }}>
-                      <h3>Scope &amp; property details</h3>
-                      <pre
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          fontFamily: "inherit",
-                          fontSize: 13,
-                          margin: "10px 0 0",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {r.scopeNotes}
-                      </pre>
-                      <p className="ax-muted" style={{ marginTop: 14, fontSize: 12.5 }}>
-                        Phone: {r.contactPhone ?? "—"} · Quote request{" "}
-                        {r.quoteRequestId.slice(0, 8).toUpperCase()}
-                        {r.quotedAt && ` · priced ${new Date(r.quotedAt).toLocaleString()}`}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </Fragment>
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </td>
+              <td>
+                <button className="ax-btn ghost sm" onClick={() => { setErr(null); setNotice(null); setDetailId(r.id); }}>
+                  Details
+                </button>
+              </td>
+            </tr>
           ))}
           {rows.length === 0 && (
             <tr>
@@ -283,6 +264,95 @@ export default function PmRequestsPage() {
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      {detail && (
+        <Modal
+          title={detail.company ?? detail.contactName}
+          onClose={() => setDetailId(null)}
+          width={640}
+        >
+          {/* The page-level alerts sit behind the overlay — mirror them here so
+              feedback for in-modal actions (price validation, saves) stays visible. */}
+          {err && <div className="ax-alert err">{err}</div>}
+          {notice && <div className="ax-alert ok">{notice}</div>}
+          <dl className="ax-kv">
+            <dt>Status</dt>
+            <dd><span className={`ax-badge ${badge(detail.status)}`}>{detail.status}</span></dd>
+            <dt>Contact</dt>
+            <dd>
+              {detail.contactName}
+              <br />
+              <span className="ax-muted">{detail.contactEmail}</span>
+              {detail.contactPhone && (
+                <>
+                  <br />
+                  <span className="ax-muted">{detail.contactPhone}</span>
+                </>
+              )}
+            </dd>
+            <dt>Units</dt>
+            <dd>{detail.unitsEst}+</dd>
+            <dt>Bundle</dt>
+            <dd><span className="ax-badge muted">{bundleLabel(detail.bundle)}</span></dd>
+            <dt>Received</dt>
+            <dd>{new Date(detail.createdAt).toLocaleString()}</dd>
+            <dt>Quote request</dt>
+            <dd>{detail.quoteRequestId.slice(0, 8).toUpperCase()}</dd>
+            {detail.quotedAt && (
+              <>
+                <dt>Priced</dt>
+                <dd>{new Date(detail.quotedAt).toLocaleString()}</dd>
+              </>
+            )}
+          </dl>
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Scope &amp; property details</div>
+          <pre
+            style={{
+              whiteSpace: "pre-wrap",
+              fontFamily: "inherit",
+              fontSize: 13,
+              margin: 0,
+              lineHeight: 1.6,
+            }}
+          >
+            {detail.scopeNotes}
+          </pre>
+
+          <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Quoted price</div>
+          <div className="ax-row" style={{ gap: 6 }}>
+            <span className="ax-muted">$</span>
+            <input
+              className="ax-input"
+              style={{ width: 110 }}
+              value={amounts[detail.id] ?? ""}
+              onChange={(e) => setAmounts((a) => ({ ...a, [detail.id]: e.target.value }))}
+              placeholder="0.00"
+            />
+            <button className="ax-btn sm" onClick={() => askPrice(detail)}>
+              Set price
+            </button>
+          </div>
+
+          <div className="ax-row" style={{ marginTop: 16, gap: 8 }}>
+            <span className="ax-muted" style={{ fontSize: 13 }}>Status:</span>
+            <select
+              className="ax-select"
+              style={{ maxWidth: 150 }}
+              value={detail.status}
+              onChange={(e) => askStatus(detail, e.target.value)}
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </Modal>
+      )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

@@ -11,13 +11,14 @@
 // there was no way to read the queue, let alone act on it. The demand panel is
 // the other half — it's the number that should drive which area opens next.
 //
-// Notify is not undoable: it sends real email. Hence the confirm step, the
+// Notify is not undoable: it sends real email. Hence the confirm modal, the
 // ACTIVE-only server-side filter (nobody is mailed twice), and the exact count
 // shown before you commit.
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 interface WaitlistSignup {
   id: string;
@@ -66,10 +67,8 @@ export default function WaitlistPage() {
   const [notice, setNotice] = useState<string | null>(null);
   /** ZIPs ticked for the next notify batch. */
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [notifying, setNotifying] = useState(false);
   const [areaName, setAreaName] = useState("");
-  /** Set while the confirm prompt for a notify batch is open. */
-  const [confirming, setConfirming] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams({ page: String(page), limit: "20" });
@@ -116,48 +115,59 @@ export default function WaitlistPage() {
       else next.add(zip);
       return next;
     });
-    setConfirming(false);
   }
 
-  async function patchStatus(id: string, next: string) {
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/waitlist/${id}`, { method: "PATCH", body: { status: next } });
-      setNotice("Signup updated.");
-      await Promise.all([load(), loadDemand()]);
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+  function askStatus(r: WaitlistSignup, next: string) {
+    setConfirm({
+      title: "Change signup status",
+      body: (
+        <>
+          Change <b>{r.name ?? r.email}</b>&apos;s signup for ZIP <b>{r.zip}</b> from <b>{r.status}</b> to{" "}
+          <b>{next}</b>?
+        </>
+      ),
+      confirmLabel: `Set ${next}`,
+      action: async () => {
+        await api(`/admin/waitlist/${r.id}`, { method: "PATCH", body: { status: next } });
+        setNotice("Signup updated.");
+        await Promise.all([load(), loadDemand()]);
+      },
+    });
   }
 
-  async function notify() {
-    const zips = [...picked];
+  /** Opens the danger confirm — the action sends real email and can't be undone. */
+  function askNotify(pickedWaiting: number) {
+    const zips = [...picked].sort();
     if (zips.length === 0) return;
-    setNotifying(true);
-    setErr(null);
-    setNotice(null);
-    try {
-      const result = await api<NotifyResult>("/admin/waitlist/notify", {
-        method: "POST",
-        body: { zips, ...(areaName.trim() ? { areaName: areaName.trim() } : {}) },
-      });
-      setNotice(
-        result.notified === 0 && result.failed === 0
-          ? `Nobody was still waiting on ${zips.join(", ")}.`
-          : `Emailed ${result.notified} signup(s)${
-              result.failed ? ` — ${result.failed} could not be delivered and stay ACTIVE for a retry` : ""
-            }.`,
-      );
-      setPicked(new Set());
-      setAreaName("");
-      setConfirming(false);
-      await Promise.all([load(), loadDemand()]);
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Notify failed");
-    } finally {
-      setNotifying(false);
-    }
+    setConfirm({
+      title: "Email waiting customers",
+      danger: true,
+      confirmLabel: `Email ${pickedWaiting} customer(s)`,
+      body: (
+        <>
+          This sends real email to <b>{pickedWaiting}</b> customer(s) waiting on <b>{zips.join(", ")}</b> and marks
+          them NOTIFIED. It can&apos;t be undone. Make sure coverage is actually live for these ZIPs first.
+          <br />
+          <span className="ax-muted">Only ACTIVE signups are mailed, so re-running this never emails anyone twice.</span>
+        </>
+      ),
+      action: async () => {
+        const result = await api<NotifyResult>("/admin/waitlist/notify", {
+          method: "POST",
+          body: { zips, ...(areaName.trim() ? { areaName: areaName.trim() } : {}) },
+        });
+        setNotice(
+          result.notified === 0 && result.failed === 0
+            ? `Nobody was still waiting on ${zips.join(", ")}.`
+            : `Emailed ${result.notified} signup(s)${
+                result.failed ? ` — ${result.failed} could not be delivered and stay ACTIVE for a retry` : ""
+              }.`,
+        );
+        setPicked(new Set());
+        setAreaName("");
+        await Promise.all([load(), loadDemand()]);
+      },
+    });
   }
 
   function applySearch(e: React.FormEvent) {
@@ -212,37 +222,16 @@ export default function WaitlistPage() {
                 value={areaName}
                 onChange={(e) => setAreaName(e.target.value)}
               />
-              {confirming ? (
-                <>
-                  <button className="ax-btn sm" disabled={notifying} onClick={() => void notify()}>
-                    {notifying ? "Sending…" : `Yes — email ${pickedWaiting} customer(s)`}
-                  </button>
-                  <button className="ax-btn ghost sm" disabled={notifying} onClick={() => setConfirming(false)}>
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button className="ax-btn sm" onClick={() => setConfirming(true)}>
-                  Notify {picked.size} ZIP(s)
-                </button>
-              )}
+              <button className="ax-btn sm" onClick={() => askNotify(pickedWaiting)}>
+                Notify {picked.size} ZIP(s)
+              </button>
               <button className="ax-btn ghost sm" onClick={() => setPicked(new Set())}>
                 Clear selection
               </button>
             </div>
             <p className="ax-muted" style={{ fontSize: 12.5, marginTop: 8 }}>
-              {confirming ? (
-                <>
-                  This sends real email to <b>{pickedWaiting}</b> customer(s) on{" "}
-                  <b>{[...picked].sort().join(", ")}</b> and marks them NOTIFIED. It can&apos;t be undone.
-                  Make sure coverage is actually live for these ZIPs first.
-                </>
-              ) : (
-                <>
-                  Selected: <b>{[...picked].sort().join(", ")}</b> · {pickedWaiting} customer(s) waiting.
-                  Only ACTIVE signups are mailed, so re-running this never emails anyone twice.
-                </>
-              )}
+              Selected: <b>{[...picked].sort().join(", ")}</b> · {pickedWaiting} customer(s) waiting.
+              Only ACTIVE signups are mailed, so re-running this never emails anyone twice.
             </p>
           </div>
         )}
@@ -321,8 +310,7 @@ export default function WaitlistPage() {
         </thead>
         <tbody>
           {rows.map((r) => (
-            <Fragment key={r.id}>
-              <tr>
+              <tr key={r.id}>
                 <td>
                   <b>{r.name ?? r.email}</b>
                   {r.name && (
@@ -351,7 +339,7 @@ export default function WaitlistPage() {
                       className="ax-select"
                       style={{ maxWidth: 130 }}
                       value={r.status}
-                      onChange={(e) => void patchStatus(r.id, e.target.value)}
+                      onChange={(e) => askStatus(r, e.target.value)}
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
@@ -362,7 +350,6 @@ export default function WaitlistPage() {
                   </div>
                 </td>
               </tr>
-            </Fragment>
           ))}
           {rows.length === 0 && (
             <tr>
@@ -375,6 +362,8 @@ export default function WaitlistPage() {
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

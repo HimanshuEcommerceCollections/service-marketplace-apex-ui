@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 type PriceType = "PER_VISIT" | "PER_MONTH" | "FLAT";
 type Status = "ACTIVE" | "INACTIVE";
@@ -51,7 +52,7 @@ export default function PlansPage() {
   const [priceType, setPriceType] = useState<PriceType>("PER_VISIT");
   const [bullets, setBullets] = useState("");
   const [featured, setFeatured] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const fetchAll = useCallback(
     () =>
@@ -114,49 +115,68 @@ export default function PlansPage() {
   }
 
   /** Create in create mode; PATCH the edited plan in edit mode (service is locked). */
-  async function save() {
+  function askSave() {
     if (!serviceId || !cadenceId || !name.trim() || !price) {
       setErr("Service, cadence, name and price are required.");
       return;
     }
-    setBusy(true);
-    setErr(null);
-    setNotice(null);
-    try {
-      const body = {
-        cadenceId,
-        name: name.trim(),
-        bullets: parsedBullets(),
-        price: Math.round(Number(price) * 100),
-        priceType,
-        featured,
-      };
-      if (editingId) {
-        await api(`/admin/catalog/plans/${editingId}`, { method: "PATCH", body });
-        setNotice("Plan updated.");
-      } else {
-        await api("/admin/catalog/plans", { method: "POST", body: { ...body, serviceId } });
-        setNotice("Plan created.");
-      }
-      resetForm();
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : editingId ? "Update failed" : "Create failed");
-    } finally {
-      setBusy(false);
+    const dollars = Number(price);
+    if (!Number.isFinite(dollars) || dollars <= 0) {
+      setErr("Enter a positive price.");
+      return;
     }
+    setErr(null);
+    const serviceName = services.find((s) => s.id === serviceId)?.name ?? "—";
+    const cadenceLabel = cadences.find((c) => c.id === cadenceId)?.label ?? "—";
+    const typeLabel = PRICE_TYPES.find((t) => t.v === priceType)?.label ?? priceType;
+    setConfirm({
+      title: editingId ? `Save plan — ${name.trim()}` : `Create plan — ${name.trim()}`,
+      body: (
+        <>
+          {editingId ? "Save" : "Create"} <b>{name.trim()}</b> ({serviceName}, {cadenceLabel}) at{" "}
+          <b>${dollars.toFixed(2)} {typeLabel}</b>? The price is BINDING — subscribers are charged exactly this
+          (pre-tax), and the plan is publicly visible while ACTIVE.
+        </>
+      ),
+      confirmLabel: editingId ? "Save plan" : "Create plan",
+      action: async () => {
+        const body = {
+          cadenceId,
+          name: name.trim(),
+          bullets: parsedBullets(),
+          price: Math.round(dollars * 100),
+          priceType,
+          featured,
+        };
+        if (editingId) {
+          await api(`/admin/catalog/plans/${editingId}`, { method: "PATCH", body });
+          setNotice("Plan updated.");
+        } else {
+          await api("/admin/catalog/plans", { method: "POST", body: { ...body, serviceId } });
+          setNotice("Plan created.");
+        }
+        resetForm();
+        await load();
+      },
+    });
   }
 
-  async function patch(id: string, body: Record<string, unknown>, msg: string) {
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/catalog/plans/${id}`, { method: "PATCH", body });
-      setNotice(msg);
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+  function askPatch(p: Plan, body: Record<string, unknown>, summary: string, danger = false) {
+    setConfirm({
+      title: `${summary} — ${p.name}`,
+      danger,
+      body: (
+        <>
+          {summary} <b>{p.name}</b> ({p.serviceName}, {p.cadenceLabel})? This changes what customers see on the site.
+        </>
+      ),
+      confirmLabel: summary,
+      action: async () => {
+        await api(`/admin/catalog/plans/${p.id}`, { method: "PATCH", body });
+        setNotice("Plan updated.");
+        await load();
+      },
+    });
   }
 
   return (
@@ -211,11 +231,11 @@ export default function PlansPage() {
           />
         </div>
         <div className="ax-row" style={{ gap: 8, marginTop: 10 }}>
-          <button className="ax-btn" onClick={() => void save()} disabled={busy}>
-            {busy ? "Saving…" : editingId ? "Save changes" : "Create plan"}
+          <button className="ax-btn" onClick={askSave}>
+            {editingId ? "Save changes" : "Create plan"}
           </button>
           {editingId && (
-            <button className="ax-btn ghost" onClick={resetForm} disabled={busy}>
+            <button className="ax-btn ghost" onClick={resetForm}>
               Cancel
             </button>
           )}
@@ -253,10 +273,20 @@ export default function PlansPage() {
                   <button className="ax-btn ghost sm" onClick={() => startEdit(p)}>
                     Edit
                   </button>
-                  <button className="ax-btn ghost sm" onClick={() => void patch(p.id, { featured: !p.featured }, "Plan updated.")}>
+                  <button className="ax-btn ghost sm" onClick={() => askPatch(p, { featured: !p.featured }, p.featured ? "Unfeature" : "Feature")}>
                     {p.featured ? "Unfeature" : "Feature"}
                   </button>
-                  <button className="ax-btn ghost sm" onClick={() => void patch(p.id, { status: p.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }, "Plan updated.")}>
+                  <button
+                    className="ax-btn ghost sm"
+                    onClick={() =>
+                      askPatch(
+                        p,
+                        { status: p.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
+                        p.status === "ACTIVE" ? "Deactivate" : "Activate",
+                        p.status === "ACTIVE",
+                      )
+                    }
+                  >
                     {p.status === "ACTIVE" ? "Deactivate" : "Activate"}
                   </button>
                 </div>
@@ -266,6 +296,8 @@ export default function PlansPage() {
           {plans.length === 0 && <tr><td colSpan={7} className="ax-muted">No plans yet — create the first one above.</td></tr>}
         </tbody>
       </table>
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

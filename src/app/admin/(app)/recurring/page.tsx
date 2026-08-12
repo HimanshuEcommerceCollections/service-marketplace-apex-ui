@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 type Interval = "NONE" | "WEEK" | "MONTH";
 type Status = "ACTIVE" | "INACTIVE";
@@ -38,7 +39,7 @@ export default function RecurringCadencesPage() {
   const [label, setLabel] = useState("");
   const [interval, setInterval_] = useState<Interval>("WEEK");
   const [count, setCount] = useState("1");
-  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const load = useCallback(
     () =>
@@ -61,40 +62,50 @@ export default function RecurringCadencesPage() {
       .catch((e) => setErr(e instanceof ApiError ? e.message : "Failed to load cadences"));
   }, []);
 
-  async function create() {
+  function askCreate() {
     if (!label.trim()) return;
-    setBusy(true);
-    setErr(null);
-    setNotice(null);
-    try {
-      await api("/admin/catalog/cadences", {
-        method: "POST",
-        body: { label: label.trim(), interval, intervalCount: Math.max(1, Number(count) || 1) },
-      });
-      setLabel("");
-      setCount("1");
-      setNotice("Cadence created — it appears on every service, inactive until enabled per service.");
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Create failed");
-    } finally {
-      setBusy(false);
-    }
+    const n = Math.max(1, Number(count) || 1);
+    setConfirm({
+      title: `Add cadence — ${label.trim()}`,
+      body: (
+        <>
+          Add <b>{label.trim()}</b>
+          {interval !== "NONE" && <> (billed every {n > 1 ? `${n} ` : ""}{interval.toLowerCase()}{n > 1 ? "s" : ""})</>}?
+          It appears on every service&apos;s recurring grid, inactive at 0% until enabled per service.
+        </>
+      ),
+      confirmLabel: "Add cadence",
+      action: async () => {
+        await api("/admin/catalog/cadences", {
+          method: "POST",
+          body: { label: label.trim(), interval, intervalCount: n },
+        });
+        setLabel("");
+        setCount("1");
+        setNotice("Cadence created — it appears on every service, inactive until enabled per service.");
+        await load();
+      },
+    });
   }
 
-  async function toggle(c: Cadence) {
-    setErr(null);
-    setNotice(null);
-    try {
-      await api(`/admin/catalog/cadences/${c.id}`, {
-        method: "PATCH",
-        body: { status: c.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
-      });
-      setNotice("Cadence updated.");
-      await load();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Update failed");
-    }
+  function askToggle(c: Cadence) {
+    const next = c.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    setConfirm({
+      title: `${next === "INACTIVE" ? "Deactivate" : "Activate"} ${c.label}`,
+      danger: next === "INACTIVE",
+      body: (
+        <>
+          Set the <b>{c.label}</b> cadence to <b>{next}</b>? This affects every service offering it
+          {next === "INACTIVE" && " — customers can no longer pick it when booking"}.
+        </>
+      ),
+      confirmLabel: next === "INACTIVE" ? "Deactivate" : "Activate",
+      action: async () => {
+        await api(`/admin/catalog/cadences/${c.id}`, { method: "PATCH", body: { status: next } });
+        setNotice("Cadence updated.");
+        await load();
+      },
+    });
   }
 
   return (
@@ -114,8 +125,8 @@ export default function RecurringCadencesPage() {
           {interval !== "NONE" && (
             <input className="ax-input" style={{ width: 90 }} placeholder="every N" value={count} onChange={(e) => setCount(e.target.value)} />
           )}
-          <button className="ax-btn sm" onClick={() => void create()} disabled={busy}>
-            {busy ? "Creating…" : "Add"}
+          <button className="ax-btn sm" onClick={askCreate}>
+            Add
           </button>
         </div>
       </div>
@@ -130,7 +141,7 @@ export default function RecurringCadencesPage() {
               <td className="ax-muted">{cycleLabel(c)}</td>
               <td><span className={`ax-badge ${c.status === "ACTIVE" ? "ok" : "muted"}`}>{c.status}</span></td>
               <td>
-                <button className="ax-btn ghost sm" onClick={() => void toggle(c)}>
+                <button className="ax-btn ghost sm" onClick={() => askToggle(c)}>
                   {c.status === "ACTIVE" ? "Deactivate" : "Activate"}
                 </button>
               </td>
@@ -139,6 +150,8 @@ export default function RecurringCadencesPage() {
           {rows.length === 0 && <tr><td colSpan={5} className="ax-muted">No cadences.</td></tr>}
         </tbody>
       </table>
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }
