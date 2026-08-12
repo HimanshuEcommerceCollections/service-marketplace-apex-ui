@@ -124,7 +124,9 @@ interface CoverageVerdict {
 }
 
 type SubmitResult =
-  | { outcome: "BOOKED"; reference: string; status: string }
+  // status = fulfilment lifecycle; payment_status = money axis (two independent
+  // columns on the server since the booking-status split).
+  | { outcome: "BOOKED"; reference: string; status: string; payment_status?: string }
   | { outcome: "WAITLISTED"; waitlist_signup: { zip: string }; reason?: string | null }
   // A recurring frequency was chosen, so this is a subscription: Stripe
   // Checkout owns the rest and the first visit arrives from the webhook.
@@ -1348,7 +1350,7 @@ export default function BookingFlow() {
           )}
 
           {/* ---------- PAYMENT (FROM: pay at booking) ---------- */}
-          {done && result && result.outcome === "BOOKED" && result.status === "AWAITING_PAYMENT" && !paid && (
+          {done && result && result.outcome === "BOOKED" && result.payment_status === "AWAITING_PAYMENT" && !paid && (
             <div className="success show" style={{ maxWidth: 640 }}>
               <h2 style={{ fontSize: "clamp(26px,3.4vw,40px)" }}>Secure your booking</h2>
               <div className="bid">{result.reference}</div>
@@ -1367,7 +1369,7 @@ export default function BookingFlow() {
           )}
 
           {/* ---------- SUCCESS ---------- */}
-          {done && result && !(result.outcome === "BOOKED" && result.status === "AWAITING_PAYMENT" && !paid) && (
+          {done && result && !(result.outcome === "BOOKED" && result.payment_status === "AWAITING_PAYMENT" && !paid) && (
             <div className="success show">
               <div className="ill">
                 <Check />

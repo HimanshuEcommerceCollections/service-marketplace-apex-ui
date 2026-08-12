@@ -71,9 +71,10 @@
   display: inline-block; padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase; background: var(--mist); color: var(--slate7);
 }
+.mb-badges { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .mb-badge.is-confirmed, .mb-badge.is-paid { background: #e6f2ec; color: var(--confirm); }
 .mb-badge.is-completed { background: var(--bblue-tint); color: var(--bblue-deep); }
-.mb-badge.is-cancelled { background: #fbeae4; color: #b0492c; }
+.mb-badge.is-cancelled, .mb-badge.is-refunded, .mb-badge.is-partially_refunded { background: #fbeae4; color: #b0492c; }
 .mb-badge.is-pending, .mb-badge.is-awaiting_payment { background: #f7ecdf; color: var(--attention); }
 
 /* empty / loading / signed-out states */
