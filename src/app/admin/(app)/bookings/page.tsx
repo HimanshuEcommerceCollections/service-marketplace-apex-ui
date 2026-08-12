@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
-import { ConfirmModal, Modal, type ConfirmRequest } from "../../components/modal";
+import { ConfirmModal, Lightbox, Modal, thumbUrl, type ConfirmRequest } from "../../components/modal";
 
 interface Booking {
   reference: string;
@@ -13,6 +13,8 @@ interface Booking {
   paymentStatus: string;
   service: { slug: string; name: string } | null;
   priceTotal: number | null;
+  /** Coordinator's binding amount for QUOTE bookings (pre-tax), once set. */
+  quotedAmount: number | null;
   currency: string;
   scheduledAt: string | null;
   createdAt: string;
@@ -35,6 +37,17 @@ interface PaymentRow {
   createdAt: string;
 }
 
+/** The detail-only extras from GET /admin/bookings/:reference. */
+interface BookingExtra {
+  payments: PaymentRow[];
+  /** The pricing attachment for QUOTE bookings (null for FROM). */
+  quote: { id: string; status: string; quotedAmount: number | null; description: string } | null;
+  /** Customer-uploaded job photos — what the coordinator prices from. */
+  photos: { id: string; url: string }[];
+  /** Engine total for the customer's configuration — indicative for quotes, never binding. */
+  configuration: { priceTotal: number | null } | null;
+}
+
 const STATUSES = ["", "PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
 const PAYMENT_STATUSES = ["", "UNPAID", "AWAITING_PAYMENT", "PAID", "PARTIALLY_REFUNDED", "REFUNDED"];
 const TRANSITIONS = ["PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -51,16 +64,22 @@ export default function BookingsPage() {
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [status, setStatus] = useState("");
   const [payStatus, setPayStatus] = useState("");
+  /** The pricing work queue: quote bookings with no coordinator price yet. */
+  const [needsPricing, setNeedsPricing] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   /** Reference of the booking open in the detail modal (row data stays fresh across reloads). */
   const [detailRef, setDetailRef] = useState<string | null>(null);
-  /** Payments for the open booking (null = loading; keyed writes prevent stale fills). */
-  const [payments, setPayments] = useState<PaymentRow[] | null>(null);
+  /** Detail extras (payments, quote, photos) for the open booking; null = loading. */
+  const [extra, setExtra] = useState<BookingExtra | null>(null);
   /** Per-payment refund drafts, in dollars. */
   const [refunds, setRefunds] = useState<Record<string, string>>({});
+  /** Quote-price draft, in dollars. */
+  const [quotePrice, setQuotePrice] = useState("");
+  /** Index into the open booking's photos, when the lightbox is up. */
+  const [photoIdx, setPhotoIdx] = useState<number | null>(null);
   // Incremented per load; a slower earlier request bails on resolve so it can't
   // overwrite the results of a newer one (per-keystroke search race).
   const loadRef = useRef(0);
@@ -70,6 +89,7 @@ export default function BookingsPage() {
     const params = new URLSearchParams({ page: String(page), limit: "20" });
     if (status) params.set("status", status);
     if (payStatus) params.set("paymentStatus", payStatus);
+    if (needsPricing) params.set("needsPricing", "true");
     if (search.trim()) params.set("search", search.trim());
     try {
       const { data, meta } = await apiWithMeta<Booking[]>(`/admin/bookings?${params}`);
@@ -81,34 +101,65 @@ export default function BookingsPage() {
       if (loadRef.current !== epoch) return;
       setErr(e instanceof ApiError ? e.message : "Failed to load bookings");
     }
-  }, [page, status, payStatus, search]);
+  }, [page, status, payStatus, needsPricing, search]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  /** Fetch the money trail for the open booking; drafts default to the full remaining. */
-  const loadPayments = useCallback(async (reference: string) => {
+  /** Fetch the detail extras; refund drafts default to each charge's full remaining. */
+  const loadExtra = useCallback(async (reference: string) => {
     try {
-      const d = await api<{ payments: PaymentRow[] }>(`/admin/bookings/${reference}`);
-      setPayments(d.payments);
+      const d = await api<BookingExtra>(`/admin/bookings/${reference}`);
+      setExtra(d);
       setRefunds((prev) =>
         Object.fromEntries(
           d.payments.map((p) => [p.id, p.id in prev ? prev[p.id] : (p.remaining / 100).toFixed(2)]),
         ),
       );
+      setQuotePrice((prev) =>
+        prev !== "" ? prev : d.quote?.quotedAmount != null ? (d.quote.quotedAmount / 100).toFixed(2) : "",
+      );
     } catch (e) {
-      setPayments([]);
-      setErr(e instanceof ApiError ? e.message : "Failed to load the booking's payments");
+      setExtra({ payments: [], quote: null, photos: [], configuration: null });
+      setErr(e instanceof ApiError ? e.message : "Failed to load the booking's details");
     }
   }, []);
 
   function openDetail(reference: string) {
     setErr(null);
-    setPayments(null);
+    setExtra(null);
     setRefunds({});
+    setQuotePrice("");
+    setPhotoIdx(null);
     setDetailRef(reference);
-    void loadPayments(reference);
+    void loadExtra(reference);
+  }
+
+  /** Set the coordinator's binding price — the same audited write the old Quotes screen performed. */
+  function askSetPrice(b: Booking, quoteId: string, current: number | null) {
+    const dollars = Number(quotePrice);
+    if (!Number.isFinite(dollars) || dollars <= 0) {
+      setErr("Enter a positive amount.");
+      return;
+    }
+    setErr(null);
+    setConfirm({
+      title: `Set quote price — ${b.reference}`,
+      body: (
+        <>
+          Set the quote for <b>{b.customer?.email ?? b.contactEmail}</b> ({b.service?.name ?? "no service"}) to{" "}
+          <b>${dollars.toFixed(2)}</b>?
+          {current != null && <> Currently <b>${(current / 100).toFixed(2)}</b>.</>}{" "}
+          The customer is emailed their quote and can pay exactly this amount.
+        </>
+      ),
+      confirmLabel: `Set $${dollars.toFixed(2)}`,
+      action: async () => {
+        await api(`/admin/quotes/${quoteId}`, { method: "PATCH", body: { quotedAmount: Math.round(dollars * 100) } });
+        await Promise.all([load(), loadExtra(b.reference)]);
+      },
+    });
   }
 
   function askRefund(b: Booking, p: PaymentRow) {
@@ -142,7 +193,7 @@ export default function BookingsPage() {
       action: async () => {
         await api(`/admin/payments/${p.id}/refund`, { method: "POST", body: { amount: cents } });
         setRefunds((r) => ({ ...r, [p.id]: "" }));
-        await Promise.all([load(), loadPayments(b.reference)]);
+        await Promise.all([load(), loadExtra(b.reference)]);
       },
     });
   }
@@ -187,6 +238,14 @@ export default function BookingsPage() {
           ))}
         </select>
         <input className="ax-input" style={{ maxWidth: 240 }} placeholder="Search reference or email…" value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} />
+        <label className="ax-row" style={{ gap: 6, fontSize: 13 }}>
+          <input
+            type="checkbox"
+            checked={needsPricing}
+            onChange={(e) => { setPage(1); setNeedsPricing(e.target.checked); }}
+          />
+          Needs pricing
+        </label>
       </div>
 
       <table className="ax-table">
@@ -211,7 +270,17 @@ export default function BookingsPage() {
               </td>
               <td>{b.service?.name ?? "—"}</td>
               <td className="ax-muted">{b.customer?.email ?? b.contactEmail}</td>
-              <td>{b.quoteRequest ? "—" : money(b.priceTotal)}</td>
+              <td>
+                {b.quoteRequest ? (
+                  b.quotedAmount != null ? (
+                    money(b.quotedAmount)
+                  ) : (
+                    <span className="ax-badge warn">not priced</span>
+                  )
+                ) : (
+                  money(b.priceTotal)
+                )}
+              </td>
               <td><span className={`ax-badge ${payBadge(b.paymentStatus)}`}>{payLabel(b.paymentStatus)}</span></td>
               <td><span className={`ax-badge ${badge(b.status)}`}>{b.status}</span></td>
               <td>
@@ -263,16 +332,92 @@ export default function BookingsPage() {
               )}
             </dd>
             <dt>Price</dt>
-            <dd>{detail.quoteRequest ? "Set on the Quotes page" : `${money(detail.priceTotal)} ${detail.currency}`}</dd>
+            <dd>
+              {detail.quoteRequest
+                ? detail.quotedAmount != null
+                  ? `${money(detail.quotedAmount)} ${detail.currency} (coordinator quote)`
+                  : "Not priced yet — set it in the Quote section below"
+                : `${money(detail.priceTotal)} ${detail.currency}`}
+            </dd>
             <dt>Scheduled</dt>
             <dd>{when(detail.scheduledAt)}</dd>
             <dt>Created</dt>
             <dd>{when(detail.createdAt)}</dd>
           </dl>
+          {/* ── Quote pricing (QUOTE bookings) — absorbed from the old Quotes screen ── */}
+          {detail.quoteRequest && (
+            <>
+              <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>
+                Quote
+                {extra?.quote && (
+                  <span className={`ax-badge ${extra.quote.status === "WON" ? "ok" : extra.quote.status === "LOST" ? "danger" : "muted"}`} style={{ marginLeft: 8 }}>
+                    {extra.quote.status}
+                  </span>
+                )}
+              </div>
+              {extra === null ? (
+                <p className="ax-muted" style={{ margin: 0 }}>Loading quote…</p>
+              ) : !extra.quote ? (
+                <p className="ax-muted" style={{ margin: 0 }}>No quote attached to this booking.</p>
+              ) : (
+                <>
+                  <p style={{ whiteSpace: "pre-wrap", fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>
+                    {extra.quote.description || <span className="ax-muted">No description provided.</span>}
+                  </p>
+
+                  {extra.photos.length > 0 && (
+                    <div className="ax-row" style={{ gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                      {extra.photos.map((p, i) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setPhotoIdx(i)}
+                          style={{ border: "none", background: "none", padding: 0, cursor: "zoom-in" }}
+                          aria-label={`View photo ${i + 1} full size`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img className="ax-thumb" src={thumbUrl(p.url, 144)} alt={`Customer photo ${i + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="ax-row" style={{ gap: 6, marginTop: 12 }}>
+                    <span className="ax-muted">$</span>
+                    <input
+                      className="ax-input"
+                      style={{ width: 110 }}
+                      value={quotePrice}
+                      onChange={(e) => setQuotePrice(e.target.value)}
+                      placeholder="0.00"
+                    />
+                    <button className="ax-btn sm" onClick={() => askSetPrice(detail, extra.quote!.id, extra.quote!.quotedAmount)}>
+                      Set price
+                    </button>
+                    {extra.configuration?.priceTotal != null && (
+                      <button
+                        type="button"
+                        className="ax-btn ghost sm"
+                        title="Copy the customer's configured total into the price field"
+                        onClick={() => setQuotePrice((extra.configuration!.priceTotal! / 100).toFixed(2))}
+                      >
+                        Use indicative (~${(extra.configuration.priceTotal / 100).toFixed(2)})
+                      </button>
+                    )}
+                  </div>
+                  <p className="ax-muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
+                    Setting the price emails the customer their quote and lets them pay exactly this amount.
+                    WON/LOST track automatically from payment, confirmation and cancellation.
+                  </p>
+                </>
+              )}
+            </>
+          )}
+
           <div className="ax-section-title" style={{ margin: "18px 0 6px" }}>Payments</div>
-          {payments === null ? (
+          {extra === null ? (
             <p className="ax-muted" style={{ margin: 0 }}>Loading payments…</p>
-          ) : payments.length === 0 ? (
+          ) : extra.payments.length === 0 ? (
             <p className="ax-muted" style={{ margin: 0 }}>No payments recorded for this booking.</p>
           ) : (
             <table className="ax-table">
@@ -286,7 +431,7 @@ export default function BookingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {payments.map((p) => (
+                {extra.payments.map((p) => (
                   <tr key={p.id}>
                     <td className="ax-muted">{new Date(p.createdAt).toLocaleDateString()}</td>
                     <td>{money(p.amount)}</td>
@@ -316,7 +461,7 @@ export default function BookingsPage() {
               </tbody>
             </table>
           )}
-          {payments !== null && payments.some((p) => p.refundable) && (
+          {extra !== null && extra.payments.some((p) => p.refundable) && (
             <p className="ax-muted" style={{ fontSize: 12, margin: "6px 0 0" }}>
               Refund any amount up to what remains — partial amounts are fine and can be repeated.
               Refunding never changes the booking&apos;s status.
@@ -338,6 +483,10 @@ export default function BookingsPage() {
             </select>
           </div>
         </Modal>
+      )}
+
+      {detail && extra && photoIdx != null && (
+        <Lightbox photos={extra.photos} index={photoIdx} onClose={() => setPhotoIdx(null)} onNavigate={setPhotoIdx} />
       )}
 
       <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />

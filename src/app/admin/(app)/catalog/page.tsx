@@ -95,7 +95,7 @@ interface EditView {
 
 const MODE_HELP: Record<PricingMode, string> = {
   FROM: "Binding — customers pay the configured total when they book. Base price is the payable minimum AND the “from $X” listed on the site.",
-  QUOTE: "Coordinator-priced — customers see the configured total as an indication only; you set the final amount on the Quotes page before they can pay.",
+  QUOTE: "Coordinator-priced — customers see the configured total as an indication only; you set the final amount on the booking (Bookings → Details) before they can pay.",
 };
 
 const c2d = (c: number) => (c / 100).toFixed(2);

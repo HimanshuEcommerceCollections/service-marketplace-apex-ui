@@ -9,8 +9,9 @@ export interface NavItem {
 /** Sidebar items, gated by role (mirrors the server capability map for nav). */
 export const NAV: NavItem[] = [
   { href: "/admin", label: "Dashboard", roles: ["COORDINATOR", "ADMIN"] },
+  // Quote pricing lives on Bookings (detail modal + "Needs pricing" filter) —
+  // a booking-flow quote IS a booking; PM enquiries have their own screen.
   { href: "/admin/bookings", label: "Bookings", roles: ["COORDINATOR", "ADMIN"] },
-  { href: "/admin/quotes", label: "Quotes", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/pm-requests", label: "Property managers", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/pro-applications", label: "Pro applications", roles: ["COORDINATOR", "ADMIN"] },
   { href: "/admin/services", label: "Catalog & pricing", roles: ["COORDINATOR", "ADMIN"] },
