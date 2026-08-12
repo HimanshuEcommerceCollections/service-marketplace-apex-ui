@@ -23,7 +23,10 @@ const ALLOWED = ['CUSTOMER'] as const;
 interface MyBooking {
   reference: string;
   service: { slug: string; name: string } | null;
+  /** Fulfilment lifecycle (PENDING → CONFIRMED → IN_PROGRESS → COMPLETED / CANCELLED). */
   status: string;
+  /** Money axis (UNPAID / AWAITING_PAYMENT / PAID / PARTIALLY_REFUNDED / REFUNDED). */
+  paymentStatus: string;
   quoteRequest: boolean;
   priceTotal: number | null;
   taxAmount: number | null;
@@ -206,7 +209,14 @@ export default function MyBookingsView() {
                         )}
                       </div>
                       <div className="mb-item-side">
-                        <span className={`mb-badge is-${b.status.toLowerCase()}`}>{label(b.status)}</span>
+                        <span className="mb-badges">
+                          <span className={`mb-badge is-${b.status.toLowerCase()}`}>{label(b.status)}</span>
+                          {/* The money axis is its own badge — UNPAID adds nothing the
+                              status doesn't already say for a fresh quote, so hide it. */}
+                          {b.paymentStatus && b.paymentStatus !== 'UNPAID' && (
+                            <span className={`mb-badge is-${b.paymentStatus.toLowerCase()}`}>{label(b.paymentStatus)}</span>
+                          )}
+                        </span>
                         <span className="mb-price">{money(b.grandTotal ?? b.priceTotal, b.currency)}</span>
                         {(b.canPay || b.canCancel) && (
                           <span className="mb-actions">
