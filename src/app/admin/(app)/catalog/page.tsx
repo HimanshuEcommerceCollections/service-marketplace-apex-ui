@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../../lib/api";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 import {
   DURATION_UNITS,
   EMPTY_DURATION,
@@ -132,7 +133,7 @@ export default function EditPricingPage() {
 
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   useEffect(() => {
     api<ServiceOption[]>("/services").then(setServices).catch(() => setServices([]));
@@ -170,7 +171,7 @@ export default function EditPricingPage() {
     }
   }
 
-  /** Entity ops commit immediately and return the fresh view. */
+  /** Additive entity ops (add group/option) commit immediately and return the fresh view. */
   async function run(msg: string, fn: () => Promise<EditView>) {
     setErr(null);
     setNotice(null);
@@ -182,7 +183,13 @@ export default function EditPricingPage() {
     }
   }
 
-  async function savePricing() {
+  /** Confirmed variant of `run` — throws on failure so the ConfirmModal stays open with the error. */
+  async function commit(msg: string, fn: () => Promise<EditView>) {
+    applyView(await fn());
+    setNotice(msg);
+  }
+
+  function savePricing() {
     if (!view) return;
 
     // Parse before anything else: an unparsed field would reach the API as NaN
@@ -216,29 +223,38 @@ export default function EditPricingPage() {
       }
     }
 
-    setBusy(true);
     setErr(null);
     setNotice(null);
-    try {
-      const body = {
-        pricingMode: mode,
-        basePrice: base.value,
-        taxRateBps: tax.value,
-        photosMin: pMin.value,
-        photosMax: pMax.value,
-        typicalDuration: dur.value,
-        options,
-      };
-      applyView(await api<EditView>(`/admin/catalog/services/${view.slug}/pricing`, { method: "PUT", body }));
-      setNotice("Pricing saved — live on the site within ~5 min.");
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "Save failed");
-    } finally {
-      setBusy(false);
-    }
+    const slug = view.slug;
+    const body = {
+      pricingMode: mode,
+      basePrice: base.value,
+      taxRateBps: tax.value,
+      photosMin: pMin.value,
+      photosMax: pMax.value,
+      typicalDuration: dur.value,
+      options,
+    };
+    setConfirm({
+      title: `Save pricing — ${view.name}`,
+      body: (
+        <>
+          Save the pricing for <b>{view.name}</b>? Mode <b>{mode}</b>, base price{" "}
+          <b>${c2d(base.value)}</b>
+          {base.value !== view.basePrice && <> (was ${c2d(view.basePrice)})</>}, tax{" "}
+          <b>{(tax.value / 100).toFixed(2)}%</b>, plus {options.length} option delta(s). This goes live on the site
+          within ~5 minutes.
+        </>
+      ),
+      confirmLabel: "Save pricing",
+      action: () =>
+        commit("Pricing saved — live on the site within ~5 min.", () =>
+          api<EditView>(`/admin/catalog/services/${slug}/pricing`, { method: "PUT", body }),
+        ),
+    });
   }
 
-  async function saveRecurring() {
+  function saveRecurring() {
     if (!view) return;
     const rows: { cadenceId: string; discountPercent: number; isActive: boolean }[] = [];
     for (const r of rec) {
@@ -250,9 +266,32 @@ export default function EditPricingPage() {
       }
       rows.push({ cadenceId: r.cadenceId, discountPercent: pct.value, isActive: r.isActive });
     }
-    await run("Recurring settings saved.", () =>
-      api<EditView>(`/admin/catalog/services/${view.slug}/recurring`, { method: "PUT", body: { rows } }),
-    );
+    setErr(null);
+    const slug = view.slug;
+    const offered = rows.filter((r) => r.isActive).length;
+    setConfirm({
+      title: `Save recurring — ${view.name}`,
+      body: (
+        <>
+          Save the recurring settings for <b>{view.name}</b>? <b>{offered}</b> cadence(s) offered
+          {offered > 0 && (
+            <>
+              {" "}
+              ({rec
+                .filter((r) => r.isActive)
+                .map((r) => `${r.label} −${wholeNumber(r.discount, 0, 100).ok ? Number(r.discount) : 0}%`)
+                .join(", ")})
+            </>
+          )}
+          . This changes the discounts customers see when booking.
+        </>
+      ),
+      confirmLabel: "Save recurring",
+      action: () =>
+        commit("Recurring settings saved.", () =>
+          api<EditView>(`/admin/catalog/services/${slug}/recurring`, { method: "PUT", body: { rows } }),
+        ),
+    });
   }
 
   async function addGroup() {
@@ -290,11 +329,42 @@ export default function EditPricingPage() {
     setGUnitPrice("");
   }
 
-  const patchGroup = (g: EditGroup, body: Record<string, unknown>, msg: string) =>
-    run(msg, () => api<EditView>(`/admin/catalog/services/${view!.slug}/groups/${g.id}`, { method: "PATCH", body }));
+  /** Group/option toggles change the public configurator immediately — confirm first. */
+  function askGroup(g: EditGroup, body: Record<string, unknown>, summary: string, danger = false) {
+    setConfirm({
+      title: `${summary} — ${g.label}`,
+      danger,
+      body: (
+        <>
+          {summary} the <b>{g.label}</b> configuration on <b>{view!.name}</b>? This changes the booking configurator
+          customers see.
+        </>
+      ),
+      confirmLabel: summary,
+      action: () =>
+        commit("Configuration updated.", () =>
+          api<EditView>(`/admin/catalog/services/${view!.slug}/groups/${g.id}`, { method: "PATCH", body }),
+        ),
+    });
+  }
 
-  const patchOption = (o: EditOption, body: Record<string, unknown>, msg: string) =>
-    run(msg, () => api<EditView>(`/admin/catalog/services/${view!.slug}/options/${o.id}`, { method: "PATCH", body }));
+  function askOption(o: EditOption, body: Record<string, unknown>, summary: string, danger = false) {
+    setConfirm({
+      title: `${summary} — ${o.label}`,
+      danger,
+      body: (
+        <>
+          {summary} the <b>{o.label}</b> option on <b>{view!.name}</b>? This changes the booking configurator
+          customers see.
+        </>
+      ),
+      confirmLabel: summary,
+      action: () =>
+        commit("Option updated.", () =>
+          api<EditView>(`/admin/catalog/services/${view!.slug}/options/${o.id}`, { method: "PATCH", body }),
+        ),
+    });
+  }
 
   async function addOption(g: EditGroup) {
     const draft = optDrafts[g.id];
@@ -526,10 +596,20 @@ export default function EditPricingPage() {
                   </span>
                   {g.isRequired && <span className="ax-badge warn">required</span>}
                   <span style={{ marginLeft: "auto" }} className="ax-row">
-                    <button className="ax-btn ghost sm" onClick={() => void patchGroup(g, { isRequired: !g.isRequired }, "Configuration updated.")}>
+                    <button className="ax-btn ghost sm" onClick={() => askGroup(g, { isRequired: !g.isRequired }, g.isRequired ? "Make optional" : "Make required")}>
                       {g.isRequired ? "Make optional" : "Make required"}
                     </button>
-                    <button className="ax-btn ghost sm" onClick={() => void patchGroup(g, { status: g.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }, "Configuration updated.")}>
+                    <button
+                      className="ax-btn ghost sm"
+                      onClick={() =>
+                        askGroup(
+                          g,
+                          { status: g.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
+                          g.status === "ACTIVE" ? "Deactivate" : "Activate",
+                          g.status === "ACTIVE",
+                        )
+                      }
+                    >
                       {g.status === "ACTIVE" ? "Deactivate" : "Activate"}
                     </button>
                   </span>
@@ -558,7 +638,17 @@ export default function EditPricingPage() {
                               {deltaR[o.id] && <Err of={deltaR[o.id]} />}
                             </td>
                             <td>
-                              <button className="ax-btn ghost sm" onClick={() => void patchOption(o, { status: o.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }, "Option updated.")}>
+                              <button
+                                className="ax-btn ghost sm"
+                                onClick={() =>
+                                  askOption(
+                                    o,
+                                    { status: o.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
+                                    o.status === "ACTIVE" ? "Deactivate" : "Activate",
+                                    o.status === "ACTIVE",
+                                  )
+                                }
+                              >
                                 {o.status === "ACTIVE" ? "Deactivate" : "Activate"}
                               </button>
                             </td>
@@ -647,19 +737,21 @@ export default function EditPricingPage() {
                 ))}
               </tbody>
             </table>
-            <button className="ax-btn sm" style={{ marginTop: 10 }} onClick={() => void saveRecurring()} disabled={recurringInvalid}>
+            <button className="ax-btn sm" style={{ marginTop: 10 }} onClick={saveRecurring} disabled={recurringInvalid}>
               Save recurring
             </button>
           </div>
 
           <div className="ax-row" style={{ marginTop: 16, gap: 12 }}>
-            <button className="ax-btn" onClick={() => void savePricing()} disabled={busy || pricingInvalid}>
-              {busy ? "Saving…" : "Save pricing"}
+            <button className="ax-btn" onClick={savePricing} disabled={pricingInvalid}>
+              Save pricing
             </button>
             {pricingInvalid && <span className="ax-err">Fix the highlighted fields to save.</span>}
           </div>
         </>
       )}
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }

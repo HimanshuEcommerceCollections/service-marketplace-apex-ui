@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiWithMeta, ApiError, type PageMeta } from "../../lib/api";
 import { Pager } from "../../components/pager";
+import { ConfirmModal, type ConfirmRequest } from "../../components/modal";
 
 interface AreaOption {
   id: string;
@@ -27,6 +28,7 @@ export default function ZipCodesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   // create form
   const [nArea, setNArea] = useState("");
@@ -72,6 +74,44 @@ export default function ZipCodesPage() {
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "Action failed");
     }
+  }
+
+  function askToggle(z: ZipView) {
+    const next = z.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    setConfirm({
+      title: `${next === "INACTIVE" ? "Deactivate" : "Activate"} ZIP ${z.zipCode}`,
+      body: (
+        <>
+          Set ZIP <b>{z.zipCode}</b> ({z.city ?? "no city"}, {z.area?.name ?? "no area"}) to <b>{next}</b>?{" "}
+          {next === "INACTIVE"
+            ? "Customers in this ZIP can no longer book covered services."
+            : "This ZIP becomes bookable wherever its area is covered."}
+        </>
+      ),
+      confirmLabel: next === "INACTIVE" ? "Deactivate" : "Activate",
+      action: async () => {
+        await api(`/admin/zip-codes/${z.id}`, { method: "PATCH", body: { status: next } });
+        await load();
+      },
+    });
+  }
+
+  function askDelete(z: ZipView) {
+    setConfirm({
+      title: `Delete ZIP ${z.zipCode}`,
+      danger: true,
+      body: (
+        <>
+          Delete ZIP <b>{z.zipCode}</b> ({z.city ?? "no city"}, {z.area?.name ?? "no area"})? It is removed from its
+          area and stops being bookable immediately.
+        </>
+      ),
+      confirmLabel: `Delete ${z.zipCode}`,
+      action: async () => {
+        await api(`/admin/zip-codes/${z.id}`, { method: "DELETE" });
+        await load();
+      },
+    });
   }
 
   return (
@@ -158,10 +198,10 @@ export default function ZipCodesPage() {
               </td>
               <td>
                 <div className="ax-row" style={{ gap: 6 }}>
-                  <button className="ax-btn ghost sm" onClick={() => void run(() => api(`/admin/zip-codes/${z.id}`, { method: "PATCH", body: { status: z.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" } }))}>
+                  <button className="ax-btn ghost sm" onClick={() => askToggle(z)}>
                     {z.status === "ACTIVE" ? "Deactivate" : "Activate"}
                   </button>
-                  <button className="ax-btn danger sm" onClick={() => void run(() => api(`/admin/zip-codes/${z.id}`, { method: "DELETE" }))}>Delete</button>
+                  <button className="ax-btn danger sm" onClick={() => askDelete(z)}>Delete</button>
                 </div>
               </td>
             </tr>
@@ -173,6 +213,8 @@ export default function ZipCodesPage() {
       </table>
 
       <Pager meta={meta} page={page} setPage={setPage} />
+
+      <ConfirmModal req={confirm} onClose={() => setConfirm(null)} />
     </>
   );
 }
